@@ -1,0 +1,14 @@
+server:
+  host: "0.0.0.0"
+  port: 8080
+
+secret: "qwerty"
+
+database:
+  host: "localhost"
+  port: 5432
+  user: "postgres"
+  password: "postgres"
+  name: "ne-noy"
+  sslmode: "disable"
+  timezone: "UTC"
