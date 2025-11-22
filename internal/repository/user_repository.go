@@ -31,7 +31,7 @@ func (r *userRepository) GetByVkId(vk int64) (*model.User, error) {
 		First(user, "vk_id = ?", vk)
 
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		return nil, result.Error
+		return nil, nil
 	}
 	if result.Error != nil {
 		return nil, result.Error

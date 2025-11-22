@@ -23,6 +23,9 @@ func (u userService) GetUserByVkId(vkId int64) (*dto.UserDto, error) {
 	if err != nil {
 		return nil, err
 	}
+	if userModel == nil {
+		return nil, nil
+	}
 	roleDto := &dto.RoleDto{}
 	roleDto.ID = userModel.Role.ID
 	roleDto.Name = userModel.Role.Name

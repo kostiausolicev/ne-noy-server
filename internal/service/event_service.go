@@ -34,10 +34,6 @@ func (e eventService) GetEventsByRole(roleId uuid.UUID) ([]dto.EventMiniDto, err
 	if err != nil {
 		return nil, err
 	}
-	count, err := e.r.CountParticipants(events[0].ID)
-	if err != nil {
-		return nil, err
-	}
 
 	eventsDto := make([]dto.EventMiniDto, len(events))
 
@@ -62,6 +58,10 @@ func (e eventService) GetEventsByRole(roleId uuid.UUID) ([]dto.EventMiniDto, err
 				LastName:  ep.User.LastName,
 				VkId:      ep.User.VkID,
 			}
+		}
+		count, err := e.r.CountParticipants(event.ID)
+		if err != nil {
+			return nil, err
 		}
 
 		eventsDto[i] = dto.EventMiniDto{

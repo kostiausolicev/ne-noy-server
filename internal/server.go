@@ -24,12 +24,13 @@ func New(db *gorm.DB, secret string) *Server {
 	userService := service.NewUserService(userRepo)
 	eventService := service.NewEventService(eventRepo)
 	eventParticipantService := service.NewEventParticipantService(eventParticipantRepository)
+	jwtService := service.NewJWTService(secret)
 
 	router := gin.Default()
 	router.Use(middleware.ErrorHandler())
 	public := router.Group("/")
 	{
-		controller.ConfigureServiceController(public)
+		controller.ConfigureServiceController(public, jwtService, userRepo)
 	}
 	apiV1 := router.Group("/api/v1")
 	apiV1.Use(middleware.AuthMiddleware(secret))

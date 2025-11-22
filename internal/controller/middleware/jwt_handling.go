@@ -29,7 +29,7 @@ func AuthMiddleware(secret string) gin.HandlerFunc {
 
 		claims := token.Claims.(jwt.MapClaims)
 
-		userID := claims[config.UserVkIdContextKey].(int64)
+		userID := int64(claims[config.UserVkIdContextKey].(float64))
 
 		role := claims[config.UserRoleContextKey].(string)
 

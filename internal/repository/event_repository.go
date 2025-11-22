@@ -53,6 +53,7 @@ func (e eventRepository) GetAll() ([]*model.Event, error) {
 		Preload("Orgs", func(db *gorm.DB) *gorm.DB {
 			return db.Select(`
 				"user".id, 
+				"user".vk_id, 
 				"user".first_name, 
 				"user".last_name
 			`)
@@ -69,6 +70,7 @@ func (e eventRepository) GetAll() ([]*model.Event, error) {
 		Preload("EventParticipants.User", func(db *gorm.DB) *gorm.DB {
 			return db.Select(`
 				"user".id,
+				"user".vk_id,
 				"user".first_name,
 				"user".last_name
 			`)
@@ -87,27 +89,37 @@ func (e eventRepository) GetAllByRole(roleId uuid.UUID) ([]*model.Event, error) 
 
 	result := e.db.
 		Table("event").
-		Preload("Attachments").
+		Select(`
+            event.id,
+            event.name,
+            event.starts_at
+        `).
 		Preload("Orgs", func(db *gorm.DB) *gorm.DB {
 			return db.Select(`
 				"user".id, 
-				"user".vk_id, 
+				"user".vk_id,
 				"user".first_name, 
 				"user".last_name
 			`)
 		}).
 		Preload("EventParticipants", func(db *gorm.DB) *gorm.DB {
-			return db.Select("event_participant.id", "event_participant.user_id", "event_participant.event_id")
+			return db.
+				Select(`
+					event_participant.id, 
+					event_participant.user_id,
+					event_participant.event_id
+				`).
+				Limit(3)
 		}).
 		Preload("EventParticipants.User", func(db *gorm.DB) *gorm.DB {
 			return db.Select(`
-				"user".id, 
-				"user".vk_id, 
-				"user".first_name, 
+				"user".id,
+				"user".vk_id,
+				"user".first_name,
 				"user".last_name
 			`)
 		}).
-		Joins("JOIN event_role er ON er.event_id = events.id").
+		Joins("JOIN event_role er ON er.event_id = event.id").
 		Where("er.role_id = ?", roleId).
 		Find(&events)
 

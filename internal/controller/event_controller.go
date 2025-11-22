@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"ne_noy/internal/config"
 	"ne_noy/internal/service"
 
 	"github.com/gin-gonic/gin"
@@ -15,11 +16,7 @@ type eventController struct {
 func (uc *eventController) getEvent(c *gin.Context) {}
 
 func (uc *eventController) getEventsAvailable(c *gin.Context) {
-
-}
-
-func (uc *eventController) getEventsAll(c *gin.Context) {
-	roleIdStr, _ := c.Get("role_id")
+	roleIdStr, _ := c.Get(config.UserRoleContextKey)
 	roleId, _ := uuid.Parse(roleIdStr.(string))
 	events, err := uc.eventService.GetEventsByRole(roleId)
 	if err != nil {
@@ -46,6 +43,5 @@ func ConfigureEventController(
 	}
 	router.GET("/events/:id", ec.getEvent)
 	router.GET("/events/available", ec.getEventsAvailable)
-	router.GET("/events/all", ec.getEventsAll)
 	router.POST("/events/:id/participate", ec.participateToEvent)
 }
