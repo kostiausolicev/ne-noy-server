@@ -17,15 +17,6 @@ type Server struct {
 }
 
 func New(db *gorm.DB, secret string) *Server {
-	router := gin.Default()
-	router.Use(middleware.ErrorHandler())
-	router.Use(middleware.AuthMiddleware(secret))
-
-	// healthcheck
-	router.GET("/health", func(c *gin.Context) {
-		c.JSON(200, gin.H{"status": "ok"})
-	})
-
 	userRepo := repository.NewUserRepository(db)
 	eventRepo := repository.NewEventRepository(db)
 	eventParticipantRepository := repository.NewEventParticipantRepository(db)
@@ -34,8 +25,18 @@ func New(db *gorm.DB, secret string) *Server {
 	eventService := service.NewEventService(eventRepo)
 	eventParticipantService := service.NewEventParticipantService(eventParticipantRepository)
 
-	controller.ConfigureUserController(router, userService)
-	controller.ConfigureEventController(router, eventService, eventParticipantService)
+	router := gin.Default()
+	router.Use(middleware.ErrorHandler())
+	public := router.Group("/")
+	{
+		controller.ConfigureServiceController(public)
+	}
+	apiV1 := router.Group("/api/v1")
+	apiV1.Use(middleware.AuthMiddleware(secret))
+	{
+		controller.ConfigureUserController(apiV1, userService)
+		controller.ConfigureEventController(apiV1, eventService, eventParticipantService)
+	}
 
 	return &Server{
 		Router: router,

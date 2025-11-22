@@ -49,7 +49,7 @@ func (uc *userController) DeleteUser(c *gin.Context) {
 	// ...
 }
 
-func ConfigureUserController(router *gin.Engine, service service.UserService) {
+func ConfigureUserController(router *gin.RouterGroup, service service.UserService) {
 	uc := &userController{service: service}
 	router.POST("/users", uc.CreateUser)
 	router.GET("/users", uc.GetAll)
