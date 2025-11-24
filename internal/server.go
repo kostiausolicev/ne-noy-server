@@ -7,6 +7,7 @@ import (
 	"ne_noy/internal/repository"
 	"ne_noy/internal/service"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
@@ -23,19 +24,20 @@ func New(db *gorm.DB, secret string) *Server {
 
 	userService := service.NewUserService(userRepo)
 	eventService := service.NewEventService(eventRepo)
-	eventParticipantService := service.NewEventParticipantService(eventParticipantRepository)
+	eventParticipantService := service.NewEventParticipantService(eventParticipantRepository, eventRepo)
 	jwtService := service.NewJWTService(secret)
 
 	router := gin.Default()
+	router.Use(cors.Default())
 	router.Use(middleware.ErrorHandler())
 	public := router.Group("/")
 	{
 		controller.ConfigureServiceController(public, jwtService, userRepo)
+		controller.ConfigureUserController(public, userService)
 	}
 	apiV1 := router.Group("/api/v1")
 	apiV1.Use(middleware.AuthMiddleware(secret))
 	{
-		controller.ConfigureUserController(apiV1, userService)
 		controller.ConfigureEventController(apiV1, eventService, eventParticipantService)
 	}
 

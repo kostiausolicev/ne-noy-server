@@ -11,14 +11,14 @@ type EventMiniDto struct {
 	Title             string        `json:"title"`
 	Orgs              []UserMiniDto `json:"orgs"`
 	Participants      []UserMiniDto `json:"participants"`
-	ParticipantsCount int           `json:"participants_count"`
-	StartsAt          time.Time     `json:"start_at"`
+	ParticipantsCount int           `json:"participantsCount"`
+	StartsAt          time.Time     `json:"startAt"`
 }
 
 type EventDto struct {
 	ID         uuid.UUID `json:"id"`
-	VkPostLink string    `json:"vk_post_link"`
-	PhotoURL   string    `json:"photo_url"`
+	VkPostLink string    `json:"vkPostLink"`
+	PhotoURL   string    `json:"photoUrl"`
 
 	Title       string        `json:"title"`
 	Description string        `json:"description"`
@@ -27,7 +27,16 @@ type EventDto struct {
 	Place       string        `json:"place"`
 
 	Participants             []UserMiniDto `json:"participants"`
-	ParticipantsCount        int           `json:"participants_count"`
-	StartDate                time.Time     `json:"start_date"`
-	CurrentUserIsParticipant *bool         `json:"current_user_is_participant,omitempty"`
+	ParticipantsCount        int           `json:"participantsCount"`
+	StartDate                time.Time     `json:"startDate"`
+	CurrentUserIsParticipant *bool         `json:"currentUserIsParticipant,omitempty"`
+}
+
+type EventParticipantDto struct {
+	EventID   uuid.UUID `json:"event_id"`
+	UserID    uuid.UUID `json:"user_id"`
+	Lat       float64   `json:"lat;omitempty"`
+	Long      float64   `json:"long;omitempty"`
+	CheckTime time.Time `json:"check_time"`
+	CheckBy   uuid.UUID `json:"check_by"`
 }

@@ -9,6 +9,7 @@ import (
 	"gopkg.in/dgrijalva/jwt-go.v3"
 )
 
+// TODO заменить jwt на проверку vk токена
 func AuthMiddleware(secret string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")

@@ -13,7 +13,7 @@ type userController struct {
 }
 
 func (uc *userController) CreateUser(c *gin.Context) {
-	// ...
+
 }
 
 func (uc *userController) GetAll(c *gin.Context) {

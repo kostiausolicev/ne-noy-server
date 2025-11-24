@@ -19,6 +19,7 @@ type EventRepository interface {
 	GetAll() ([]*model.Event, error)
 	GetAllByRole(roleId uuid.UUID) ([]*model.Event, error)
 	CountParticipants(id uuid.UUID) (int, error)
+	GetEventLocationData(id uuid.UUID) (*model.Event, error)
 
 	GetById(id uuid.UUID) (*model.Event, error)
 	Create(event *model.Event) (*model.Event, error)
@@ -153,4 +154,20 @@ func (e eventRepository) Update(event *model.Event) (*model.Event, error) {
 func (e eventRepository) Delete(id uuid.UUID) error {
 	//TODO implement me
 	panic("implement me")
+}
+
+func (e eventRepository) GetEventLocationData(id uuid.UUID) (*model.Event, error) {
+	var event *model.Event
+	result := e.db.
+		Table("event").
+		Select(`
+			event.lat,
+			event.long
+		`).
+		Where("event.id = ?", id).
+		Take(event)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return event, nil
 }

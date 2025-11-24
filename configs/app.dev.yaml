@@ -2,7 +2,7 @@ server:
   host: "0.0.0.0"
   port: 8080
 
-secret: "qwerty"
+secret: "np5CSGPjSzinGdgZuQ2b"
 
 database:
   host: "localhost"
