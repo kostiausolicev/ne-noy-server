@@ -18,7 +18,7 @@ type UserDto struct {
 type UserMiniDto struct {
 	ID        uuid.UUID `json:"id"`
 	VkId      int64     `json:"vk_id"`
-	FirstName string    `json:"first_name"`
-	LastName  string    `json:"last_name"`
+	FirstName string    `json:"firstname"`
+	LastName  string    `json:"lastname"`
 	PhotoURL  string    `json:"photo"`
 }

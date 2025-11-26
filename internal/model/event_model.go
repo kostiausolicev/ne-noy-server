@@ -12,10 +12,11 @@ type Event struct {
 	Status      *string   `gorm:"size:50"` // deleted | draft | active
 	Description *string
 	Cover       *string
-	VkPostID    *int
-	VkVoteID    *int
+	VkPostID    *string
+	VkVoteID    *string
 	Lat         *float64 `gorm:"type:decimal(10,8)"`
 	Long        *float64 `gorm:"type:decimal(11,8)"`
+	Address     *string
 	StartsAt    *time.Time
 	Type        *string   `gorm:"size:100"`
 	CreatedAt   time.Time `gorm:"autoCreateTime"`

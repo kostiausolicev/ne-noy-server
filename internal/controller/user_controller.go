@@ -29,9 +29,7 @@ func (uc *userController) GetAll(c *gin.Context) {
 			c.Error(err)
 			return
 		}
-		c.JSON(http.StatusOK, gin.H{
-			"user": user,
-		})
+		c.JSON(http.StatusOK, user)
 	} else {
 
 	}

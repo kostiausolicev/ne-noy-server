@@ -17,18 +17,18 @@ type EventMiniDto struct {
 
 type EventDto struct {
 	ID         uuid.UUID `json:"id"`
-	VkPostLink string    `json:"vkPostLink"`
-	PhotoURL   string    `json:"photoUrl"`
+	VkPostLink *string   `json:"vkPostLink"`
+	PhotoURL   *string   `json:"photoUrl"`
 
 	Title       string        `json:"title"`
-	Description string        `json:"description"`
+	Description *string       `json:"description"`
 	Attachments []string      `json:"attachments"`
 	Orgs        []UserMiniDto `json:"orgs"`
-	Place       string        `json:"place"`
+	Address     *string       `json:"address"`
 
 	Participants             []UserMiniDto `json:"participants"`
 	ParticipantsCount        int           `json:"participantsCount"`
-	StartDate                time.Time     `json:"startDate"`
+	StartsAt                 *time.Time    `json:"startsAt"`
 	CurrentUserIsParticipant *bool         `json:"currentUserIsParticipant,omitempty"`
 }
 
