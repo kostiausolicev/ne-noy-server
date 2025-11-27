@@ -17,15 +17,15 @@ func NewEventParticipantService(epr repository.EventParticipantRepository, er re
 }
 
 type EventParticipantService interface {
-	ParticipantToEvent(eventID, userID uuid.UUID) (bool, error)
-	UpParticipantToEvent(eventID, userID uuid.UUID) (bool, error)
+	ParticipantToEvent(eventID uuid.UUID, userID int64) (bool, error)
+	UpParticipantToEvent(eventID uuid.UUID, userID int64) (bool, error)
 }
 
-func (eps eventParticipantService) ParticipantToEvent(eventID, userID uuid.UUID) (bool, error) {
+func (eps eventParticipantService) ParticipantToEvent(eventID uuid.UUID, userID int64) (bool, error) {
 	return eps.epr.Participant(eventID, userID)
 }
 
-func (eps eventParticipantService) UpParticipantToEvent(eventID, userID uuid.UUID) (bool, error) {
+func (eps eventParticipantService) UpParticipantToEvent(eventID uuid.UUID, userID int64) (bool, error) {
 	return eps.epr.UnParticipant(eventID, userID)
 }
 

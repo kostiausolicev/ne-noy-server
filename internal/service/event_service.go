@@ -2,6 +2,7 @@ package service
 
 import (
 	"ne_noy/internal/dto"
+	"ne_noy/internal/model"
 	"ne_noy/internal/repository"
 
 	"github.com/google/uuid"
@@ -14,10 +15,8 @@ func NewEventService(r repository.EventRepository) EventService {
 type EventService interface {
 	GetEvent(id uuid.UUID, userVkId int64) (*dto.EventDto, error)
 	GetEventsByRole(roleId uuid.UUID) ([]dto.EventMiniDto, error)
-	GetArchiveEvents() ([]dto.EventMiniDto, error)
+	GetArchiveEvents(roleId uuid.UUID) ([]dto.EventMiniDto, error)
 	GetEduEvents() ([]dto.EventMiniDto, error)
-	ParticipantToEvent(eventID, userID uuid.UUID) (bool, error)
-	UpParticipantToEvent(eventID, userID uuid.UUID) (bool, error)
 }
 
 type eventService struct {
@@ -88,6 +87,24 @@ func (e eventService) GetEventsByRole(roleId uuid.UUID) ([]dto.EventMiniDto, err
 		return nil, err
 	}
 
+	return e.parseModelToDto(events)
+}
+
+func (e eventService) GetArchiveEvents(roleId uuid.UUID) ([]dto.EventMiniDto, error) {
+	events, err := e.r.GetAllArchive(roleId)
+	if err != nil {
+		return nil, err
+	}
+
+	return e.parseModelToDto(events)
+}
+
+func (e eventService) GetEduEvents() ([]dto.EventMiniDto, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (e eventService) parseModelToDto(events []*model.Event) ([]dto.EventMiniDto, error) {
 	eventsDto := make([]dto.EventMiniDto, len(events))
 
 	for i, event := range events {
@@ -130,24 +147,4 @@ func (e eventService) GetEventsByRole(roleId uuid.UUID) ([]dto.EventMiniDto, err
 	}
 
 	return eventsDto, nil
-}
-
-func (e eventService) GetArchiveEvents() ([]dto.EventMiniDto, error) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (e eventService) GetEduEvents() ([]dto.EventMiniDto, error) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (e eventService) ParticipantToEvent(eventID, userID uuid.UUID) (bool, error) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (e eventService) UpParticipantToEvent(eventID, userID uuid.UUID) (bool, error) {
-	//TODO implement me
-	panic("implement me")
 }

@@ -8,9 +8,9 @@ import (
 
 type EventParticipant struct {
 	ID             uuid.UUID `gorm:"type:uuid;primaryKey;default:uuid_generate_v4()"`
-	EventID        uuid.UUID `gorm:"type:uuid"`
+	EventID        uuid.UUID `gorm:"type:uuid;index;uniqueIndex:idx_event_user"`
 	Event          Event     `gorm:"foreignKey:EventID"`
-	UserID         uuid.UUID `gorm:"type:uuid"`
+	UserID         uuid.UUID `gorm:"type:uuid;index;uniqueIndex:idx_event_user"`
 	User           User      `gorm:"foreignKey:UserID"`
 	IsChecked      bool      `gorm:"default:false"`
 	CheckTimestamp *time.Time

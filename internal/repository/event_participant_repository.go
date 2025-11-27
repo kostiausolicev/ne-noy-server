@@ -16,14 +16,16 @@ func NewEventParticipantRepository(db *gorm.DB) EventParticipantRepository {
 }
 
 type EventParticipantRepository interface {
-	Participant(eventId, userId uuid.UUID) (bool, error)
-	UnParticipant(eventId, userId uuid.UUID) (bool, error)
+	Participant(eventID uuid.UUID, userId int64) (bool, error)
+	UnParticipant(eventID uuid.UUID, userId int64) (bool, error)
 }
 
-func (er eventParticipantRepository) Participant(eventId, userId uuid.UUID) (bool, error) {
+func (er eventParticipantRepository) Participant(eventId uuid.UUID, userId int64) (bool, error) {
+	user := &model.User{}
+	er.db.Table("user").Select("id").Where("vk_id = ?", userId).Scan(&user)
 	eventParticipant := model.EventParticipant{
 		EventID: eventId,
-		UserID:  userId,
+		UserID:  user.ID,
 	}
 	result := er.db.Create(&eventParticipant)
 	if result.Error != nil {
@@ -32,9 +34,14 @@ func (er eventParticipantRepository) Participant(eventId, userId uuid.UUID) (boo
 	return true, nil
 }
 
-func (er eventParticipantRepository) UnParticipant(eventId, userId uuid.UUID) (bool, error) {
+func (er eventParticipantRepository) UnParticipant(eventId uuid.UUID, userId int64) (bool, error) {
+	sub := er.db.Table(`event_participant`).
+		Select("event_participant.id").
+		Joins(`INNER JOIN "user" ON event_participant.user_id = "user".id`).
+		Where(`event_participant.event_id = ? AND "user".vk_id = ?`, eventId, userId)
+
 	result := er.db.
-		Where(`event_id = ?, user_id = ?`, eventId, userId).
+		Where("id IN (?)", sub).
 		Delete(&model.EventParticipant{})
 	if result.Error != nil {
 		return false, result.Error

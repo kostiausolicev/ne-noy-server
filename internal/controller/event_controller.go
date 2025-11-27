@@ -37,12 +37,46 @@ func (uc *eventController) getEventsAvailable(c *gin.Context) {
 	})
 }
 
-func (uc *eventController) participateToEvent(c *gin.Context) {
+func (uc *eventController) getEventsArchive(c *gin.Context) {
+	roleIdStr, _ := c.Get(config.UserRoleContextKey)
+	roleId, _ := uuid.Parse(roleIdStr.(string))
+	events, err := uc.eventService.GetArchiveEvents(roleId)
+	if err != nil {
+		return
+	}
+	c.JSON(200, gin.H{
+		"events": events,
+	})
+}
 
+func (uc *eventController) participateToEvent(c *gin.Context) {
+	eventId, _ := uuid.Parse(c.Param("id"))
+	vkIdStr, _ := strconv.ParseInt(c.GetHeader(config.UserVkIdContextKey), 10, 64)
+	success, err := uc.eventParticipantService.ParticipantToEvent(eventId, vkIdStr)
+	if err != nil {
+		c.JSON(400, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+	c.JSON(200, gin.H{
+		"success": success,
+	})
 }
 
 func (uc *eventController) unParticipateToEvent(c *gin.Context) {
-
+	eventId, _ := uuid.Parse(c.Param("id"))
+	vkIdStr, _ := strconv.ParseInt(c.GetHeader(config.UserVkIdContextKey), 10, 64)
+	success, err := uc.eventParticipantService.UpParticipantToEvent(eventId, vkIdStr)
+	if err != nil {
+		c.JSON(400, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+	c.JSON(200, gin.H{
+		"success": success,
+	})
 }
 
 func ConfigureEventController(
@@ -55,5 +89,7 @@ func ConfigureEventController(
 	}
 	router.GET("/events/:id", ec.getEvent)
 	router.GET("/events/available", ec.getEventsAvailable)
+	router.GET("/events/archive", ec.getEventsArchive)
 	router.POST("/events/:id/participate", ec.participateToEvent)
+	router.POST("/events/:id/unparticipate", ec.unParticipateToEvent)
 }
