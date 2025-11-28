@@ -2,7 +2,6 @@ package internal
 
 import (
 	"fmt"
-	"ne_noy/internal/config"
 	"ne_noy/internal/controller"
 	"ne_noy/internal/controller/middleware"
 	"ne_noy/internal/repository"
@@ -18,7 +17,7 @@ type Server struct {
 	DB     *gorm.DB
 }
 
-func New(db *gorm.DB, secret string) *Server {
+func New(db *gorm.DB, secret string, id int64) *Server {
 	userRepo := repository.NewUserRepository(db)
 	eventRepo := repository.NewEventRepository(db)
 	eventParticipantRepository := repository.NewEventParticipantRepository(db)
@@ -30,22 +29,12 @@ func New(db *gorm.DB, secret string) *Server {
 
 	router := gin.Default()
 	router.Use(cors.New(cors.Config{
-		AllowOrigins: []string{"http://localhost:5173", "http://localhost:3000"},
-		AllowMethods: []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
-		AllowHeaders: []string{
-			"Origin",
-			"Content-Length",
-			"Content-Type",
-			"Accept",
-			"Authorization",
-			// TODO убрать как будет сделана проверка через вк токен
-			config.UserVkIdContextKey,
-			config.UserRoleContextKey,
-		},
-		ExposeHeaders: []string{
-			"Content-Length",
-		},
+		AllowAllOrigins:  true,
+		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization", "*"}, // ← "*" проще
+		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,
+		MaxAge:           300, // ← кэш preflight
 	}))
 	router.Use(middleware.ErrorHandler())
 	public := router.Group("/")
@@ -53,7 +42,7 @@ func New(db *gorm.DB, secret string) *Server {
 		controller.ConfigureServiceController(public, jwtService, userRepo)
 	}
 	apiV1 := router.Group("/api/v1")
-	apiV1.Use(middleware.AuthMiddleware(secret))
+	apiV1.Use(middleware.AuthMiddleware(secret, id))
 	controller.ConfigureEventController(apiV1, eventService, eventParticipantService)
 	controller.ConfigureUserController(apiV1, userService)
 

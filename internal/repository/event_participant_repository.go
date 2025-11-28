@@ -21,7 +21,7 @@ type EventParticipantRepository interface {
 }
 
 func (er eventParticipantRepository) Participant(eventId uuid.UUID, userId int64) (bool, error) {
-	user := &model.User{}
+	user := model.User{}
 	er.db.Table("user").Select("id").Where("vk_id = ?", userId).Scan(&user)
 	eventParticipant := model.EventParticipant{
 		EventID: eventId,

@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"ne_noy/internal/dto"
 	"ne_noy/internal/service"
 	"net/http"
 	"strconv"
@@ -13,7 +14,19 @@ type userController struct {
 }
 
 func (uc *userController) CreateUser(c *gin.Context) {
+	var user dto.UserDto
 
+	if err := c.ShouldBindJSON(&user); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	createUser, err := uc.service.CreateUser(user)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusCreated, createUser)
 }
 
 func (uc *userController) GetAll(c *gin.Context) {

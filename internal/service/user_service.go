@@ -14,7 +14,7 @@ func NewUserService(ur repository.UserRepository) UserService {
 }
 
 type UserService interface {
-	CreateUser(user model.User) (*model.User, error)
+	CreateUser(user dto.UserDto) (*dto.UserDto, error)
 	GetUserByVkId(vkId int64) (*dto.UserDto, error)
 }
 
@@ -22,17 +22,50 @@ type userService struct {
 	r repository.UserRepository
 }
 
-func (u userService) CreateUser(user model.User) (*model.User, error) {
+func (u userService) CreateUser(createUserDto dto.UserDto) (*dto.UserDto, error) {
 	defaultRole, err := u.r.GetRole()
 	if err != nil {
 		return nil, err
 	}
-	user.Role = defaultRole
+	user := model.User{
+		FirstName:             createUserDto.FirstName,
+		LastName:              createUserDto.LastName,
+		VkID:                  createUserDto.VkId,
+		PhotoURL:              createUserDto.PhotoURL,
+		GeoAvailable:          createUserDto.GeoAvailable,
+		NotificationAvailable: createUserDto.NotificationAvailable,
+		Role:                  defaultRole,
+		RoleID:                &defaultRole.ID,
+	}
 	newUser, err := u.r.Create(&user)
 	if err != nil {
 		return nil, err
 	}
-	return newUser, nil
+	userDto := &dto.UserDto{}
+
+	roleDto := &dto.RoleDto{}
+	roleDto.ID = newUser.Role.ID
+	roleDto.Name = newUser.Role.Name
+	roleDto.DisplayName = newUser.Role.DisplayName
+
+	userDto.ID = newUser.ID
+	userDto.FirstName = newUser.FirstName
+	userDto.LastName = newUser.LastName
+	userDto.GeoAvailable = newUser.GeoAvailable
+	userDto.NotificationAvailable = newUser.NotificationAvailable
+	userDto.Role = *roleDto
+	userDto.IsAdmin = newUser.Role.Name == config.RoleAdmin || func(userId uuid.UUID) bool {
+		e, err := u.r.ExistEventOrg(userId)
+		if err != nil {
+			return false
+		}
+		return e
+	}(newUser.ID)
+	userDto.IsEduParticipant = newUser.Role.Name == config.RoleEduPart
+	userDto.VkId = newUser.VkID
+	userDto.PhotoURL = newUser.PhotoURL
+
+	return userDto, nil
 }
 
 func (u userService) GetUserByVkId(vkId int64) (*dto.UserDto, error) {

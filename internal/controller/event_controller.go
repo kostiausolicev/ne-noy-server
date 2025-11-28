@@ -3,7 +3,6 @@ package controller
 import (
 	"ne_noy/internal/config"
 	"ne_noy/internal/service"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -16,9 +15,9 @@ type eventController struct {
 
 func (uc *eventController) getEvent(c *gin.Context) {
 	eventId, _ := uuid.Parse(c.Param("id"))
-	vkIdStr, _ := strconv.ParseInt(c.GetHeader(config.UserVkIdContextKey), 10, 64)
+	vkId, _ := c.Get(config.UserVkIdContextKey)
 
-	event, err := uc.eventService.GetEvent(eventId, vkIdStr)
+	event, err := uc.eventService.GetEvent(eventId, vkId.(int64))
 	if err != nil {
 		return
 	}
@@ -51,8 +50,8 @@ func (uc *eventController) getEventsArchive(c *gin.Context) {
 
 func (uc *eventController) participateToEvent(c *gin.Context) {
 	eventId, _ := uuid.Parse(c.Param("id"))
-	vkIdStr, _ := strconv.ParseInt(c.GetHeader(config.UserVkIdContextKey), 10, 64)
-	success, err := uc.eventParticipantService.ParticipantToEvent(eventId, vkIdStr)
+	vkId, _ := c.Get(config.UserVkIdContextKey)
+	success, err := uc.eventParticipantService.ParticipantToEvent(eventId, vkId.(int64))
 	if err != nil {
 		c.JSON(400, gin.H{
 			"error": err.Error(),
@@ -66,8 +65,8 @@ func (uc *eventController) participateToEvent(c *gin.Context) {
 
 func (uc *eventController) unParticipateToEvent(c *gin.Context) {
 	eventId, _ := uuid.Parse(c.Param("id"))
-	vkIdStr, _ := strconv.ParseInt(c.GetHeader(config.UserVkIdContextKey), 10, 64)
-	success, err := uc.eventParticipantService.UpParticipantToEvent(eventId, vkIdStr)
+	vkId, _ := c.Get(config.UserVkIdContextKey)
+	success, err := uc.eventParticipantService.UpParticipantToEvent(eventId, vkId.(int64))
 	if err != nil {
 		c.JSON(400, gin.H{
 			"error": err.Error(),

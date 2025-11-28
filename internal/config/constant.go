@@ -1,7 +1,7 @@
 package config
 
 const (
-	UserVkIdContextKey = "user_vk_id"
+	UserVkIdContextKey = "vk_user_id"
 	UserRoleContextKey = "user_role"
 )
 

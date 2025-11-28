@@ -10,6 +10,7 @@ type Config struct {
 	Server   ServerConfig `yaml:"server"`
 	Database DBConfig     `yaml:"database"`
 	Secret   string       `yaml:"secret"`
+	AppId    int64        `yaml:"appId"`
 }
 
 func Load(path string) (*Config, error) {

@@ -14,13 +14,18 @@ type userRepository struct {
 }
 
 func (r *userRepository) GetRole() (*model.Role, error) {
+	var role model.Role
 	result := r.db.Table("role").
-		First(&model.Role{}).
-		Where("role.name = ?", config.RoleDefault)
+		Select("role.id, role.name, role.display_name").
+		Where("role.name = ?", config.RoleDefault).
+		First(&role)
 	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return nil, nil // можно отдельно обработать создание роли
+		}
 		return nil, result.Error
 	}
-	return &model.Role{}, nil
+	return &role, nil
 }
 
 func NewUserRepository(db *gorm.DB) UserRepository {
@@ -43,16 +48,17 @@ func (r *userRepository) ExistEventOrg(userId uuid.UUID) (bool, error) {
 	if result.Error != nil {
 		return false, result.Error
 	}
-	var hasEvent bool
-	result.Scan(&hasEvent)
+	var hasEvent bool = false
+	//result.Scan(&hasEvent)
 	return hasEvent, nil
 }
 
 func (r *userRepository) GetByVkId(vk int64) (*model.User, error) {
-	user := &model.User{}
+	var user model.User
 	result := r.db.
 		Preload("Role").
-		First(user, "vk_id = ?", vk)
+		Where("vk_id = ?", vk).
+		First(&user)
 
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return nil, nil
@@ -60,7 +66,7 @@ func (r *userRepository) GetByVkId(vk int64) (*model.User, error) {
 	if result.Error != nil {
 		return nil, result.Error
 	}
-	return user, nil
+	return &user, nil
 }
 
 func (r *userRepository) GetById(id uuid.UUID) (*model.User, error) {
@@ -79,6 +85,6 @@ func (r *userRepository) Update(user *model.User) (*model.User, error) {
 }
 
 func (r *userRepository) Create(user *model.User) (*model.User, error) {
-	//TODO implement me
-	panic("implement me")
+	r.db.Create(user)
+	return user, nil
 }
