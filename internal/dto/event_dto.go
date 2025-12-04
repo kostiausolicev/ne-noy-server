@@ -31,12 +31,3 @@ type EventDto struct {
 	StartsAt                 *time.Time    `json:"startsAt"`
 	CurrentUserIsParticipant *bool         `json:"currentUserIsParticipant,omitempty"`
 }
-
-type EventParticipantDto struct {
-	EventID   uuid.UUID `json:"event_id"`
-	UserID    uuid.UUID `json:"user_id"`
-	Lat       float64   `json:"lat;omitempty"`
-	Long      float64   `json:"long;omitempty"`
-	CheckTime time.Time `json:"check_time"`
-	CheckBy   uuid.UUID `json:"check_by"`
-}

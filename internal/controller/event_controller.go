@@ -24,7 +24,6 @@ func (uc *eventController) getAllEvents(c *gin.Context) {
 		"events": events,
 	})
 }
-
 func (uc *eventController) getEvent(c *gin.Context) {
 	eventId, _ := uuid.Parse(c.Param("id"))
 	vkId, _ := c.Get(config.UserVkIdContextKey)
@@ -34,6 +33,18 @@ func (uc *eventController) getEvent(c *gin.Context) {
 		return
 	}
 	c.JSON(200, event)
+}
+
+func (uc *eventController) getEventParticipants(c *gin.Context) {
+	eventId, _ := uuid.Parse(c.Param("id"))
+	participants, err := uc.eventService.GetEventParticipants(eventId)
+	if err != nil {
+		c.Error(err)
+		return
+	}
+	c.JSON(200, gin.H{
+		"participants": participants,
+	})
 }
 
 func (uc *eventController) getEventsAvailable(c *gin.Context) {
@@ -99,6 +110,7 @@ func ConfigureEventController(
 		eventParticipantService: eventParticipantService,
 	}
 	router.GET("/events/:id", ec.getEvent)
+	router.GET("/events/:id/participants", ec.getEventParticipants)
 	router.GET("/events/available", ec.getEventsAvailable)
 	router.GET("/events/archive", ec.getEventsArchive)
 	router.POST("/events/:id/participate", ec.participateToEvent)

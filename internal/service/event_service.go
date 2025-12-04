@@ -15,6 +15,7 @@ func NewEventService(r repository.EventRepository, u UserService) EventService {
 
 type EventService interface {
 	GetAll(vkId int64) ([]dto.EventMiniDto, error)
+	GetEventParticipants(id uuid.UUID) ([]dto.EventParticipantDto, error)
 	GetEvent(id uuid.UUID, userVkId int64) (*dto.EventDto, error)
 	GetEventsByRole(roleId uuid.UUID) ([]dto.EventMiniDto, error)
 	GetArchiveEvents(roleId uuid.UUID) ([]dto.EventMiniDto, error)
@@ -46,6 +47,30 @@ func (e eventService) GetAll(vkId int64) ([]dto.EventMiniDto, error) {
 	}
 
 	return e.parseModelToDto(events)
+}
+
+func (e eventService) GetEventParticipants(id uuid.UUID) ([]dto.EventParticipantDto, error) {
+	eventParticipants, err := e.r.GetParticipants(id)
+	if err != nil {
+		return nil, err
+	}
+
+	participants := make([]dto.EventParticipantDto, len(eventParticipants))
+	for i, ep := range eventParticipants {
+		userDto := dto.UserMiniDto{
+			ID:        ep.User.ID,
+			FirstName: ep.User.FirstName,
+			LastName:  ep.User.LastName,
+			VkId:      ep.User.VkID,
+			PhotoURL:  ep.User.PhotoURL,
+		}
+		participants[i] = dto.EventParticipantDto{
+			User:           userDto,
+			IsChecked:      ep.IsChecked,
+			CheckTimestamp: ep.CheckTimestamp,
+		}
+	}
+	return participants, nil
 }
 
 func (e eventService) GetEvent(id uuid.UUID, userId int64) (*dto.EventDto, error) {

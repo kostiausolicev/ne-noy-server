@@ -29,15 +29,17 @@ func (eps eventParticipantService) UpParticipantToEvent(eventID uuid.UUID, userI
 	return eps.epr.UnParticipant(eventID, userID)
 }
 
+// CheckParticipant TODO
 func (eps eventParticipantService) CheckParticipant(participantData dto.EventParticipantDto) error {
-	eventId := participantData.EventID
-	location, err := eps.er.GetEventLocationData(eventId)
-	if err != nil {
-		return err
-	}
-	_, err = eps.er.Update(location)
-	if err != nil {
-		return err
-	}
-	return nil
+	//eventId := participantData.EventID
+	//location, err := eps.er.GetEventLocationData(eventId)
+	//if err != nil {
+	//	return err
+	//}
+	//_, err = eps.er.Update(location)
+	//if err != nil {
+	//	return err
+	//}
+	//return nil
+	panic("implement me")
 }

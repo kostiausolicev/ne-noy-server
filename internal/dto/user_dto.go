@@ -1,6 +1,10 @@
 package dto
 
-import "github.com/google/uuid"
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
 
 type UserDto struct {
 	ID                    uuid.UUID `json:"id"`
@@ -21,4 +25,11 @@ type UserMiniDto struct {
 	FirstName string    `json:"firstname"`
 	LastName  string    `json:"lastname"`
 	PhotoURL  string    `json:"photo"`
+}
+
+type EventParticipantDto struct {
+	User           UserMiniDto  `json:"user"`
+	IsChecked      bool         `json:"isChecked"`
+	CheckAuthor    *UserMiniDto `json:"checkAuthor,omitempty"`
+	CheckTimestamp *time.Time   `json:"checkTimestamp,omitempty"`
 }

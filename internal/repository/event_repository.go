@@ -35,6 +35,7 @@ type EventRepository interface {
 	GetUserParticipationInEvent(eventId uuid.UUID, userId int64) (bool, error)
 
 	GetById(id uuid.UUID) (*model.Event, error)
+	GetParticipants(id uuid.UUID) ([]model.EventParticipant, error)
 	Create(event *model.Event) (*model.Event, error)
 	Update(event *model.Event) (*model.Event, error)
 	Delete(id uuid.UUID) error
@@ -124,6 +125,28 @@ func (e eventRepository) GetAllArchive(roleId uuid.UUID) ([]*model.Event, error)
 	}
 
 	return events, nil
+}
+
+func (e eventRepository) GetParticipants(id uuid.UUID) ([]model.EventParticipant, error) {
+	var participants []model.EventParticipant
+
+	result := e.db.
+		Table("event_participant").
+		Select(`
+			event_participant.user_id,
+			event_participant.check_timestamp,
+			event_participant.is_checked
+		`).
+		Preload("User", func(db *gorm.DB) *gorm.DB {
+			return db.Select(select_user_fields)
+		}).
+		Where("event_participant.event_id = ?", id).
+		Find(&participants)
+
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return participants, nil
 }
 
 // GetById TODO Попробовать использовать Joins вместе со Scan
