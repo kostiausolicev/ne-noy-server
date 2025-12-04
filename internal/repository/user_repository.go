@@ -33,6 +33,8 @@ func NewUserRepository(db *gorm.DB) UserRepository {
 }
 
 type UserRepository interface {
+	GetAllByFirstNameAndRole(firstName string) ([]model.User, error)
+	GetAllByFirstNameAndLastNameAndRole(firstName, lastName string) ([]model.User, error)
 	GetByVkId(vk int64) (*model.User, error)
 	Create(user *model.User) (*model.User, error)
 	Update(vkId int64, field string, value interface{})
@@ -40,6 +42,47 @@ type UserRepository interface {
 
 	GetRole() (*model.Role, error)
 	ExistEventOrg(userId uuid.UUID) (bool, error)
+}
+
+func (u *userRepository) GetAllByFirstNameAndRole(firstName string) ([]model.User, error) {
+	var users []model.User
+	namePattern := "%" + firstName + "%"
+
+	result := u.db.Table(`"user"`).
+		Select(select_user_fields).
+		Joins(`LEFT JOIN "role" ON role.id = "user".role_id`).
+		Where(`"role".name IN (?, ?)`, config.RoleHikePart, config.RoleAdmin).
+		Where(
+			u.db.Where(`"user".first_name ILIKE ?`, namePattern).
+				Or(`"user".last_name ILIKE ?`, namePattern),
+		).
+		Scan(&users)
+
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return users, nil
+}
+
+func (u *userRepository) GetAllByFirstNameAndLastNameAndRole(firstName, lastName string) ([]model.User, error) {
+	var users []model.User
+	fn := "%" + firstName + "%"
+	ln := "%" + lastName + "%"
+
+	result := u.db.Table(`"user"`).
+		Select(select_user_fields).
+		Joins(`LEFT JOIN "role" ON role.id = "user".role_id`).
+		Where(`"role".name IN (?, ?)`, config.RoleHikePart, config.RoleAdmin).
+		Where(
+			u.db.Where(`"user".first_name ILIKE ? AND "user".last_name LIKE ?`, fn, ln).
+				Or(`"user".first_name ILIKE ? AND "user".last_name LIKE ?`, ln, fn),
+		).
+		Scan(&users)
+
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return users, nil
 }
 
 func (r *userRepository) ExistEventOrg(userId uuid.UUID) (bool, error) {

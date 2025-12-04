@@ -6,6 +6,7 @@ import (
 	"ne_noy/internal/dto"
 	"ne_noy/internal/model"
 	"ne_noy/internal/repository"
+	"strings"
 
 	"github.com/google/uuid"
 )
@@ -15,6 +16,7 @@ func NewUserService(ur repository.UserRepository) UserService {
 }
 
 type UserService interface {
+	GetAllUsers(fio string) (users []dto.UserMiniDto, err error)
 	UpdatePermissions(permission string, vkId int64, value bool) error
 	CreateUser(user dto.UserDto) (*dto.UserDto, error)
 	GetUserByVkId(vkId int64) (*dto.UserDto, error)
@@ -22,6 +24,33 @@ type UserService interface {
 
 type userService struct {
 	r repository.UserRepository
+}
+
+func (u userService) GetAllUsers(fio string) (users []dto.UserMiniDto, err error) {
+	fioChancs := strings.Split(fio, " ")
+	var userModels []model.User
+	if len(fioChancs) < 1 {
+		err = errors.New("fio format error")
+		return
+	}
+	if len(fioChancs) == 1 {
+		userModels, err = u.r.GetAllByFirstNameAndRole(fioChancs[0])
+	} else {
+		userModels, err = u.r.GetAllByFirstNameAndLastNameAndRole(fioChancs[0], fioChancs[1])
+	}
+	if err != nil {
+		return
+	}
+	users = make([]dto.UserMiniDto, len(userModels))
+	for i, userModel := range userModels {
+		users[i] = dto.UserMiniDto{
+			ID:        userModel.ID,
+			FirstName: userModel.FirstName,
+			LastName:  userModel.LastName,
+			PhotoURL:  userModel.PhotoURL,
+		}
+	}
+	return
 }
 
 func (u userService) UpdatePermissions(permission string, vkId int64, value bool) error {

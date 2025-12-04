@@ -29,7 +29,15 @@ func (uc *userController) CreateUser(c *gin.Context) {
 	c.JSON(http.StatusCreated, createUser)
 }
 
-func (uc *userController) GetAll(c *gin.Context) {}
+func (uc *userController) GetAll(c *gin.Context) {
+	fio := c.Query("fio")
+	users, err := uc.service.GetAllUsers(fio)
+	if err != nil {
+		c.Error(err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"users": users})
+}
 
 func (uc *userController) GetByVkId(c *gin.Context) {
 	vkId := c.Param("id")
