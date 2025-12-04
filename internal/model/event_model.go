@@ -12,7 +12,7 @@ type Event struct {
 	Status      *string   `gorm:"size:50"` // deleted | draft | active
 	Description *string
 	Cover       *string
-	VkPostID    *string
+	VkPostLink  *string
 	VkVoteID    *string
 	Lat         *float64 `gorm:"type:decimal(10,8)"`
 	Long        *float64 `gorm:"type:decimal(11,8)"`

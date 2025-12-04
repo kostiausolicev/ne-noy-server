@@ -7,6 +7,16 @@ import (
 	"gorm.io/gorm"
 )
 
+const (
+	select_user_fields = `
+				"user".id, 
+				"user".vk_id,
+				"user".first_name, 
+				"user".last_name,
+				"user".photo_url
+			`
+)
+
 type eventRepository struct {
 	db *gorm.DB
 }
@@ -17,6 +27,7 @@ func NewEventRepository(db *gorm.DB) EventRepository {
 
 type EventRepository interface {
 	GetAll() ([]*model.Event, error)
+	GetAllByOrg(orgId uuid.UUID) ([]*model.Event, error)
 	GetAllByRole(roleId uuid.UUID) ([]*model.Event, error)
 	GetAllArchive(roleId uuid.UUID) ([]*model.Event, error)
 	CountParticipants(id uuid.UUID) (int, error)
@@ -46,38 +57,22 @@ func (e eventRepository) CountParticipants(id uuid.UUID) (int, error) {
 func (e eventRepository) GetAll() ([]*model.Event, error) {
 	var events []*model.Event
 
-	result := e.db.
-		Table("event").
-		Select(`
-            event.id,
-            event.name,
-            event.starts_at
-        `).
-		Preload("Orgs", func(db *gorm.DB) *gorm.DB {
-			return db.Select(`
-				"user".id, 
-				"user".vk_id, 
-				"user".first_name, 
-				"user".last_name
-			`)
-		}).
-		Preload("EventParticipants", func(db *gorm.DB) *gorm.DB {
-			return db.
-				Select(`
-					event_participant.id, 
-					event_participant.user_id,
-					event_participant.event_id
-				`).
-				Limit(3)
-		}).
-		Preload("EventParticipants.User", func(db *gorm.DB) *gorm.DB {
-			return db.Select(`
-				"user".id,
-				"user".vk_id,
-				"user".first_name,
-				"user".last_name
-			`)
-		}).
+	result := e.getEventsQuery().
+		Find(&events)
+
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
+	return events, nil
+}
+
+func (e eventRepository) GetAllByOrg(orgId uuid.UUID) ([]*model.Event, error) {
+	var events []*model.Event
+
+	result := e.getEventsQuery().
+		Joins("LEFT JOIN event_org eo ON eo.user_id = ?", orgId).
+		Where("eo.user_id = ?", orgId).
 		Find(&events)
 
 	if result.Error != nil {
@@ -104,40 +99,7 @@ func (e eventRepository) GetUserParticipationInEvent(eventId uuid.UUID, userVkId
 func (e eventRepository) GetAllByRole(roleId uuid.UUID) ([]*model.Event, error) {
 	var events []*model.Event
 
-	result := e.db.
-		Table("event").
-		Select(`
-            event.id,
-            event.name,
-            event.starts_at
-        `).
-		Preload("Orgs", func(db *gorm.DB) *gorm.DB {
-			return db.Select(`
-				"user".id, 
-				"user".vk_id,
-				"user".first_name, 
-				"user".last_name,
-				"user".photo_url
-			`)
-		}).
-		Preload("EventParticipants", func(db *gorm.DB) *gorm.DB {
-			return db.
-				Select(`
-					event_participant.id, 
-					event_participant.user_id,
-					event_participant.event_id
-				`).
-				Limit(3)
-		}).
-		Preload("EventParticipants.User", func(db *gorm.DB) *gorm.DB {
-			return db.Select(`
-				"user".id,
-				"user".vk_id,
-				"user".first_name,
-				"user".last_name,
-				"user".photo_url
-			`)
-		}).
+	result := e.getEventsQuery().
 		Joins("JOIN event_role er ON er.event_id = event.id").
 		Where("er.role_id = ? AND event.starts_at > NOW()", roleId).
 		Find(&events)
@@ -152,40 +114,7 @@ func (e eventRepository) GetAllByRole(roleId uuid.UUID) ([]*model.Event, error) 
 func (e eventRepository) GetAllArchive(roleId uuid.UUID) ([]*model.Event, error) {
 	var events []*model.Event
 
-	result := e.db.
-		Table("event").
-		Select(`
-            event.id,
-            event.name,
-            event.starts_at
-        `).
-		Preload("Orgs", func(db *gorm.DB) *gorm.DB {
-			return db.Select(`
-				"user".id, 
-				"user".vk_id,
-				"user".first_name, 
-				"user".last_name,
-				"user".photo_url
-			`)
-		}).
-		Preload("EventParticipants", func(db *gorm.DB) *gorm.DB {
-			return db.
-				Select(`
-					event_participant.id, 
-					event_participant.user_id,
-					event_participant.event_id
-				`).
-				Limit(3)
-		}).
-		Preload("EventParticipants.User", func(db *gorm.DB) *gorm.DB {
-			return db.Select(`
-				"user".id,
-				"user".vk_id,
-				"user".first_name,
-				"user".last_name,
-				"user".photo_url
-			`)
-		}).
+	result := e.getEventsQuery().
 		Joins("JOIN event_role er ON er.event_id = event.id").
 		Where("er.role_id = ? AND event.starts_at < NOW()", roleId).
 		Find(&events)
@@ -289,4 +218,25 @@ func (e eventRepository) GetEventLocationData(id uuid.UUID) (*model.Event, error
 		return nil, result.Error
 	}
 	return event, nil
+}
+
+func (e eventRepository) getEventsQuery() *gorm.DB {
+	return e.db.
+		Table("event").
+		Select(`
+            event.id,
+            event.name,
+            event.starts_at
+        `).
+		Preload("Orgs", func(db *gorm.DB) *gorm.DB { return db.Select(select_user_fields) }).
+		Preload("EventParticipants", func(db *gorm.DB) *gorm.DB {
+			return db.
+				Select(`
+					event_participant.id, 
+					event_participant.user_id,
+					event_participant.event_id
+				`).
+				Limit(3)
+		}).
+		Preload("EventParticipants.User", func(db *gorm.DB) *gorm.DB { return db.Select(select_user_fields) })
 }

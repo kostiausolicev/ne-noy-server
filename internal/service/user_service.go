@@ -1,6 +1,7 @@
 package service
 
 import (
+	"errors"
 	"ne_noy/internal/config"
 	"ne_noy/internal/dto"
 	"ne_noy/internal/model"
@@ -14,12 +15,25 @@ func NewUserService(ur repository.UserRepository) UserService {
 }
 
 type UserService interface {
+	UpdatePermissions(permission string, vkId int64, value bool) error
 	CreateUser(user dto.UserDto) (*dto.UserDto, error)
 	GetUserByVkId(vkId int64) (*dto.UserDto, error)
 }
 
 type userService struct {
 	r repository.UserRepository
+}
+
+func (u userService) UpdatePermissions(permission string, vkId int64, value bool) error {
+	switch permission {
+	case "geo":
+		u.r.Update(vkId, "geo_available", value)
+	case "notification":
+		u.r.Update(vkId, "notification_available", value)
+	default:
+		return errors.New("недопустимый параметр")
+	}
+	return nil
 }
 
 func (u userService) CreateUser(createUserDto dto.UserDto) (*dto.UserDto, error) {
@@ -41,35 +55,10 @@ func (u userService) CreateUser(createUserDto dto.UserDto) (*dto.UserDto, error)
 	if err != nil {
 		return nil, err
 	}
-	userDto := &dto.UserDto{}
-
-	roleDto := &dto.RoleDto{}
-	roleDto.ID = newUser.Role.ID
-	roleDto.Name = newUser.Role.Name
-	roleDto.DisplayName = newUser.Role.DisplayName
-
-	userDto.ID = newUser.ID
-	userDto.FirstName = newUser.FirstName
-	userDto.LastName = newUser.LastName
-	userDto.GeoAvailable = newUser.GeoAvailable
-	userDto.NotificationAvailable = newUser.NotificationAvailable
-	userDto.Role = *roleDto
-	userDto.IsAdmin = newUser.Role.Name == config.RoleAdmin || func(userId uuid.UUID) bool {
-		e, err := u.r.ExistEventOrg(userId)
-		if err != nil {
-			return false
-		}
-		return e
-	}(newUser.ID)
-	userDto.IsEduParticipant = newUser.Role.Name == config.RoleEduPart
-	userDto.VkId = newUser.VkID
-	userDto.PhotoURL = newUser.PhotoURL
-
-	return userDto, nil
+	return u.userModelToDto(newUser), nil
 }
 
 func (u userService) GetUserByVkId(vkId int64) (*dto.UserDto, error) {
-	userDto := &dto.UserDto{}
 	userModel, err := u.r.GetByVkId(vkId)
 	if err != nil {
 		return nil, err
@@ -77,6 +66,11 @@ func (u userService) GetUserByVkId(vkId int64) (*dto.UserDto, error) {
 	if userModel == nil {
 		return nil, nil
 	}
+	return u.userModelToDto(userModel), nil
+}
+
+func (u userService) userModelToDto(userModel *model.User) *dto.UserDto {
+	userDto := &dto.UserDto{}
 	roleDto := &dto.RoleDto{}
 	roleDto.ID = userModel.Role.ID
 	roleDto.Name = userModel.Role.Name
@@ -99,5 +93,5 @@ func (u userService) GetUserByVkId(vkId int64) (*dto.UserDto, error) {
 	userDto.VkId = userModel.VkID
 	userDto.PhotoURL = userModel.PhotoURL
 
-	return userDto, nil
+	return userDto
 }

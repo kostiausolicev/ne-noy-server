@@ -1,6 +1,7 @@
 package service
 
 import (
+	"ne_noy/internal/config"
 	"ne_noy/internal/dto"
 	"ne_noy/internal/model"
 	"ne_noy/internal/repository"
@@ -8,11 +9,12 @@ import (
 	"github.com/google/uuid"
 )
 
-func NewEventService(r repository.EventRepository) EventService {
-	return eventService{r: r}
+func NewEventService(r repository.EventRepository, u UserService) EventService {
+	return eventService{r: r, u: u}
 }
 
 type EventService interface {
+	GetAll(vkId int64) ([]dto.EventMiniDto, error)
 	GetEvent(id uuid.UUID, userVkId int64) (*dto.EventDto, error)
 	GetEventsByRole(roleId uuid.UUID) ([]dto.EventMiniDto, error)
 	GetArchiveEvents(roleId uuid.UUID) ([]dto.EventMiniDto, error)
@@ -21,6 +23,29 @@ type EventService interface {
 
 type eventService struct {
 	r repository.EventRepository
+	u UserService
+}
+
+func (e eventService) GetAll(vkId int64) ([]dto.EventMiniDto, error) {
+	// Получаем пользователя
+	user, err := e.u.GetUserByVkId(vkId)
+	if err != nil {
+		return nil, err
+	}
+	var events []*model.Event
+
+	if user.Role.Name == config.RoleAdmin {
+		// Если админ, возвращаем все мероприятия
+		events, err = e.r.GetAll()
+	} else {
+		// Иначе, возвращаем только те, где пользователь организатор
+		events, err = e.r.GetAllByOrg(user.ID)
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	return e.parseModelToDto(events)
 }
 
 func (e eventService) GetEvent(id uuid.UUID, userId int64) (*dto.EventDto, error) {
@@ -65,7 +90,7 @@ func (e eventService) GetEvent(id uuid.UUID, userId int64) (*dto.EventDto, error
 
 	eventDto := &dto.EventDto{
 		ID:         event.ID,
-		VkPostLink: event.VkPostID,
+		VkPostLink: event.VkPostLink,
 		PhotoURL:   event.Cover,
 
 		Title:                    event.Name,

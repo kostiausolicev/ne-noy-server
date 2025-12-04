@@ -13,6 +13,18 @@ type eventController struct {
 	eventParticipantService service.EventParticipantService
 }
 
+func (uc *eventController) getAllEvents(c *gin.Context) {
+	vkId, _ := c.Get(config.UserVkIdContextKey)
+
+	events, err := uc.eventService.GetAll(vkId.(int64))
+	if err != nil {
+		return
+	}
+	c.JSON(200, gin.H{
+		"events": events,
+	})
+}
+
 func (uc *eventController) getEvent(c *gin.Context) {
 	eventId, _ := uuid.Parse(c.Param("id"))
 	vkId, _ := c.Get(config.UserVkIdContextKey)
@@ -91,4 +103,5 @@ func ConfigureEventController(
 	router.GET("/events/archive", ec.getEventsArchive)
 	router.POST("/events/:id/participate", ec.participateToEvent)
 	router.POST("/events/:id/unparticipate", ec.unParticipateToEvent)
+	router.GET("/events/all", ec.getAllEvents)
 }

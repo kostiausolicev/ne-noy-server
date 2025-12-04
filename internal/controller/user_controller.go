@@ -29,23 +29,21 @@ func (uc *userController) CreateUser(c *gin.Context) {
 	c.JSON(http.StatusCreated, createUser)
 }
 
-func (uc *userController) GetAll(c *gin.Context) {
-	vkId := c.Query("vk_id")
-	if vkId != "" {
-		vkIdLong, err := strconv.ParseInt(vkId, 10, 64)
-		if err != nil {
-			c.Error(err)
-			return
-		}
-		user, err := uc.service.GetUserByVkId(vkIdLong)
-		if err != nil {
-			c.Error(err)
-			return
-		}
-		c.JSON(http.StatusOK, user)
-	} else {
+func (uc *userController) GetAll(c *gin.Context) {}
 
+func (uc *userController) GetByVkId(c *gin.Context) {
+	vkId := c.Param("id")
+	vkIdLong, err := strconv.ParseInt(vkId, 10, 64)
+	if err != nil {
+		c.Error(err)
+		return
 	}
+	user, err := uc.service.GetUserByVkId(vkIdLong)
+	if err != nil {
+		c.Error(err)
+		return
+	}
+	c.JSON(http.StatusOK, user)
 }
 
 func (uc *userController) GetById(c *gin.Context) {
@@ -53,7 +51,19 @@ func (uc *userController) GetById(c *gin.Context) {
 }
 
 func (uc *userController) UpdateUser(c *gin.Context) {
-	// ...
+	vkId := c.Param("id")
+	vkIdLong, err := strconv.ParseInt(vkId, 10, 64)
+	if err != nil {
+		c.Error(err)
+		return
+	}
+	permission := c.Param("permission")
+	value, err := strconv.ParseBool(c.Query("value"))
+	if err != nil {
+		c.Error(err)
+		return
+	}
+	err = uc.service.UpdatePermissions(permission, vkIdLong, value)
 }
 
 func (uc *userController) DeleteUser(c *gin.Context) {
@@ -65,6 +75,7 @@ func ConfigureUserController(router *gin.RouterGroup, service service.UserServic
 	router.POST("/users", uc.CreateUser)
 	router.GET("/users", uc.GetAll)
 	router.GET("/users/:id", uc.GetById)
-	router.PUT("/users/:id", uc.UpdateUser)
-	router.DELETE("/users/:id", uc.DeleteUser)
+	router.GET("/users/vk/:id", uc.GetByVkId)
+	router.PUT("/users/vk/:id/:permission", uc.UpdateUser)
+	router.DELETE("/users/vk/:id", uc.DeleteUser)
 }
