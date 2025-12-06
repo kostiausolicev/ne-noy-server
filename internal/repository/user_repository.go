@@ -13,21 +13,6 @@ type userRepository struct {
 	db *gorm.DB
 }
 
-func (r *userRepository) GetRole() (*model.Role, error) {
-	var role model.Role
-	result := r.db.Table("role").
-		Select("role.id, role.name, role.display_name").
-		Where("role.name = ?", config.RoleDefault).
-		First(&role)
-	if result.Error != nil {
-		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-			return nil, nil // можно отдельно обработать создание роли
-		}
-		return nil, result.Error
-	}
-	return &role, nil
-}
-
 func NewUserRepository(db *gorm.DB) UserRepository {
 	return &userRepository{db: db}
 }
@@ -44,16 +29,31 @@ type UserRepository interface {
 	ExistEventOrg(userId uuid.UUID) (bool, error)
 }
 
-func (u *userRepository) GetAllByFirstNameAndRole(firstName string) ([]model.User, error) {
+func (r *userRepository) GetRole() (*model.Role, error) {
+	var role model.Role
+	result := r.db.Table("role").
+		Select("role.id, role.name, role.display_name").
+		Where("role.name = ?", config.RoleDefault).
+		First(&role)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return nil, nil // можно отдельно обработать создание роли
+		}
+		return nil, result.Error
+	}
+	return &role, nil
+}
+
+func (r *userRepository) GetAllByFirstNameAndRole(firstName string) ([]model.User, error) {
 	var users []model.User
 	namePattern := "%" + firstName + "%"
 
-	result := u.db.Table(`"user"`).
-		Select(select_user_fields).
+	result := r.db.Table(`"user"`).
+		Select(selectUserFields).
 		Joins(`LEFT JOIN "role" ON role.id = "user".role_id`).
 		Where(`"role".name IN (?, ?)`, config.RoleHikePart, config.RoleAdmin).
 		Where(
-			u.db.Where(`"user".first_name ILIKE ?`, namePattern).
+			r.db.Where(`"user".first_name ILIKE ?`, namePattern).
 				Or(`"user".last_name ILIKE ?`, namePattern),
 		).
 		Scan(&users)
@@ -64,17 +64,17 @@ func (u *userRepository) GetAllByFirstNameAndRole(firstName string) ([]model.Use
 	return users, nil
 }
 
-func (u *userRepository) GetAllByFirstNameAndLastNameAndRole(firstName, lastName string) ([]model.User, error) {
+func (r *userRepository) GetAllByFirstNameAndLastNameAndRole(firstName, lastName string) ([]model.User, error) {
 	var users []model.User
 	fn := "%" + firstName + "%"
 	ln := "%" + lastName + "%"
 
-	result := u.db.Table(`"user"`).
-		Select(select_user_fields).
+	result := r.db.Table(`"user"`).
+		Select(selectUserFields).
 		Joins(`LEFT JOIN "role" ON role.id = "user".role_id`).
 		Where(`"role".name IN (?, ?)`, config.RoleHikePart, config.RoleAdmin).
 		Where(
-			u.db.Where(`"user".first_name ILIKE ? AND "user".last_name LIKE ?`, fn, ln).
+			r.db.Where(`"user".first_name ILIKE ? AND "user".last_name LIKE ?`, fn, ln).
 				Or(`"user".first_name ILIKE ? AND "user".last_name LIKE ?`, ln, fn),
 		).
 		Scan(&users)

@@ -11,6 +11,9 @@ type Config struct {
 	Database DBConfig     `yaml:"database"`
 	Secret   string       `yaml:"secret"`
 	AppId    int64        `yaml:"appId"`
+	//VkApiKey       string       `yaml:"vkApiKey"`
+	//VkGroupId      string       `yaml:"vkGroupId"`
+	//VkGroupAlbumId string       `yaml:"vkGroupAlbumId"`
 }
 
 func Load(path string) (*Config, error) {

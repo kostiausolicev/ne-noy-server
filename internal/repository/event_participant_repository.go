@@ -20,7 +20,7 @@ type EventParticipantRepository interface {
 	UnParticipant(eventID uuid.UUID, userId int64) (bool, error)
 }
 
-func (er eventParticipantRepository) Participant(eventId uuid.UUID, userId int64) (bool, error) {
+func (er *eventParticipantRepository) Participant(eventId uuid.UUID, userId int64) (bool, error) {
 	user := model.User{}
 	er.db.Table("user").Select("id").Where("vk_id = ?", userId).Scan(&user)
 	eventParticipant := model.EventParticipant{
@@ -34,7 +34,7 @@ func (er eventParticipantRepository) Participant(eventId uuid.UUID, userId int64
 	return true, nil
 }
 
-func (er eventParticipantRepository) UnParticipant(eventId uuid.UUID, userId int64) (bool, error) {
+func (er *eventParticipantRepository) UnParticipant(eventId uuid.UUID, userId int64) (bool, error) {
 	sub := er.db.Table(`event_participant`).
 		Select("event_participant.id").
 		Joins(`INNER JOIN "user" ON event_participant.user_id = "user".id`).
