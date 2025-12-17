@@ -132,10 +132,7 @@ func (e eventService) GetEvent(id uuid.UUID, userId int64) (*dto.EventDto, error
 			PhotoURL:  ep.User.PhotoURL,
 		}
 	}
-	count, err := e.r.CountParticipants(event.ID)
-	if err != nil {
-		return nil, err
-	}
+
 	attachments := make([]string, len(event.Attachments))
 	for i, att := range event.Attachments {
 		attachments[i] = att.AttachmentLink
@@ -153,11 +150,12 @@ func (e eventService) GetEvent(id uuid.UUID, userId int64) (*dto.EventDto, error
 		Title:                    event.Name,
 		Description:              event.Description,
 		Attachments:              attachments,
-		ParticipantsCount:        count,
+		ParticipantsCount:        event.ParticipantsCount,
 		Orgs:                     orgs,
 		Address:                  event.Address,
 		Participants:             participants,
 		StartsAt:                 event.StartsAt,
+		Status:                   event.Status,
 		CurrentUserIsParticipant: &isParticipant,
 	}
 	return eventDto, nil
@@ -213,17 +211,14 @@ func (e eventService) parseModelsToDtos(events []*model.Event) ([]dto.EventMiniD
 				PhotoURL:  ep.User.PhotoURL,
 			}
 		}
-		count, err := e.r.CountParticipants(event.ID)
-		if err != nil {
-			return nil, err
-		}
 
 		eventsDto[i] = dto.EventMiniDto{
 			ID:                event.ID,
 			Title:             event.Name,
 			StartsAt:          *event.StartsAt,
-			ParticipantsCount: count,
+			ParticipantsCount: event.ParticipantsCount,
 			Orgs:              orgs,
+			Status:            *event.Status,
 			Participants:      participants,
 		}
 	}
@@ -255,16 +250,12 @@ func (e eventService) parseModelToDto(event *model.Event) (*dto.EventMiniDto, er
 			PhotoURL:  ep.User.PhotoURL,
 		}
 	}
-	count, err := e.r.CountParticipants(event.ID)
-	if err != nil {
-		return nil, err
-	}
 
 	eventDto := &dto.EventMiniDto{
 		ID:                event.ID,
 		Title:             event.Name,
 		StartsAt:          *event.StartsAt,
-		ParticipantsCount: count,
+		ParticipantsCount: event.ParticipantsCount,
 		Orgs:              orgs,
 		Participants:      participants,
 	}

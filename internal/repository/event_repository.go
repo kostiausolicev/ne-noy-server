@@ -31,29 +31,15 @@ type EventRepository interface {
 	GetAllByOrg(orgId uuid.UUID) ([]*model.Event, error)
 	GetAllByRole(roleId uuid.UUID) ([]*model.Event, error)
 	GetAllArchive(roleId uuid.UUID) ([]*model.Event, error)
-	CountParticipants(id uuid.UUID) (int, error)
 	GetEventLocationData(id uuid.UUID) (*model.Event, error)
 	GetUserParticipationInEvent(eventId uuid.UUID, userId int64) (bool, error)
+	GetEventOrgs(eventId uuid.UUID) ([]model.User, error)
 
 	GetById(id uuid.UUID) (*model.Event, error)
 	GetParticipants(id uuid.UUID) ([]model.EventParticipant, error)
 	Create(event *model.Event) (*model.Event, error)
 	Update(event *model.Event) (*model.Event, error)
 	Delete(id uuid.UUID) error
-}
-
-func (r *eventRepository) CountParticipants(id uuid.UUID) (int, error) {
-	var count int64
-	result := r.db.
-		Table("event_participant").
-		Where("event_id = ?", id).
-		Count(&count)
-
-	if result.Error != nil {
-		return 0, result.Error
-	}
-
-	return int(count), nil
 }
 
 func (r *eventRepository) GetAll() ([]*model.Event, error) {
@@ -96,6 +82,23 @@ func (r *eventRepository) GetUserParticipationInEvent(eventId uuid.UUID, userVkI
 		return false, result.Error
 	}
 	return count > 0, nil
+}
+
+func (r *eventRepository) GetEventOrgs(eventId uuid.UUID) ([]model.User, error) {
+	orgs := make([]model.User, 0)
+
+	err := r.db.
+		Table("event_org eo").
+		Select("u.id, u.vk_id").
+		Joins("JOIN \"user\" u ON u.id = eo.user_id").
+		Where("eo.event_id = ?", eventId).
+		Scan(&orgs).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	return orgs, nil
 }
 
 func (r *eventRepository) GetAllByRole(roleId uuid.UUID) ([]*model.Event, error) {
@@ -184,6 +187,7 @@ func (r *eventRepository) GetById(id uuid.UUID) (*model.Event, error) {
 			event.vk_post_id,
 			event.vk_vote_id,
 			event.address,
+			event.status,
 			event.starts_at
 		`).
 		Where("event.id = ?", id).
@@ -357,6 +361,12 @@ func (r *eventRepository) getEventsQuery() *gorm.DB {
 		Select(`
             event.id,
             event.name,
+			event.status,
+			(
+				SELECT COUNT(*)
+				FROM event_participant ep
+				WHERE ep.event_id = event.id
+			) AS participants_count,
             event.starts_at
         `).
 		Preload("Orgs", func(db *gorm.DB) *gorm.DB { return db.Select(selectUserFields) }).

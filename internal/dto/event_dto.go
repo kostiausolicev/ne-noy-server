@@ -12,6 +12,7 @@ type EventMiniDto struct {
 	Orgs              []UserMiniDto `json:"orgs"`
 	Participants      []UserMiniDto `json:"participants"`
 	ParticipantsCount int           `json:"participantsCount"`
+	Status            string        `json:"status"`
 	StartsAt          time.Time     `json:"startAt"`
 }
 
@@ -28,6 +29,7 @@ type EventDto struct {
 
 	Participants             []UserMiniDto `json:"participants"`
 	ParticipantsCount        int           `json:"participantsCount"`
+	Status                   *string       `json:"status"`
 	StartsAt                 *time.Time    `json:"startsAt"`
 	CurrentUserIsParticipant *bool         `json:"currentUserIsParticipant,omitempty"`
 }

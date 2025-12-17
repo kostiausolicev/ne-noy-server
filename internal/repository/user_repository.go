@@ -98,7 +98,7 @@ func (r *userRepository) ExistEventOrg(userId uuid.UUID) (bool, error) {
 func (r *userRepository) GetByVkId(vk int64) (*model.User, error) {
 	var user model.User
 	result := r.db.
-		Preload("Role").
+		Joins("Role").
 		Where("vk_id = ?", vk).
 		First(&user)
 

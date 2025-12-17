@@ -205,6 +205,22 @@ func (uc *eventController) unParticipateToEvent(c *gin.Context) {
 	c.JSON(200, gin.H{"success": success})
 }
 
+func (uc *eventController) checkParticipate(c *gin.Context) {
+	_, ok := parseUUID(c, "id")
+	if !ok {
+		return
+	}
+	var checkEventDto dto.CheckEventParticipant
+	if err := c.ShouldBindJSON(&checkEventDto); err != nil {
+		badRequest(c, err)
+		return
+	}
+	err := uc.eventParticipantService.CheckParticipant(checkEventDto)
+	if err != nil {
+		internalError(c, err)
+	}
+}
+
 func ConfigureEventController(
 	r *gin.RouterGroup,
 	eventService service.EventService,
@@ -227,4 +243,6 @@ func ConfigureEventController(
 
 	r.POST("/events/:id/participate", ec.participateToEvent)
 	r.POST("/events/:id/unparticipate", ec.unParticipateToEvent)
+
+	r.PUT("/events/:id/participate/check", ec.checkParticipate)
 }

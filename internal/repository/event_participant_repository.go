@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"errors"
 	"ne_noy/internal/model"
 
 	"github.com/google/uuid"
@@ -16,8 +17,27 @@ func NewEventParticipantRepository(db *gorm.DB) EventParticipantRepository {
 }
 
 type EventParticipantRepository interface {
+	CheckParticipant(participant *model.EventParticipant) error
 	Participant(eventID uuid.UUID, userId int64) (bool, error)
 	UnParticipant(eventID uuid.UUID, userId int64) (bool, error)
+}
+
+func (er *eventParticipantRepository) CheckParticipant(participant *model.EventParticipant) error {
+	result := er.db.
+		Model(&model.EventParticipant{}).
+		Where("event_id = ? AND user_id = ?", participant.EventID, participant.UserID).
+		Updates(map[string]interface{}{
+			"is_checked":      true,
+			"check_timestamp": participant.CheckTimestamp,
+			"check_lat":       participant.CheckLat,
+			"check_long":      participant.CheckLong,
+			"check_type":      participant.CheckType,
+			"check_author":    participant.CheckAuthor,
+		})
+	if result.RowsAffected == 0 {
+		return errors.New("participant not exist")
+	}
+	return result.Error
 }
 
 func (er *eventParticipantRepository) Participant(eventId uuid.UUID, userId int64) (bool, error) {

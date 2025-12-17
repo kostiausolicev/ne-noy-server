@@ -33,3 +33,13 @@ type EventParticipantDto struct {
 	CheckAuthor    *UserMiniDto `json:"checkAuthor,omitempty"`
 	CheckTimestamp *time.Time   `json:"checkTimestamp,omitempty"`
 }
+
+type CheckEventParticipant struct {
+	UserId          uuid.UUID `json:"userId"`
+	EventId         uuid.UUID `json:"eventId"`
+	CheckAuthorVkId *int64    `json:"checkAuthorVkId"`
+	Timestamp       time.Time `json:"timestamp"`
+	CheckType       string    `json:"checkType"`
+	Lat             *float64  `json:"lat"`
+	Long            *float64  `json:"long"`
+}

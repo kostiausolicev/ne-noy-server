@@ -16,7 +16,7 @@ type EventParticipant struct {
 	CheckTimestamp *time.Time
 	CheckLat       *float64   `gorm:"type:decimal(10,8)"`
 	CheckLong      *float64   `gorm:"type:decimal(11,8)"`
-	CheckType      *string    `gorm:"size:50"`
+	CheckType      string     `gorm:"size:50"`
 	CheckAuthor    *uuid.UUID `gorm:"type:uuid"`
 	CreatedAt      time.Time  `gorm:"autoCreateTime"`
 }
