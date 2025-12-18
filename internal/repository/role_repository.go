@@ -18,7 +18,7 @@ type roleRepository struct {
 func (r roleRepository) GetById(id uuid.UUID) (*model.Role, error) {
 	var role model.Role
 	result := r.db.
-		Table("role").
+		Table("roles").
 		Select("name").
 		Where("id = ?", id).
 		First(&role)
