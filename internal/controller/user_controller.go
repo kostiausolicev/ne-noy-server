@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 type userController struct {
@@ -74,6 +75,23 @@ func (uc *userController) UpdateUser(c *gin.Context) {
 	err = uc.service.UpdatePermissions(permission, vkIdLong, value)
 }
 
+func (uc *userController) UpdateUserRole(c *gin.Context) {
+	vkId := c.Param("id")
+	vkIdLong, err := strconv.ParseInt(vkId, 10, 64)
+	if err != nil {
+		c.Error(err)
+		return
+	}
+	roleIdString := c.Param("roleId")
+	roleIdUuid, err := uuid.Parse(roleIdString)
+	err = uc.service.UpdateRole(vkIdLong, roleIdUuid)
+	if err != nil {
+		c.Error(err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{})
+}
+
 func (uc *userController) DeleteUser(c *gin.Context) {
 	// ...
 }
@@ -86,4 +104,9 @@ func ConfigureUserController(router *gin.RouterGroup, service service.UserServic
 	router.GET("/users/vk/:id", uc.GetByVkId)
 	router.PUT("/users/vk/:id/:permission", uc.UpdateUser)
 	router.DELETE("/users/vk/:id", uc.DeleteUser)
+}
+
+func ConfigureAdminUserController(router *gin.RouterGroup, service service.UserService) {
+	uc := &userController{service: service}
+	router.PUT("/users/vk/:id/role/:roleId", uc.UpdateUserRole)
 }

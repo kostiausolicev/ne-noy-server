@@ -16,6 +16,7 @@ func NewUserService(ur repository.UserRepository) UserService {
 }
 
 type UserService interface {
+	UpdateRole(vkId int64, roleUuid uuid.UUID) error
 	GetAllUsers(fio string) (users []dto.UserMiniDto, err error)
 	UpdatePermissions(permission string, vkId int64, value bool) error
 	CreateUser(user dto.UserDto) (*dto.UserDto, error)
@@ -26,6 +27,11 @@ type userService struct {
 	r repository.UserRepository
 }
 
+func (u userService) UpdateRole(vkId int64, roleUuid uuid.UUID) error {
+	u.r.Update(vkId, "role_id", roleUuid)
+	return nil
+}
+
 func (u userService) GetAllUsers(fio string) (users []dto.UserMiniDto, err error) {
 	fioChancs := strings.Split(fio, " ")
 	var userModels []model.User
@@ -34,7 +40,11 @@ func (u userService) GetAllUsers(fio string) (users []dto.UserMiniDto, err error
 		return
 	}
 	if len(fioChancs) == 1 {
-		userModels, err = u.r.GetAllByFirstNameAndRole(fioChancs[0])
+		if fioChancs[0] == "" {
+			userModels, err = u.r.GetAll()
+		} else {
+			userModels, err = u.r.GetAllByFirstNameAndRole(fioChancs[0])
+		}
 	} else {
 		userModels, err = u.r.GetAllByFirstNameAndLastNameAndRole(fioChancs[0], fioChancs[1])
 	}
@@ -48,6 +58,7 @@ func (u userService) GetAllUsers(fio string) (users []dto.UserMiniDto, err error
 			FirstName: userModel.FirstName,
 			LastName:  userModel.LastName,
 			PhotoURL:  userModel.PhotoURL,
+			VkId:      userModel.VkID,
 		}
 	}
 	return

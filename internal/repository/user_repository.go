@@ -18,6 +18,7 @@ func NewUserRepository(db *gorm.DB) UserRepository {
 }
 
 type UserRepository interface {
+	GetAll() ([]model.User, error)
 	GetAllByFirstNameAndRole(firstName string) ([]model.User, error)
 	GetAllByFirstNameAndLastNameAndRole(firstName, lastName string) ([]model.User, error)
 	GetByVkId(vk int64) (*model.User, error)
@@ -42,6 +43,19 @@ func (r *userRepository) GetRole() (*model.Role, error) {
 		return nil, result.Error
 	}
 	return &role, nil
+}
+
+func (r *userRepository) GetAll() ([]model.User, error) {
+	var users []model.User
+
+	result := r.db.Table(`"user"`).
+		Select(selectUserFields).
+		Scan(&users)
+
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return users, nil
 }
 
 func (r *userRepository) GetAllByFirstNameAndRole(firstName string) ([]model.User, error) {
