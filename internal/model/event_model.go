@@ -12,18 +12,18 @@ type Event struct {
 	Status            *string   `gorm:"size:50"` // deleted | draft | active
 	Description       *string
 	Cover             *string
-	VkPostLink        *string
+	VkPostLink        *string `gorm:"column:vk_post_id"`
 	VkVoteID          *string
 	Lat               *float64 `gorm:"type:decimal(10,8)"`
-	Long              *float64 `gorm:"type:decimal(11,8)"`
+	Long              *float64 `gorm:"column:lon;type:decimal(11,8)"`
 	Address           *string
 	StartsAt          *time.Time
 	ParticipantsCount int       `gorm:"-:create"`
 	Type              *string   `gorm:"size:100"`
 	CreatedAt         time.Time `gorm:"autoCreateTime"`
 
-	AvailableRoles    []Role            `gorm:"many2many:event_role"`
-	Attachments       []EventAttachment `gorm:"many2many:event_attachment"`
-	Orgs              []User            `gorm:"many2many:event_org"`
+	AvailableRoles    []Role            `gorm:"many2many:event_roles"`
+	Attachments       []EventAttachment `gorm:"many2many:event_attachments"`
+	Orgs              []User            `gorm:"many2many:event_orgs"`
 	EventParticipants []EventParticipant
 }

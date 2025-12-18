@@ -3,7 +3,6 @@ package database
 import (
 	"log"
 	"ne_noy/internal/config"
-	"ne_noy/internal/model"
 	"os"
 	"time"
 
@@ -26,18 +25,8 @@ func Connect(cfg config.DBConfig) (*gorm.DB, error) {
 	)
 	db, err := gorm.Open(postgres.Open(cfg.DSN()), &gorm.Config{
 		Logger:         newLogger,
-		NamingStrategy: schema.NamingStrategy{SingularTable: true},
+		NamingStrategy: schema.NamingStrategy{SingularTable: false},
 	})
-	if err != nil {
-		return nil, err
-	}
-	err = db.AutoMigrate(
-		&model.Role{},
-		&model.User{},
-		&model.EventParticipant{},
-		&model.Event{},
-		&model.EventAttachment{},
-	)
 	if err != nil {
 		return nil, err
 	}

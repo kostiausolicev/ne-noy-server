@@ -40,9 +40,10 @@ func (er *eventParticipantRepository) CheckParticipant(participant *model.EventP
 	return result.Error
 }
 
+// Participant TODO сделать сырой запрос с подзапросом
 func (er *eventParticipantRepository) Participant(eventId uuid.UUID, userId int64) (bool, error) {
 	user := model.User{}
-	er.db.Table("user").Select("id").Where("vk_id = ?", userId).Scan(&user)
+	er.db.Table("users").Select("id").Where("vk_id = ?", userId).Scan(&user)
 	eventParticipant := model.EventParticipant{
 		EventID: eventId,
 		UserID:  user.ID,
@@ -55,10 +56,10 @@ func (er *eventParticipantRepository) Participant(eventId uuid.UUID, userId int6
 }
 
 func (er *eventParticipantRepository) UnParticipant(eventId uuid.UUID, userId int64) (bool, error) {
-	sub := er.db.Table(`event_participant`).
-		Select("event_participant.id").
-		Joins(`INNER JOIN "user" ON event_participant.user_id = "user".id`).
-		Where(`event_participant.event_id = ? AND "user".vk_id = ?`, eventId, userId)
+	sub := er.db.Table(`event_participants`).
+		Select("event_participants.id").
+		Joins(`INNER JOIN users ON event_participants.user_id = users.id`).
+		Where(`event_participants.event_id = ? AND susers.vk_id = ?`, eventId, userId)
 
 	result := er.db.
 		Where("id IN (?)", sub).

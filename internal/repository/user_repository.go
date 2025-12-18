@@ -32,13 +32,13 @@ type UserRepository interface {
 
 func (r *userRepository) GetRole() (*model.Role, error) {
 	var role model.Role
-	result := r.db.Table("role").
-		Select("role.id, role.name, role.display_name").
-		Where("role.name = ?", config.RoleDefault).
+	result := r.db.Table("roles").
+		Select("roles.id, roles.name, roles.display_name").
+		Where("roles.name = ?", config.RoleDefault).
 		First(&role)
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-			return nil, nil // можно отдельно обработать создание роли
+			return nil, nil
 		}
 		return nil, result.Error
 	}
@@ -48,8 +48,14 @@ func (r *userRepository) GetRole() (*model.Role, error) {
 func (r *userRepository) GetAll() ([]model.User, error) {
 	var users []model.User
 
-	result := r.db.Table(`"user"`).
-		Select(selectUserFields).
+	result := r.db.Table(`"users"`).
+		Select(`
+			users.id,
+			users.vk_id,
+			users.first_name,
+			users.last_name,
+			users.photo_url
+		`).
 		Scan(&users)
 
 	if result.Error != nil {
@@ -62,13 +68,19 @@ func (r *userRepository) GetAllByFirstNameAndRole(firstName string) ([]model.Use
 	var users []model.User
 	namePattern := "%" + firstName + "%"
 
-	result := r.db.Table(`"user"`).
-		Select(selectUserFields).
-		Joins(`LEFT JOIN "role" ON role.id = "user".role_id`).
-		Where(`"role".name IN (?, ?)`, config.RoleHikePart, config.RoleAdmin).
+	result := r.db.Table(`"users"`).
+		Select(`
+			users.id,
+			users.vk_id,
+			users.first_name,
+			users.last_name,
+			users.photo_url
+		`).
+		Joins(`LEFT JOIN roles ON roles.id = users.role_id`).
+		Where(`roles.name IN (?, ?)`, config.RoleHikePart, config.RoleAdmin).
 		Where(
-			r.db.Where(`"user".first_name ILIKE ?`, namePattern).
-				Or(`"user".last_name ILIKE ?`, namePattern),
+			r.db.Where(`users.first_name ILIKE ?`, namePattern).
+				Or(`users.last_name ILIKE ?`, namePattern),
 		).
 		Scan(&users)
 
@@ -83,13 +95,19 @@ func (r *userRepository) GetAllByFirstNameAndLastNameAndRole(firstName, lastName
 	fn := "%" + firstName + "%"
 	ln := "%" + lastName + "%"
 
-	result := r.db.Table(`"user"`).
-		Select(selectUserFields).
-		Joins(`LEFT JOIN "role" ON role.id = "user".role_id`).
-		Where(`"role".name IN (?, ?)`, config.RoleHikePart, config.RoleAdmin).
+	result := r.db.Table(`"users"`).
+		Select(`
+			users.id,
+			users.vk_id,
+			users.first_name,
+			users.last_name,
+			users.photo_url
+		`).
+		Joins(`LEFT JOIN roles ON roles.id = users.role_id`).
+		Where(`roles.name IN (?, ?)`, config.RoleHikePart, config.RoleAdmin).
 		Where(
-			r.db.Where(`"user".first_name ILIKE ? AND "user".last_name LIKE ?`, fn, ln).
-				Or(`"user".first_name ILIKE ? AND "user".last_name LIKE ?`, ln, fn),
+			r.db.Where(`users.first_name ILIKE ? AND users.last_name ILIKE ?`, fn, ln).
+				Or(`users.first_name ILIKE ? AND users.last_name ILIKE ?`, ln, fn),
 		).
 		Scan(&users)
 
@@ -100,7 +118,7 @@ func (r *userRepository) GetAllByFirstNameAndLastNameAndRole(firstName, lastName
 }
 
 func (r *userRepository) ExistEventOrg(userId uuid.UUID) (bool, error) {
-	result := r.db.Raw(`EXISTS (event_org WHERE event_org.user_id = ?) AS has_event`, userId)
+	result := r.db.Raw(`EXISTS (SELECT 1 FROM event_orgs WHERE user_id = ?) AS has_event`, userId)
 	if result.Error != nil {
 		return false, result.Error
 	}
@@ -112,6 +130,7 @@ func (r *userRepository) ExistEventOrg(userId uuid.UUID) (bool, error) {
 func (r *userRepository) GetByVkId(vk int64) (*model.User, error) {
 	var user model.User
 	result := r.db.
+		Table(`users`).
 		Joins("Role").
 		Where("vk_id = ?", vk).
 		First(&user)
@@ -126,7 +145,6 @@ func (r *userRepository) GetByVkId(vk int64) (*model.User, error) {
 }
 
 func (r *userRepository) Delete(id uuid.UUID) error {
-	//TODO implement me
 	panic("implement me")
 }
 

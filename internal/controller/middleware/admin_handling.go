@@ -25,7 +25,7 @@ func AdminMiddleware(roleRepository repository.RoleRepository) gin.HandlerFunc {
 			c.Error(err)
 			return
 		}
-		if role.Name != "admin" {
+		if role.Name != config.RoleAdmin {
 			c.JSON(http.StatusForbidden, gin.H{"error": "role name should be admin"})
 			return
 		}

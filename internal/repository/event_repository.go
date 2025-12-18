@@ -10,11 +10,11 @@ import (
 
 const (
 	selectUserFields = `
-				"user".id, 
-				"user".vk_id,
-				"user".first_name, 
-				"user".last_name,
-				"user".photo_url
+				"users".id, 
+				"users".vk_id,
+				"users".first_name, 
+				"users".last_name,
+				"users".photo_url
 			`
 )
 
@@ -59,7 +59,7 @@ func (r *eventRepository) GetAllByOrg(orgId uuid.UUID) ([]*model.Event, error) {
 	var events []*model.Event
 
 	result := r.getEventsQuery().
-		Joins("LEFT JOIN event_org eo ON eo.user_id = ?", orgId).
+		Joins("LEFT JOIN event_orgs eo ON eo.user_id = ?", orgId).
 		Where("eo.user_id = ?", orgId).
 		Find(&events)
 
@@ -73,9 +73,9 @@ func (r *eventRepository) GetAllByOrg(orgId uuid.UUID) ([]*model.Event, error) {
 func (r *eventRepository) GetUserParticipationInEvent(eventId uuid.UUID, userVkId int64) (bool, error) {
 	var count int64
 	result := r.db.
-		Table("event_participant").
-		Joins(`INNER JOIN "user" on event_participant.user_id = "user".id`).
-		Where(`event_id = ? AND "user".vk_id = ?`, eventId, userVkId).
+		Table("event_participants").
+		Joins(`INNER JOIN "users" on event_participants.user_id = "users".id`).
+		Where(`event_id = ? AND "users".vk_id = ?`, eventId, userVkId).
 		Count(&count)
 
 	if result.Error != nil {
@@ -88,9 +88,9 @@ func (r *eventRepository) GetEventOrgs(eventId uuid.UUID) ([]model.User, error) 
 	orgs := make([]model.User, 0)
 
 	err := r.db.
-		Table("event_org eo").
+		Table("event_orgs eo").
 		Select("u.id, u.vk_id").
-		Joins("JOIN \"user\" u ON u.id = eo.user_id").
+		Joins("JOIN \"users\" u ON u.id = eo.user_id").
 		Where("eo.event_id = ?", eventId).
 		Scan(&orgs).Error
 
@@ -105,8 +105,8 @@ func (r *eventRepository) GetAllByRole(roleId uuid.UUID) ([]*model.Event, error)
 	var events []*model.Event
 
 	result := r.getEventsQuery().
-		Joins("JOIN event_role er ON er.event_id = event.id").
-		Where("er.role_id = ? AND event.starts_at > NOW()", roleId).
+		Joins("JOIN event_roles er ON er.event_id = events.id").
+		Where("er.role_id = ? AND events.starts_at > NOW()", roleId).
 		Find(&events)
 
 	if result.Error != nil {
@@ -120,8 +120,8 @@ func (r *eventRepository) GetAllArchive(roleId uuid.UUID) ([]*model.Event, error
 	var events []*model.Event
 
 	result := r.getEventsQuery().
-		Joins("JOIN event_role er ON er.event_id = event.id").
-		Where("er.role_id = ? AND event.starts_at < NOW()", roleId).
+		Joins("JOIN event_roles er ON er.event_id = events.id").
+		Where("er.role_id = ? AND events.starts_at < NOW()", roleId).
 		Find(&events)
 
 	if result.Error != nil {
@@ -135,16 +135,16 @@ func (r *eventRepository) GetParticipants(id uuid.UUID) ([]model.EventParticipan
 	var participants []model.EventParticipant
 
 	result := r.db.
-		Table("event_participant").
+		Table("event_participants").
 		Select(`
-			event_participant.user_id,
-			event_participant.check_timestamp,
-			event_participant.is_checked
+			event_participants.user_id,
+			event_participants.check_timestamp,
+			event_participants.is_checked
 		`).
 		Preload("User", func(db *gorm.DB) *gorm.DB {
 			return db.Select(selectUserFields)
 		}).
-		Where("event_participant.event_id = ?", id).
+		Where("event_participants.event_id = ?", id).
 		Find(&participants)
 
 	if result.Error != nil {
@@ -156,16 +156,16 @@ func (r *eventRepository) GetParticipants(id uuid.UUID) ([]model.EventParticipan
 func (r *eventRepository) GetById(id uuid.UUID) (*model.Event, error) {
 	var event *model.Event
 	result := r.db.
-		Table("event").
+		Table("events").
 		Preload("Orgs", func(db *gorm.DB) *gorm.DB {
 			return db.Select(selectUserFields)
 		}).
 		Preload("EventParticipants", func(db *gorm.DB) *gorm.DB {
 			return db.
 				Select(`
-					event_participant.id, 
-					event_participant.user_id,
-					event_participant.event_id
+					event_participants.id, 
+					event_participants.user_id,
+					event_participants.event_id
 				`).
 				Limit(3)
 		}).
@@ -174,23 +174,22 @@ func (r *eventRepository) GetById(id uuid.UUID) (*model.Event, error) {
 		}).
 		Preload("Attachments", func(db *gorm.DB) *gorm.DB {
 			return db.Select(`
-				event_attachment.id,
-				event_attachment.attachment_link
+				event_attachments.id,
+				event_attachments.attachment_link
 			`)
 		}).
 		Select(`
-			event.id,
-			event.name,
-			event.cover,
-			event.description,
-			event.address,
-			event.vk_post_id,
-			event.vk_vote_id,
-			event.address,
-			event.status,
-			event.starts_at
+			events.id,
+			events.name,
+			events.cover,
+			events.description,
+			events.address,
+			events.vk_post_id,
+			events.vk_vote_id,
+			events.status,
+			events.starts_at
 		`).
-		Where("event.id = ?", id).
+		Where("events.id = ?", id).
 		Find(&event)
 
 	if result.Error != nil {
@@ -201,20 +200,17 @@ func (r *eventRepository) GetById(id uuid.UUID) (*model.Event, error) {
 
 func (r *eventRepository) Create(event *model.Event) (*model.Event, error) {
 	tx := r.db.Begin()
-
 	defer func() {
 		if rec := recover(); rec != nil {
 			tx.Rollback()
 		}
 	}()
 
-	// 1. сохраняем сам event
-	if err := tx.Create(event).Error; err != nil {
+	if err := tx.Omit("ParticipantsCount").Create(event).Error; err != nil {
 		tx.Rollback()
 		return nil, fmt.Errorf("failed to save event: %w", err)
 	}
 
-	// 2. добавляем Orgs
 	if len(event.Orgs) > 0 {
 		if err := tx.Model(event).Association("Orgs").Append(event.Orgs); err != nil {
 			tx.Rollback()
@@ -222,7 +218,6 @@ func (r *eventRepository) Create(event *model.Event) (*model.Event, error) {
 		}
 	}
 
-	// 3. добавляем роли
 	if len(event.AvailableRoles) > 0 {
 		if err := tx.Model(event).Association("AvailableRoles").Append(event.AvailableRoles); err != nil {
 			tx.Rollback()
@@ -230,7 +225,6 @@ func (r *eventRepository) Create(event *model.Event) (*model.Event, error) {
 		}
 	}
 
-	// 4. подгружаем связанные данные
 	var created model.Event
 	if err := tx.
 		Preload("Orgs").
@@ -300,7 +294,7 @@ func (r *eventRepository) Update(event *model.Event) (*model.Event, error) {
 		return nil, fmt.Errorf("failed to clear roles: %w", err)
 	}
 
-	if err := tx.Save(&existingEvent).Error; err != nil {
+	if err := tx.Omit("ParticipantsCount").Save(&existingEvent).Error; err != nil {
 		tx.Rollback()
 		return nil, fmt.Errorf("failed to save event: %w", err)
 	}
@@ -342,12 +336,12 @@ func (r *eventRepository) Delete(id uuid.UUID) error {
 func (r *eventRepository) GetEventLocationData(id uuid.UUID) (*model.Event, error) {
 	var event *model.Event
 	result := r.db.
-		Table("event").
+		Table("events").
 		Select(`
-			event.lat,
-			event.long
+			events.lat,
+			events.long
 		`).
-		Where("event.id = ?", id).
+		Where("events.id = ?", id).
 		Take(event)
 	if result.Error != nil {
 		return nil, result.Error
@@ -357,25 +351,25 @@ func (r *eventRepository) GetEventLocationData(id uuid.UUID) (*model.Event, erro
 
 func (r *eventRepository) getEventsQuery() *gorm.DB {
 	return r.db.
-		Table("event").
+		Table("events").
 		Select(`
-            event.id,
-            event.name,
-			event.status,
+            events.id,
+            events.name,
+			events.status,
 			(
 				SELECT COUNT(*)
-				FROM event_participant ep
-				WHERE ep.event_id = event.id
+				FROM event_participants ep
+				WHERE ep.event_id = events.id
 			) AS participants_count,
-            event.starts_at
+            events.starts_at
         `).
 		Preload("Orgs", func(db *gorm.DB) *gorm.DB { return db.Select(selectUserFields) }).
 		Preload("EventParticipants", func(db *gorm.DB) *gorm.DB {
 			return db.
 				Select(`
-					event_participant.id, 
-					event_participant.user_id,
-					event_participant.event_id
+					event_participants.id, 
+					event_participants.user_id,
+					event_participants.event_id
 				`).
 				Limit(3)
 		}).

@@ -6,10 +6,10 @@ appId: 54361387
 secret: "M31MlouxVqsDIwcAYCPs"
 
 database:
-  host: "localhost"
+  host: localhost
   port: 5432
-  user: "postgres"
-  password: "postgres"
-  name: "ne-noy"
-  sslmode: "disable"
+  user: postgres
+  password: postgres
+  name: 'ne-noy'
+  sslmode: disable
   timezone: "UTC"
