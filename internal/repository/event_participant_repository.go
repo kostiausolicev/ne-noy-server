@@ -30,7 +30,7 @@ func (er *eventParticipantRepository) CheckParticipant(participant *model.EventP
 			"is_checked":      true,
 			"check_timestamp": participant.CheckTimestamp,
 			"check_lat":       participant.CheckLat,
-			"check_long":      participant.CheckLong,
+			"check_lon":       participant.CheckLong,
 			"check_type":      participant.CheckType,
 			"check_author":    participant.CheckAuthor,
 		})
@@ -59,7 +59,7 @@ func (er *eventParticipantRepository) UnParticipant(eventId uuid.UUID, userId in
 	sub := er.db.Table(`event_participants`).
 		Select("event_participants.id").
 		Joins(`INNER JOIN users ON event_participants.user_id = users.id`).
-		Where(`event_participants.event_id = ? AND susers.vk_id = ?`, eventId, userId)
+		Where(`event_participants.event_id = ? AND users.vk_id = ?`, eventId, userId)
 
 	result := er.db.
 		Where("id IN (?)", sub).

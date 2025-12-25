@@ -90,7 +90,7 @@ func (r *eventRepository) GetEventOrgs(eventId uuid.UUID) ([]model.User, error) 
 	err := r.db.
 		Table("event_orgs eo").
 		Select("u.id, u.vk_id").
-		Joins("JOIN \"users\" u ON u.id = eo.user_id").
+		Joins("JOIN users u ON u.id = eo.user_id").
 		Where("eo.event_id = ?", eventId).
 		Scan(&orgs).Error
 
