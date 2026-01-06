@@ -1,28 +1,44 @@
 package config
 
 import (
-	"os"
+	"log"
+	"strings"
 
-	"github.com/goccy/go-yaml"
+	"github.com/joho/godotenv"
+	"github.com/spf13/viper"
 )
 
 type Config struct {
-	Server   ServerConfig `yaml:"server"`
-	Database DBConfig     `yaml:"database"`
-	Secret   string       `yaml:"secret"`
-	AppId    int64        `yaml:"appId"`
-	//VkApiKey       string       `yaml:"vkApiKey"`
-	//VkGroupId      string       `yaml:"vkGroupId"`
-	//VkGroupAlbumId string       `yaml:"vkGroupAlbumId"`
+	Server   ServerConfig `mapstructure:"server"`
+	Database DBConfig     `mapstructure:"database"`
+	Secret   string       `mapstructure:"secret"`
+	AppId    int64        `mapstructure:"appId"`
+}
+
+func init() {
+	if err := godotenv.Load(); err != nil {
+		log.Print("No .env file found")
+	}
 }
 
 func Load(path string) (*Config, error) {
-	data, err := os.ReadFile(path)
-	if err != nil {
+	v := viper.New()
+
+	v.SetConfigFile(path)
+	v.SetConfigType("yaml")
+
+	v.SetEnvPrefix("APP")
+	v.AutomaticEnv()
+	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+
+	if err := v.ReadInConfig(); err != nil {
 		return nil, err
 	}
 
 	var cfg Config
-	err = yaml.Unmarshal(data, &cfg)
-	return &cfg, err
+	if err := v.Unmarshal(&cfg); err != nil {
+		return nil, err
+	}
+
+	return &cfg, nil
 }

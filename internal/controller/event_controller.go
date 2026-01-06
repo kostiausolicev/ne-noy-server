@@ -57,6 +57,17 @@ type eventController struct {
 	eventParticipantService service.EventParticipantService
 }
 
+// swagger:route GET /events/all events getAllEvents
+// Получить все события пользователя
+//
+// security:
+//   - AuthToken: []
+//
+// responses:
+//
+//	200:
+//	  description: Список событий
+//	500: ErrorResponse
 func (uc *eventController) getAllEvents(c *gin.Context) {
 	vkId, ok := getCtxInt64(c, config.UserVkIdContextKey)
 	if !ok {
@@ -71,6 +82,17 @@ func (uc *eventController) getAllEvents(c *gin.Context) {
 	c.JSON(200, gin.H{"events": events})
 }
 
+// swagger:route GET /events/{id} events getEvent
+// Получить событие по ID
+//
+// security:
+//   - AuthToken: []
+//
+// responses:
+//
+//	200: EventDto
+//	400: ErrorResponse
+//	500: ErrorResponse
 func (uc *eventController) getEvent(c *gin.Context) {
 	eventId, ok := parseUUID(c, "id")
 	if !ok {
@@ -90,6 +112,28 @@ func (uc *eventController) getEvent(c *gin.Context) {
 	c.JSON(200, event)
 }
 
+// swagger:route POST /events events createEvent
+// Создать событие
+//
+// Создает новое событие с заданными параметрами.
+//
+// security:
+//   - AuthToken: []
+//
+// consumes:
+//   - application/json
+//
+// produces:
+//   - application/json
+//
+// responses:
+//
+//	200:
+//	  description: Созданное событие
+//	400:
+//	  description: Ошибка валидации
+//	500:
+//	  description: Внутренняя ошибка
 func (uc *eventController) createEvent(c *gin.Context) {
 	var updateEventDto dto.CreateUpdateEventDto
 	if err := c.ShouldBindJSON(&updateEventDto); err != nil {
@@ -105,6 +149,26 @@ func (uc *eventController) createEvent(c *gin.Context) {
 	c.JSON(200, event)
 }
 
+// swagger:route PUT /events/{id} events updateEvent
+// Обновить событие
+//
+// security:
+//   - AuthToken: []
+//
+// consumes:
+//   - application/json
+//
+// produces:
+//   - application/json
+//
+// responses:
+//
+//	200:
+//	  description: Обновленное событие
+//	400:
+//	  description: Ошибка валидации
+//	500:
+//	  description: Внутренняя ошибка
 func (uc *eventController) updateEvent(c *gin.Context) {
 	eventId, ok := parseUUID(c, "id")
 	if !ok {
@@ -125,6 +189,18 @@ func (uc *eventController) updateEvent(c *gin.Context) {
 	c.JSON(200, event)
 }
 
+// swagger:route GET /events/{id}/participants events getEventParticipants
+// Получить участников события
+//
+// security:
+//   - AuthToken: []
+//
+// responses:
+//
+//	200:
+//	  description: Список участников
+//	400: ErrorResponse
+//	500: ErrorResponse
 func (uc *eventController) getEventParticipants(c *gin.Context) {
 	eventId, ok := parseUUID(c, "id")
 	if !ok {
@@ -139,6 +215,17 @@ func (uc *eventController) getEventParticipants(c *gin.Context) {
 	c.JSON(200, gin.H{"participants": participants})
 }
 
+// swagger:route GET /events/available events getEventsAvailable
+// Получить доступные события по роли пользователя
+//
+// security:
+//   - AuthToken: []
+//
+// responses:
+//
+//	200:
+//	  description: Список доступных событий
+//	500: ErrorResponse
 func (uc *eventController) getEventsAvailable(c *gin.Context) {
 	roleId, ok := getCtxUUID(c, config.UserRoleContextKey)
 	if !ok {
@@ -153,6 +240,17 @@ func (uc *eventController) getEventsAvailable(c *gin.Context) {
 	c.JSON(200, gin.H{"events": events})
 }
 
+// swagger:route GET /events/archive events getEventsArchive
+// Получить архив событий
+//
+// security:
+//   - AuthToken: []
+//
+// responses:
+//
+//	200:
+//	  description: Список архивных событий
+//	500: ErrorResponse
 func (uc *eventController) getEventsArchive(c *gin.Context) {
 	roleId, ok := getCtxUUID(c, config.UserRoleContextKey)
 	if !ok {
@@ -167,6 +265,17 @@ func (uc *eventController) getEventsArchive(c *gin.Context) {
 	c.JSON(200, gin.H{"events": events})
 }
 
+// swagger:route POST /events/{id}/participate events participateToEvent
+// Записаться на событие
+//
+// security:
+//   - AuthToken: []
+//
+// responses:
+//
+//	200:
+//	  description: Успешно
+//	400: ErrorResponse
 func (uc *eventController) participateToEvent(c *gin.Context) {
 	eventId, ok := parseUUID(c, "id")
 	if !ok {
@@ -186,6 +295,17 @@ func (uc *eventController) participateToEvent(c *gin.Context) {
 	c.JSON(200, gin.H{"success": success})
 }
 
+// swagger:route POST /events/{id}/unparticipate events unParticipateToEvent
+// Отменить участие в событии
+//
+// security:
+//   - AuthToken: []
+//
+// responses:
+//
+//	200:
+//	  description: Успешно
+//	400: ErrorResponse
 func (uc *eventController) unParticipateToEvent(c *gin.Context) {
 	eventId, ok := parseUUID(c, "id")
 	if !ok {

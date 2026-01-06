@@ -154,8 +154,8 @@ func (e eventService) GetEvent(id uuid.UUID, userId int64) (*dto.EventDto, error
 		Orgs:                     orgs,
 		Address:                  event.Address,
 		Participants:             participants,
-		StartsAt:                 event.StartsAt,
-		Status:                   event.Status,
+		StartsAt:                 *event.StartsAt,
+		Status:                   *event.Status,
 		CurrentUserIsParticipant: &isParticipant,
 	}
 	return eventDto, nil

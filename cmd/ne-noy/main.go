@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"log"
 	server "ne_noy/internal"
 	"ne_noy/internal/config"
@@ -8,7 +9,10 @@ import (
 )
 
 func main() {
-	cfg, err := config.Load("/Users/konstantinusolcev/GolandProjects/awesomeProject/configs/app.dev.yaml")
+	configPath := flag.String("config", "configs/config.yaml", "path to config file")
+	flag.Parse()
+
+	cfg, err := config.Load(*configPath)
 	if err != nil {
 		log.Fatalf("cannot load config: %v", err)
 	}
