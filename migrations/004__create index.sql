@@ -16,9 +16,6 @@ CREATE INDEX idx_event_attachments_created_at ON event_attachments(created_at DE
 -- Оптимизация для JOIN запросов
 CREATE INDEX idx_users_id_with_name ON users(id, vk_id, first_name, last_name, photo_url);
 
--- Частичные индексы для оптимизации частых запросов
-CREATE INDEX idx_events_future_active ON events(starts_at)
-    WHERE starts_at > now() AND status = 'active';
 -- +goose Down
 
 DROP INDEX IF EXISTS idx_users_role_id;

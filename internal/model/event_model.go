@@ -12,13 +12,13 @@ type Event struct {
 	Status            *string   `gorm:"size:50"` // deleted | draft | active
 	Description       *string
 	Cover             *string
-	VkPostLink        *string `gorm:"column:vk_post_id"`
-	VkVoteID          *string
+	VkPostId          *int64   `gorm:"column:vk_post_id"`
+	VkVoteID          *int64   `gorm:"column:vk_vote_id"`
 	Lat               *float64 `gorm:"type:decimal(10,8)"`
 	Long              *float64 `gorm:"column:lon;type:decimal(11,8)"`
 	Address           *string
 	StartsAt          *time.Time
-	ParticipantsCount int       `gorm:"-:create"`
+	ParticipantsCount int       `gorm:"->"`
 	Type              *string   `gorm:"size:100"`
 	CreatedAt         time.Time `gorm:"autoCreateTime"`
 

@@ -17,15 +17,17 @@ type Server struct {
 	DB     *gorm.DB
 }
 
-func New(db *gorm.DB, secret string, id int64) *Server {
+func New(db *gorm.DB, secret string, appId int64) *Server {
 	userRepo := repository.NewUserRepository(db)
 	eventRepo := repository.NewEventRepository(db)
 	eventParticipantRepository := repository.NewEventParticipantRepository(db)
 	roleRepository := repository.NewRoleRepository(db)
+	eventQueueRepository := repository.NewEventQueueRepository(db)
 
 	userService := service.NewUserService(userRepo)
 	eventService := service.NewEventService(eventRepo, userService)
 	eventParticipantService := service.NewEventParticipantService(eventParticipantRepository, eventRepo)
+	eventQueueService := service.NewVkCallbackService(eventQueueRepository, eventRepo, eventParticipantService)
 
 	router := gin.Default()
 	router.Use(cors.New(cors.Config{
@@ -42,7 +44,8 @@ func New(db *gorm.DB, secret string, id int64) *Server {
 		controller.ConfigureServiceController(public, userRepo)
 	}
 	apiV1 := router.Group("/api/v1")
-	apiV1.Use(middleware.AuthMiddleware(secret, id))
+	controller.ConfigureVkCallBackController(apiV1, secret, eventQueueService)
+	apiV1.Use(middleware.AuthMiddleware(secret, appId))
 	{
 		controller.ConfigureEventController(apiV1, eventService, eventParticipantService)
 		controller.ConfigureUserController(apiV1, userService)

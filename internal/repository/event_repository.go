@@ -34,7 +34,7 @@ type EventRepository interface {
 	GetEventLocationData(id uuid.UUID) (*model.Event, error)
 	GetUserParticipationInEvent(eventId uuid.UUID, userId int64) (bool, error)
 	GetEventOrgs(eventId uuid.UUID) ([]model.User, error)
-
+	GetByVkPollAnswerId(answerId int64) (*model.Event, error)
 	GetById(id uuid.UUID) (*model.Event, error)
 	GetParticipants(id uuid.UUID) ([]model.EventParticipant, error)
 	Create(event *model.Event) (*model.Event, error)
@@ -71,17 +71,30 @@ func (r *eventRepository) GetAllByOrg(orgId uuid.UUID) ([]*model.Event, error) {
 }
 
 func (r *eventRepository) GetUserParticipationInEvent(eventId uuid.UUID, userVkId int64) (bool, error) {
-	var count int64
-	result := r.db.
-		Table("event_participants").
-		Joins(`INNER JOIN "users" on event_participants.user_id = "users".id`).
-		Where(`event_id = ? AND "users".vk_id = ?`, eventId, userVkId).
-		Count(&count)
+	var exists bool
 
-	if result.Error != nil {
-		return false, result.Error
+	err := r.db.
+		Table("event_participants ep").
+		Joins("INNER JOIN users u ON ep.user_id = u.id").
+		Where("ep.event_id = ? AND u.vk_id = ?", eventId, userVkId).
+		Select("EXISTS (SELECT 1)").
+		Scan(&exists).
+		Error
+
+	if err != nil {
+		return false, err
 	}
-	return count > 0, nil
+
+	return exists, nil
+}
+
+func (r *eventRepository) GetByVkPollAnswerId(vkPollAnswerId int64) (*model.Event, error) {
+	var event model.Event
+	result := r.db.Table("events e").
+		Select("e.id").
+		Where("e.vk_poll_answer_id = ?", vkPollAnswerId).
+		Scan(&event)
+	return &event, result.Error
 }
 
 func (r *eventRepository) GetEventOrgs(eventId uuid.UUID) ([]model.User, error) {
@@ -265,8 +278,8 @@ func (r *eventRepository) Update(event *model.Event) (*model.Event, error) {
 	if event.Cover != nil {
 		existingEvent.Cover = event.Cover
 	}
-	if event.VkPostLink != nil {
-		existingEvent.VkPostLink = event.VkPostLink
+	if event.VkPostId != nil {
+		existingEvent.VkPostId = event.VkPostId
 	}
 	if event.Address != nil {
 		existingEvent.Address = event.Address

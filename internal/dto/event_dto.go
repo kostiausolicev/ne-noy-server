@@ -43,7 +43,7 @@ type EventDto struct {
 	ID uuid.UUID `json:"id"`
 	// Ссылка на пост ВК
 	// required: false
-	VkPostLink *string `json:"vkPostLink"`
+	VkPostId *int64 `json:"vkPostId"`
 	// Ссылка на фото
 	// required: false
 	PhotoURL *string `json:"photoUrl"`
@@ -90,7 +90,7 @@ type EventDto struct {
 type CreateUpdateEventDto struct {
 	// Ссылка на пост ВК
 	// required: false
-	VkPostLink *string `json:"vkPostLink"`
+	VkPostId *int64 `json:"vkPostId"`
 	// Ссылка на фото
 	// required: false
 	PhotoURL *string `json:"photoUrl"`

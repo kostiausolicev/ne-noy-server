@@ -143,9 +143,9 @@ func (e eventService) GetEvent(id uuid.UUID, userId int64) (*dto.EventDto, error
 	}
 
 	eventDto := &dto.EventDto{
-		ID:         event.ID,
-		VkPostLink: event.VkPostLink,
-		PhotoURL:   event.Cover,
+		ID:       event.ID,
+		VkPostId: event.VkPostId,
+		PhotoURL: event.Cover,
 
 		Title:                    event.Name,
 		Description:              event.Description,
@@ -276,8 +276,8 @@ func (e eventService) parseDtoToModel(eventDto dto.CreateUpdateEventDto, eventId
 	if eventDto.Description != nil {
 		event.Description = eventDto.Description
 	}
-	if eventDto.VkPostLink != nil {
-		event.VkPostLink = eventDto.VkPostLink
+	if eventDto.VkPostId != nil {
+		event.VkPostId = eventDto.VkPostId
 	}
 	if eventDto.PhotoURL != nil {
 		event.Cover = eventDto.PhotoURL
