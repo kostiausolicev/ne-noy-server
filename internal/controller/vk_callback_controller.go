@@ -2,7 +2,7 @@ package controller
 
 import (
 	"errors"
-	"ne_noy/internal/dto/group_event"
+	"ne_noy/internal/dto/callback_dto"
 	"ne_noy/internal/service"
 
 	"github.com/gin-gonic/gin"
@@ -22,8 +22,8 @@ func (cb vkCallBackController) confirmHandler(c *gin.Context) {
 	}
 }
 
-func (cb vkCallBackController) postNewHandler(c *gin.Context, dto group_event.GroupEvent) {
-	var newPost group_event.NewPostEvent
+func (cb vkCallBackController) postNewHandler(c *gin.Context, dto callback_dto.GroupEvent) {
+	var newPost callback_dto.NewPostEvent
 	err := mapstructure.Decode(dto.Object.(map[string]interface{}), &newPost)
 	if err != nil {
 		c.Error(err)
@@ -38,8 +38,8 @@ func (cb vkCallBackController) postNewHandler(c *gin.Context, dto group_event.Gr
 	return
 }
 
-func (cb vkCallBackController) pollVoteNew(c *gin.Context, dto group_event.GroupEvent) {
-	var newVote group_event.PollVoteNewDto
+func (cb vkCallBackController) pollVoteNew(c *gin.Context, dto callback_dto.GroupEvent) {
+	var newVote callback_dto.PollVoteNewDto
 	err := mapstructure.Decode(dto.Object.(map[string]interface{}), &newVote)
 	if err != nil {
 		c.Error(err)
@@ -54,7 +54,7 @@ func (cb vkCallBackController) pollVoteNew(c *gin.Context, dto group_event.Group
 }
 
 func (cb vkCallBackController) handleConfirm(c *gin.Context) {
-	var callback group_event.GroupEvent
+	var callback callback_dto.GroupEvent
 	err := c.ShouldBindJSON(&callback)
 	if err != nil {
 		c.Error(err)

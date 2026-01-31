@@ -1,344 +1,323 @@
 package controller
 
 import (
-	"errors"
 	"ne_noy/internal/config"
 	"ne_noy/internal/dto"
 	"ne_noy/internal/service"
 
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
-
-	"net/http"
 )
-
-func badRequest(c *gin.Context, err error) {
-	c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-}
-
-func internalError(c *gin.Context, err error) {
-	c.Error(err) // отдаст в ErrorHandler()
-}
-
-func parseUUID(c *gin.Context, param string) (uuid.UUID, bool) {
-	id, err := uuid.Parse(c.Param(param))
-	if err != nil {
-		badRequest(c, err)
-		return uuid.Nil, false
-	}
-	return id, true
-}
-
-func getCtxInt64(c *gin.Context, key string) (int64, bool) {
-	val, ok := c.Get(key)
-	if !ok {
-		badRequest(c, errors.New("missing context key: "+key))
-		return 0, false
-	}
-	return val.(int64), true
-}
-
-func getCtxUUID(c *gin.Context, key string) (uuid.UUID, bool) {
-	val, ok := c.Get(key)
-	if !ok {
-		badRequest(c, errors.New("missing context key: "+key))
-		return uuid.Nil, false
-	}
-	id, err := uuid.Parse(val.(string))
-	if err != nil {
-		badRequest(c, err)
-		return uuid.Nil, false
-	}
-	return id, true
-}
 
 type eventController struct {
 	eventService            service.EventService
 	eventParticipantService service.EventParticipantService
 }
 
-// swagger:route GET /events/all events getAllEvents
-// Получить все события пользователя
+// getAllEvents godoc
 //
-// security:
-//   - AuthToken: []
-//
-// responses:
-//
-//	200:
-//	  description: Список событий
-//	500: ErrorResponse
+//	@Summary	Получить список всех мероприятий
+//	@Tags		events
+//	@Accept		json
+//	@Produce	json
+//	@Param		X-Request-Id	header		string	true	"X-Request-Id"
+//	@Success	200				{array}		dto.EventMiniDto
+//	@Failure	401				{object}	dto.ErrorResponse
+//	@Failure	500				{object}	dto.ErrorResponse
+//	@Router		/v1/events [get]
+//	@Security	VkAuth
 func (uc *eventController) getAllEvents(c *gin.Context) {
-	vkId, ok := getCtxInt64(c, config.UserVkIdContextKey)
-	if !ok {
+	vkId, err := GetCtxInt64(c, config.UserVkIdContextKey)
+	if err != nil {
+		c.Error(err)
 		return
 	}
 
 	events, err := uc.eventService.GetAll(vkId)
 	if err != nil {
-		internalError(c, err)
+		c.Error(err)
 		return
 	}
-	c.JSON(200, gin.H{"events": events})
+	c.JSON(200, events)
 }
 
-// swagger:route GET /events/{id} events getEvent
-// Получить событие по ID
+// getEvent godoc
 //
-// security:
-//   - AuthToken: []
-//
-// responses:
-//
-//	200: EventDto
-//	400: ErrorResponse
-//	500: ErrorResponse
+//	@Summary	Получить одно мероприятие по ID
+//	@Tags		events
+//	@Accept		json
+//	@Produce	json
+//	@Param		X-Request-Id	header		string	true	"Уникальный идентификатор запроса для трассировки"
+//	@Param		id				path		string	true	"UUID мероприятия (формат: 550e8400-e29b-41d4-a716-446655440000)"
+//	@Success	200				{object}	dto.EventDto
+//	@Failure	401				{object}	dto.ErrorResponse
+//	@Failure	404				{object}	dto.ErrorResponse	"Мероприятие не найдено"
+//	@Failure	500				{object}	dto.ErrorResponse
+//	@Router		/v1/events/{id} [get]
+//	@Security	VkAuth
 func (uc *eventController) getEvent(c *gin.Context) {
-	eventId, ok := parseUUID(c, "id")
-	if !ok {
+	eventId, err := ParseUUID(c, "id")
+	if err != nil {
 		return
 	}
 
-	vkId, ok := getCtxInt64(c, config.UserVkIdContextKey)
-	if !ok {
+	vkId, err := GetCtxInt64(c, config.UserVkIdContextKey)
+	if err != nil {
 		return
 	}
 
 	event, err := uc.eventService.GetEvent(eventId, vkId)
 	if err != nil {
-		internalError(c, err)
+		c.Error(err)
 		return
 	}
 	c.JSON(200, event)
 }
 
-// swagger:route POST /events events createEvent
-// Создать событие
+// createEvent godoc
 //
-// Создает новое событие с заданными параметрами.
-//
-// security:
-//   - AuthToken: []
-//
-// consumes:
-//   - application/json
-//
-// produces:
-//   - application/json
-//
-// responses:
-//
-//	200:
-//	  description: Созданное событие
-//	400:
-//	  description: Ошибка валидации
-//	500:
-//	  description: Внутренняя ошибка
+//	@Summary	Создать мероприятие
+//	@Tags		events
+//	@Accept		json
+//	@Produce	json
+//	@Param		X-Request-Id	header		string						true	"X-Request-Id"
+//	@Param		request			body		dto.CreateUpdateEventDto	true	"дто для создания мероприятия"
+//	@Success	200				{object}	dto.EventDto
+//	@Failure	401				{object}	dto.ErrorResponse
+//	@Failure	500				{object}	dto.ErrorResponse
+//	@Router		/v1/events [post]
+//	@Security	VkAuth
 func (uc *eventController) createEvent(c *gin.Context) {
 	var updateEventDto dto.CreateUpdateEventDto
 	if err := c.ShouldBindJSON(&updateEventDto); err != nil {
-		badRequest(c, err)
+		c.Error(err)
 		return
 	}
 
 	event, err := uc.eventService.CreateEvent(updateEventDto)
 	if err != nil {
-		internalError(c, err)
+		c.Error(err)
 		return
 	}
 	c.JSON(200, event)
 }
 
-// swagger:route PUT /events/{id} events updateEvent
-// Обновить событие
+// updateEvent godoc
 //
-// security:
-//   - AuthToken: []
-//
-// consumes:
-//   - application/json
-//
-// produces:
-//   - application/json
-//
-// responses:
-//
-//	200:
-//	  description: Обновленное событие
-//	400:
-//	  description: Ошибка валидации
-//	500:
-//	  description: Внутренняя ошибка
+//	@Summary	Обновить мероприятие
+//	@Tags		events
+//	@Accept		json
+//	@Produce	json
+//	@Param		X-Request-Id	header		string						true	"Уникальный идентификатор запроса"
+//	@Param		id				path		string						true	"UUID мероприятия для обновления"
+//	@Param		request			body		dto.CreateUpdateEventDto	true	"Данные для обновления мероприятия"
+//	@Success	200				{object}	dto.EventDto
+//	@Failure	400				{object}	dto.ErrorResponse	"Некорректные данные"
+//	@Failure	401				{object}	dto.ErrorResponse
+//	@Failure	404				{object}	dto.ErrorResponse
+//	@Failure	500				{object}	dto.ErrorResponse
+//	@Router		/v1/events/{id} [patch]
+//	@Security	VkAuth
 func (uc *eventController) updateEvent(c *gin.Context) {
-	eventId, ok := parseUUID(c, "id")
-	if !ok {
+	eventId, err := ParseUUID(c, "id")
+	if err != nil {
+		c.Error(err)
 		return
 	}
 
 	var updateEventDto dto.CreateUpdateEventDto
 	if err := c.ShouldBindJSON(&updateEventDto); err != nil {
-		badRequest(c, err)
+		c.Error(err)
 		return
 	}
 
 	event, err := uc.eventService.UpdateEvent(eventId, updateEventDto)
 	if err != nil {
-		internalError(c, err)
+		c.Error(err)
 		return
 	}
 	c.JSON(200, event)
 }
 
-// swagger:route GET /events/{id}/participants events getEventParticipants
-// Получить участников события
+// getEventParticipants godoc
 //
-// security:
-//   - AuthToken: []
-//
-// responses:
-//
-//	200:
-//	  description: Список участников
-//	400: ErrorResponse
-//	500: ErrorResponse
+//	@Summary	Получить список участников мероприятия
+//	@Tags		events users
+//	@Accept		json
+//	@Produce	json
+//	@Param		X-Request-Id	header		string	true	"X-Request-Id для логирования"
+//	@Param		id				path		string	true	"UUID мероприятия"
+//	@Success	200				{array}		dto.EventParticipantDto
+//	@Failure	401				{object}	dto.ErrorResponse
+//	@Failure	404				{object}	dto.ErrorResponse
+//	@Failure	500				{object}	dto.ErrorResponse
+//	@Router		/v1/events/{id}/participants [get]
+//	@Security	VkAuth
 func (uc *eventController) getEventParticipants(c *gin.Context) {
-	eventId, ok := parseUUID(c, "id")
-	if !ok {
+	eventId, err := ParseUUID(c, "id")
+	if err != nil {
+		c.Error(err)
 		return
 	}
 
 	participants, err := uc.eventService.GetEventParticipants(eventId)
 	if err != nil {
-		internalError(c, err)
+		c.Error(err)
 		return
 	}
-	c.JSON(200, gin.H{"participants": participants})
+	c.JSON(200, participants)
 }
 
-// swagger:route GET /events/available events getEventsAvailable
-// Получить доступные события по роли пользователя
+// getEventsAvailable godoc
 //
-// security:
-//   - AuthToken: []
-//
-// responses:
-//
-//	200:
-//	  description: Список доступных событий
-//	500: ErrorResponse
+//	@Summary	Получить список всех доступных мероприятий
+//	@Tags		events
+//	@Accept		json
+//	@Produce	json
+//	@Param		X-Request-Id	header		string	true	"X-Request-Id"
+//	@Success	200				{array}		dto.EventMiniDto
+//	@Failure	401				{object}	dto.ErrorResponse
+//	@Failure	500				{object}	dto.ErrorResponse
+//	@Router		/v1/events/available [get]
+//	@Security	VkAuth
 func (uc *eventController) getEventsAvailable(c *gin.Context) {
-	roleId, ok := getCtxUUID(c, config.UserRoleContextKey)
-	if !ok {
+	roleId, err := GetCtxUUID(c, config.UserRoleContextKey)
+	if err != nil {
+		c.Error(err)
 		return
 	}
 
 	events, err := uc.eventService.GetEventsByRole(roleId)
 	if err != nil {
-		internalError(c, err)
+		c.Error(err)
 		return
 	}
-	c.JSON(200, gin.H{"events": events})
+	c.JSON(200, events)
 }
 
-// swagger:route GET /events/archive events getEventsArchive
-// Получить архив событий
+// getEventsArchive godoc
 //
-// security:
-//   - AuthToken: []
-//
-// responses:
-//
-//	200:
-//	  description: Список архивных событий
-//	500: ErrorResponse
+//	@Summary	Получить список всех архивных мероприятий
+//	@Tags		events
+//	@Accept		json
+//	@Produce	json
+//	@Param		X-Request-Id	header		string	true	"X-Request-Id"
+//	@Success	200				{array}		dto.EventMiniDto
+//	@Failure	401				{object}	dto.ErrorResponse
+//	@Failure	500				{object}	dto.ErrorResponse
+//	@Router		/v1/events/archive [get]
+//	@Security	VkAuth
 func (uc *eventController) getEventsArchive(c *gin.Context) {
-	roleId, ok := getCtxUUID(c, config.UserRoleContextKey)
-	if !ok {
+	roleId, err := GetCtxUUID(c, config.UserRoleContextKey)
+	if err != nil {
+		c.Error(err)
 		return
 	}
 
 	events, err := uc.eventService.GetArchiveEvents(roleId)
 	if err != nil {
-		internalError(c, err)
+		c.Error(err)
 		return
 	}
-	c.JSON(200, gin.H{"events": events})
+	c.JSON(200, events)
 }
 
-// swagger:route POST /events/{id}/participate events participateToEvent
-// Записаться на событие
+// participateToEvent godoc
 //
-// security:
-//   - AuthToken: []
-//
-// responses:
-//
-//	200:
-//	  description: Успешно
-//	400: ErrorResponse
+//	@Summary	Участвовать в мероприятии
+//	@Tags		events
+//	@Accept		json
+//	@Produce	json
+//	@Param		X-Request-Id	header	string	true	"X-Request-Id"
+//	@Param		id				path	string	true	"UUID мероприятия, в котором участвовать"
+//	@Success	200
+//	@Failure	400	{object}	dto.ErrorResponse
+//	@Failure	401	{object}	dto.ErrorResponse
+//	@Failure	404	{object}	dto.ErrorResponse
+//	@Failure	500	{object}	dto.ErrorResponse
+//	@Router		/v1/events/{id}/participate [post]
+//	@Security	VkAuth
 func (uc *eventController) participateToEvent(c *gin.Context) {
-	eventId, ok := parseUUID(c, "id")
-	if !ok {
-		return
-	}
-
-	vkId, ok := getCtxInt64(c, config.UserVkIdContextKey)
-	if !ok {
-		return
-	}
-
-	success, err := uc.eventParticipantService.ParticipantToEvent(eventId, vkId)
+	eventId, err := ParseUUID(c, "id")
 	if err != nil {
-		badRequest(c, err)
+		c.Error(err)
 		return
 	}
-	c.JSON(200, gin.H{"success": success})
+
+	vkId, err := GetCtxInt64(c, config.UserVkIdContextKey)
+	if err != nil {
+		c.Error(err)
+		return
+	}
+
+	_, err = uc.eventParticipantService.ParticipantToEvent(eventId, vkId)
+	if err != nil {
+		c.Error(err)
+		return
+	}
+	c.Status(200)
 }
 
-// swagger:route POST /events/{id}/unparticipate events unParticipateToEvent
-// Отменить участие в событии
+// unParticipateToEvent godoc
 //
-// security:
-//   - AuthToken: []
-//
-// responses:
-//
-//	200:
-//	  description: Успешно
-//	400: ErrorResponse
+//	@Summary	Отказаться от участия в мероприятии
+//	@Tags		events
+//	@Accept		json
+//	@Produce	json
+//	@Param		X-Request-Id	header	string	true	"X-Request-Id"
+//	@Param		id				path	string	true	"UUID мероприятия"
+//	@Success	200
+//	@Failure	401	{object}	dto.ErrorResponse
+//	@Failure	404	{object}	dto.ErrorResponse
+//	@Failure	500	{object}	dto.ErrorResponse
+//	@Router		/v1/events/{id}/unparticipate [post]
+//	@Security	VkAuth
 func (uc *eventController) unParticipateToEvent(c *gin.Context) {
-	eventId, ok := parseUUID(c, "id")
-	if !ok {
-		return
-	}
-
-	vkId, ok := getCtxInt64(c, config.UserVkIdContextKey)
-	if !ok {
-		return
-	}
-
-	success, err := uc.eventParticipantService.UpParticipantToEvent(eventId, vkId)
+	eventId, err := ParseUUID(c, "id")
 	if err != nil {
-		badRequest(c, err)
+		c.Error(err)
 		return
 	}
-	c.JSON(200, gin.H{"success": success})
+
+	vkId, err := GetCtxInt64(c, config.UserVkIdContextKey)
+	if err != nil {
+		c.Error(err)
+		return
+	}
+
+	_, err = uc.eventParticipantService.UpParticipantToEvent(eventId, vkId)
+	if err != nil {
+		c.Error(err)
+		return
+	}
+	c.Status(200)
 }
 
+// checkParticipate godoc
+//
+//	@Summary	Подтвердить/проверить участие (отметка)
+//	@Tags		events
+//	@Accept		json
+//	@Produce	json
+//	@Param		X-Request-Id	header	string						true	"X-Request-Id"
+//	@Param		id				path	string						true	"UUID мероприятия"
+//	@Param		request			body	dto.CheckEventParticipant	true	"Данные для проверки/отметки участия"
+//	@Success	200
+//	@Failure	400	{object}	dto.ErrorResponse
+//	@Failure	401	{object}	dto.ErrorResponse
+//	@Failure	500	{object}	dto.ErrorResponse
+//	@Router		/v1/events/{id}/participate/check [patch]
+//	@Security	VkAuth
 func (uc *eventController) checkParticipate(c *gin.Context) {
-	_, ok := parseUUID(c, "id")
-	if !ok {
-		return
-	}
 	var checkEventDto dto.CheckEventParticipant
 	if err := c.ShouldBindJSON(&checkEventDto); err != nil {
-		badRequest(c, err)
+		c.Error(err)
 		return
 	}
 	err := uc.eventParticipantService.CheckParticipant(checkEventDto)
 	if err != nil {
-		internalError(c, err)
+		c.Error(err)
 	}
+	c.Status(200)
 }
 
 func ConfigureEventController(
@@ -353,9 +332,9 @@ func ConfigureEventController(
 
 	r.POST("/events", ec.createEvent)
 
-	r.GET("/events/all", ec.getAllEvents)
+	r.GET("/events", ec.getAllEvents)
 	r.GET("/events/:id", ec.getEvent)
-	r.PUT("/events/:id", ec.updateEvent)
+	r.PATCH("/events/:id", ec.updateEvent)
 	r.GET("/events/:id/participants", ec.getEventParticipants)
 
 	r.GET("/events/available", ec.getEventsAvailable)
@@ -364,5 +343,5 @@ func ConfigureEventController(
 	r.POST("/events/:id/participate", ec.participateToEvent)
 	r.POST("/events/:id/unparticipate", ec.unParticipateToEvent)
 
-	r.PUT("/events/:id/participate/check", ec.checkParticipate)
+	r.PATCH("/events/:id/participate/check", ec.checkParticipate)
 }

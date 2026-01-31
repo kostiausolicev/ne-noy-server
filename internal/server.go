@@ -30,28 +30,31 @@ func New(db *gorm.DB, secret string, appId int64) *Server {
 	eventQueueService := service.NewVkCallbackService(eventQueueRepository, eventRepo, eventParticipantService)
 
 	router := gin.Default()
+	// TODO Вынести в конфиг файл
 	router.Use(cors.New(cors.Config{
 		AllowAllOrigins:  true,
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
-		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization", "*"}, // ← "*" проще
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization", "*"},
 		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,
-		MaxAge:           300, // ← кэш preflight
+		MaxAge:           300,
 	}))
 	router.Use(middleware.ErrorHandler())
-	public := router.Group("/")
 	{
-		controller.ConfigureServiceController(public, userRepo)
-	}
-	apiV1 := router.Group("/api/v1")
-	controller.ConfigureVkCallBackController(apiV1, secret, eventQueueService)
-	apiV1.Use(middleware.AuthMiddleware(secret, appId))
-	{
-		controller.ConfigureEventController(apiV1, eventService, eventParticipantService)
-		controller.ConfigureUserController(apiV1, userService)
-		apiV1.Use(middleware.AdminMiddleware(roleRepository))
+		public := router.Group("/")
 		{
-			controller.ConfigureAdminUserController(apiV1, userService)
+			controller.ConfigureServiceController(public, userRepo)
+		}
+		apiV1 := router.Group("/api/v1")
+		controller.ConfigureVkCallBackController(apiV1, secret, eventQueueService)
+		apiV1.Use(middleware.AuthMiddleware(secret, appId))
+		{
+			controller.ConfigureEventController(apiV1, eventService, eventParticipantService)
+			controller.ConfigureUserController(apiV1, userService)
+			apiV1.Use(middleware.AdminMiddleware(roleRepository))
+			{
+				controller.ConfigureAdminUserController(apiV1, userService)
+			}
 		}
 	}
 	return &Server{

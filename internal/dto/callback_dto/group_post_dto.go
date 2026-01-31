@@ -1,4 +1,4 @@
-package group_event
+package callback_dto
 
 type PlaceObj struct {
 	ID      int64    `json:"id"`

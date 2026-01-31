@@ -17,6 +17,7 @@ type Event struct {
 	Lat               *float64 `gorm:"type:decimal(10,8)"`
 	Long              *float64 `gorm:"column:lon;type:decimal(11,8)"`
 	Address           *string
+	AdditionalAddress *string
 	StartsAt          *time.Time
 	ParticipantsCount int       `gorm:"->"`
 	Type              *string   `gorm:"size:100"`

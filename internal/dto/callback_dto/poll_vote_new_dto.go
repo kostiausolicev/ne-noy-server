@@ -1,4 +1,4 @@
-package group_event
+package callback_dto
 
 type PollVoteNewDto struct {
 	PollID   int64 `json:"poll_id" mapstructure:"poll_id"`

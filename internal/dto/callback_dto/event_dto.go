@@ -1,4 +1,4 @@
-package group_event
+package callback_dto
 
 type GroupEvent struct {
 	EventType string `json:"type"`

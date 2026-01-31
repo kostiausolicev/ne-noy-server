@@ -4,8 +4,8 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/base64"
-	"errors"
 	"ne_noy/internal/config"
+	"ne_noy/internal/controller"
 	"net/url"
 	"sort"
 	"strconv"
@@ -19,10 +19,9 @@ func AuthMiddleware(secret string, appId int64) gin.HandlerFunc {
 		header := c.GetHeader("authorization")
 		params, err := validateToken(header, secret, appId)
 		if err != nil {
-			c.JSON(400, gin.H{
-				"error": err.Error(),
-			})
+			c.Error(err)
 			c.Abort()
+			return
 		}
 		role := params[config.UserRoleContextKey]
 		vkId := params[config.UserVkIdContextKey]
@@ -41,7 +40,7 @@ func validateToken(token, secret string, appId int64) (map[string]interface{}, e
 	}
 	expectedSign := generateSign(payload, secret, ts, appId)
 	if expectedSign != sign {
-		return nil, errors.New("invalid signature")
+		return nil, controller.AuthorizationError
 	}
 	params := make(map[string]interface{})
 	params[config.UserRoleContextKey] = findKeyInPayload(payload, config.UserRoleContextKey)
@@ -52,7 +51,7 @@ func validateToken(token, secret string, appId int64) (map[string]interface{}, e
 func separateToken(token string) (payload string, ts int64, sign string, err error) {
 	arr := strings.Split(token, ".")
 	if len(arr) != 3 {
-		err = errors.New("invalid token")
+		err = controller.InvalidAuthTokenError
 		return
 	}
 	payload = arr[0]

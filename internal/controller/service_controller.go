@@ -7,6 +7,10 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
+
+	_ "ne_noy/docs"
 )
 
 const (
@@ -47,6 +51,20 @@ func init() {
 	}()
 }
 
+// swagger:meta
+//
+//	@title			Ne-Noy API
+//	@version		1.0
+//	@description	Backend API проекта Ne-Noy
+//	@BasePath		/api
+//
+// AuthToken:
+//
+//	type: apiKey
+//	name: Authorization
+//	in: header
+func _() {}
+
 func (sc *serviceController) healthCheck(c *gin.Context) {
 	c.JSON(200, gin.H{"status": "ok"})
 }
@@ -55,4 +73,5 @@ func ConfigureServiceController(router *gin.RouterGroup, userRepository reposito
 	sc := &serviceController{userRepository: userRepository}
 	router.GET("/health", sc.healthCheck)
 	router.GET("/metrics", gin.WrapH(promhttp.Handler()))
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 }

@@ -2,7 +2,7 @@ package service
 
 import (
 	"encoding/json"
-	"ne_noy/internal/dto/group_event"
+	"ne_noy/internal/dto/callback_dto"
 	"ne_noy/internal/model"
 	"ne_noy/internal/repository"
 
@@ -11,8 +11,8 @@ import (
 )
 
 type VkCallbackService interface {
-	ApplyVote(dto group_event.PollVoteNewDto) error
-	AddPostToQueue(dto group_event.NewPostEvent) error
+	ApplyVote(dto callback_dto.PollVoteNewDto) error
+	AddPostToQueue(dto callback_dto.NewPostEvent) error
 }
 
 type vkCallBackService struct {
@@ -22,7 +22,7 @@ type vkCallBackService struct {
 }
 
 // ApplyVote TODO надо сделать записи в отдельную таблицу, чтобы не терять данные до создания события
-func (v vkCallBackService) ApplyVote(dto group_event.PollVoteNewDto) error {
+func (v vkCallBackService) ApplyVote(dto callback_dto.PollVoteNewDto) error {
 	event, err := v.eventRepository.GetByVkPollAnswerId(dto.OptionID)
 	if err != nil {
 		return err
@@ -34,11 +34,11 @@ func (v vkCallBackService) ApplyVote(dto group_event.PollVoteNewDto) error {
 	return nil
 }
 
-func (v vkCallBackService) AddPostToQueue(dto group_event.NewPostEvent) error {
+func (v vkCallBackService) AddPostToQueue(dto callback_dto.NewPostEvent) error {
 	// Оставляем только документы и получаем срез *DocObject (или DocObject)
-	var attachments []group_event.DocObject
-	var photos []group_event.PhotoObject
-	var poll []group_event.PollObject
+	var attachments []callback_dto.DocObject
+	var photos []callback_dto.PhotoObject
+	var poll []callback_dto.PollObject
 
 	for _, attachment := range dto.Attachments {
 		if attachment.Type == "doc" {

@@ -6,126 +6,46 @@ import (
 	"github.com/google/uuid"
 )
 
-// swagger:model EventMiniDto
 type EventMiniDto struct {
-	// ID События
-	// format: uuid
-	// required: true
-	ID uuid.UUID `json:"id"`
-	// Название События
-	// required: true
-	Title string `json:"title"`
-	// Организаторы События
-	// required: true
-	// default: []
-	Orgs []UserMiniDto `json:"orgs"`
-	// Участники События
-	// required: true
-	// default: []
-	Participants []UserMiniDto `json:"participants"`
-	// Количество участников События
-	// required: true
-	// min: 0
-	ParticipantsCount int `json:"participantsCount"`
-	// Статус события
-	// required: true
-	Status string `json:"status"`
-	// Время начала События
-	// required: true
-	StartsAt time.Time `json:"startAt"`
+	ID                uuid.UUID     `json:"id"`
+	Title             string        `json:"title"`
+	Orgs              []UserMiniDto `json:"orgs"`
+	Participants      []UserMiniDto `json:"participants"`
+	ParticipantsCount int           `json:"participantsCount"`
+	Status            string        `json:"status"`
+	StartsAt          time.Time     `json:"startAt"`
 }
 
-// swagger:model EventDto
 type EventDto struct {
-	// ID События
-	// format: uuid
-	// required: true
-	ID uuid.UUID `json:"id"`
-	// Ссылка на пост ВК
-	// required: false
-	VkPostId *int64 `json:"vkPostId"`
-	// Ссылка на фото
-	// required: false
-	PhotoURL *string `json:"photoUrl"`
+	ID       uuid.UUID `json:"id"`
+	VkPostId *int64    `json:"vkPostId"`
+	PhotoURL *string   `json:"photoUrl"`
 
-	// Название События
-	// required: true
-	Title string `json:"title"`
-	// Описание События
-	// required: true
-	Description *string `json:"description"`
-	// Вложения События
-	// required: true
-	// default: []
-	Attachments []string `json:"attachments"`
-	// Организаторы События
-	// required: true
-	// default: []
-	Orgs []UserMiniDto `json:"orgs"`
-	// Адрес проведения События
-	// required: false
-	Address *string `json:"address"`
+	Title       string        `json:"title"`
+	Description *string       `json:"description"`
+	Attachments []string      `json:"attachments"`
+	Orgs        []UserMiniDto `json:"orgs"`
+	Address     *string       `json:"address"`
 
-	// Участники События
-	// required: true
-	// default: []
-	Participants []UserMiniDto `json:"participants"`
-	// Количество участников События
-	// required: true
-	// min: 0
-	ParticipantsCount int `json:"participantsCount"`
-	// Статус события
-	// required: true
-	Status string `json:"status"`
-	// Время начала События
-	// required: true
-	StartsAt time.Time `json:"startAt"`
-	// Текущий пользователь является участником
-	// required: false
-	// default: false
-	CurrentUserIsParticipant *bool `json:"currentUserIsParticipant,omitempty"`
+	Participants             []UserMiniDto `json:"participants"`
+	ParticipantsCount        int           `json:"participantsCount"`
+	Status                   string        `json:"status"`
+	StartsAt                 time.Time     `json:"startAt"`
+	CurrentUserIsParticipant *bool         `json:"currentUserIsParticipant,omitempty"`
 }
 
-// swagger:model CreateUpdateEventDto
 type CreateUpdateEventDto struct {
-	// Ссылка на пост ВК
-	// required: false
-	VkPostId *int64 `json:"vkPostId"`
-	// Ссылка на фото
-	// required: false
+	VkPostId *int64  `json:"vkPostId"`
 	PhotoURL *string `json:"photoUrl"`
 
-	// Название События
-	// required: false
-	Title *string `json:"title"`
-	// Описание События
-	// required: false
-	Description *string `json:"description"`
-	// Вложения События
-	// required: false
-	// default: []
-	Attachments *[]string `json:"attachments"`
-	// Адрес проведения События
-	// required: false
-	Address *string `json:"address"`
-	// Широта проведения События
-	// required: false
-	Lat *float64 `json:"lat"`
-	// Долгота проведения События
-	// required: false
-	Long *float64 `json:"long"`
-	// Организаторы События
-	// required: false
-	// default: []
-	Orgs []uuid.UUID `json:"orgs"`
-	// Статус события
-	// required: false
-	Status string `json:"status"`
-	// Время начала События
-	// required: false
-	StartsAt *time.Time `json:"startsAt"`
-	// ID Доступных ролей для участников
-	// required: false
-	// default: []
+	Title          *string     `json:"title"`
+	Description    *string     `json:"description"`
+	Attachments    *[]string   `json:"attachments"`
+	Address        *string     `json:"address"`
+	Lat            *float64    `json:"lat"`
+	Long           *float64    `json:"long"`
+	Orgs           []uuid.UUID `json:"orgs"`
+	Status         string      `json:"status"`
+	StartsAt       *time.Time  `json:"startsAt"`
 	AvailableRoles []uuid.UUID `json:"availableRoles"` // TODO передать на коды ролей
 }

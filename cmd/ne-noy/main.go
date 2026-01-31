@@ -8,6 +8,16 @@ import (
 	"ne_noy/internal/database"
 )
 
+//	@title			Ne-Noy-Api
+//	@version		1.0
+//	@description	API к ИС Не-Ной
+
+//	@host		localhost:8080
+//	@BasePath	/api
+
+// @securityDefinitions.apikey	VkAuth
+// @in							header
+// @name						Authorization
 func main() {
 	configPath := flag.String("config", "configs/config.yaml", "path to config file")
 	flag.Parse()

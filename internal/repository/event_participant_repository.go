@@ -27,7 +27,7 @@ func (er *eventParticipantRepository) CheckParticipant(participant *model.EventP
 		Model(&model.EventParticipant{}).
 		Where("event_id = ? AND user_id = ?", participant.EventID, participant.UserID).
 		Updates(map[string]interface{}{
-			"is_checked":      true,
+			"is_checked":      participant.IsChecked,
 			"check_timestamp": participant.CheckTimestamp,
 			"check_lat":       participant.CheckLat,
 			"check_lon":       participant.CheckLong,
