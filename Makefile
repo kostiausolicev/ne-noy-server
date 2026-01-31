@@ -13,7 +13,7 @@ migrate-down:
 build: doc
 	go build -o bin/$(APP_NAME) $(CMD_DIR)
 
-run: migrate-up build
+run: build
 	./bin/$(APP_NAME)
 
 test:

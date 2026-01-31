@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/pressly/goose/v3"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -23,12 +24,31 @@ func Connect(cfg config.DBConfig) (*gorm.DB, error) {
 			Colorful:                  true,
 		},
 	)
-	db, err := gorm.Open(postgres.Open(cfg.DSN()), &gorm.Config{
+
+	// Открываем через GORM
+	gormDB, err := gorm.Open(postgres.Open(cfg.DSN()), &gorm.Config{
 		Logger:         newLogger,
 		NamingStrategy: schema.NamingStrategy{SingularTable: false},
 	})
 	if err != nil {
 		return nil, err
 	}
-	return db, nil
+
+	// Получаем *sql.DB для goose
+	sqlDB, err := gormDB.DB()
+	if err != nil {
+		return nil, err
+	}
+
+	if err := goose.SetDialect("postgres"); err != nil {
+		return nil, err
+	}
+
+	// Сам запуск миграций
+	if err := goose.Up(sqlDB, "migrations"); err != nil {
+		return nil, err
+	}
+
+	// Возвращаем GORM-объект дальше по приложению
+	return gormDB, nil
 }
