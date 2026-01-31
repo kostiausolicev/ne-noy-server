@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"encoding/json"
 	"ne_noy/internal/dto/callback_dto"
 	"ne_noy/internal/model"
@@ -11,8 +12,8 @@ import (
 )
 
 type VkCallbackService interface {
-	ApplyVote(dto callback_dto.PollVoteNewDto) error
-	AddPostToQueue(dto callback_dto.NewPostEvent) error
+	ApplyVote(ctx context.Context, dto callback_dto.PollVoteNewDto) error
+	AddPostToQueue(ctx context.Context, dto callback_dto.NewPostEvent) error
 }
 
 type vkCallBackService struct {
@@ -22,19 +23,19 @@ type vkCallBackService struct {
 }
 
 // ApplyVote TODO надо сделать записи в отдельную таблицу, чтобы не терять данные до создания события
-func (v vkCallBackService) ApplyVote(dto callback_dto.PollVoteNewDto) error {
-	event, err := v.eventRepository.GetByVkPollAnswerId(dto.OptionID)
+func (v vkCallBackService) ApplyVote(ctx context.Context, dto callback_dto.PollVoteNewDto) error {
+	event, err := v.eventRepository.GetByVkPollAnswerId(ctx, dto.OptionID)
 	if err != nil {
 		return err
 	}
-	_, err = v.eventParticipantService.ParticipantToEvent(event.ID, dto.UserID)
+	_, err = v.eventParticipantService.ParticipantToEvent(ctx, event.ID, dto.UserID)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (v vkCallBackService) AddPostToQueue(dto callback_dto.NewPostEvent) error {
+func (v vkCallBackService) AddPostToQueue(ctx context.Context, dto callback_dto.NewPostEvent) error {
 	// Оставляем только документы и получаем срез *DocObject (или DocObject)
 	var attachments []callback_dto.DocObject
 	var photos []callback_dto.PhotoObject
@@ -77,7 +78,7 @@ func (v vkCallBackService) AddPostToQueue(dto callback_dto.NewPostEvent) error {
 		Poll:        datatypes.JSON(jsonPoll),
 	}
 
-	err = v.repository.AddPostToQueue(&eventQueueModel)
+	err = v.repository.AddPostToQueue(ctx, &eventQueueModel)
 	if err != nil {
 		return err
 	}

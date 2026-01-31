@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"errors"
 	"ne_noy/internal/model"
 
@@ -16,14 +17,18 @@ func NewEventParticipantRepository(db *gorm.DB) EventParticipantRepository {
 	return &eventParticipantRepository{db: db}
 }
 
-type EventParticipantRepository interface {
-	CheckParticipant(participant *model.EventParticipant) error
-	Participant(eventID uuid.UUID, userId int64) (bool, error)
-	UnParticipant(eventID uuid.UUID, userId int64) (bool, error)
+func (er *eventParticipantRepository) withScope(ctx context.Context) *gorm.DB {
+	return er.db.WithContext(ctx)
 }
 
-func (er *eventParticipantRepository) CheckParticipant(participant *model.EventParticipant) error {
-	result := er.db.
+type EventParticipantRepository interface {
+	CheckParticipant(ctx context.Context, participant *model.EventParticipant) error
+	Participant(ctx context.Context, eventID uuid.UUID, userId int64) (bool, error)
+	UnParticipant(ctx context.Context, eventID uuid.UUID, userId int64) (bool, error)
+}
+
+func (er *eventParticipantRepository) CheckParticipant(ctx context.Context, participant *model.EventParticipant) error {
+	result := er.withScope(ctx).
 		Model(&model.EventParticipant{}).
 		Where("event_id = ? AND user_id = ?", participant.EventID, participant.UserID).
 		Updates(map[string]interface{}{
@@ -40,10 +45,13 @@ func (er *eventParticipantRepository) CheckParticipant(participant *model.EventP
 	return result.Error
 }
 
-// Participant TODO сделать сырой запрос с подзапросом
-func (er *eventParticipantRepository) Participant(eventId uuid.UUID, userId int64) (bool, error) {
+func (er *eventParticipantRepository) Participant(ctx context.Context, eventId uuid.UUID, userId int64) (bool, error) {
 	user := model.User{}
-	er.db.Table("users").Select("id").Where("vk_id = ?", userId).Scan(&user)
+	er.withScope(ctx).
+		Table("users").
+		Select("id").
+		Where("vk_id = ?", userId).
+		Scan(&user)
 	eventParticipant := model.EventParticipant{
 		EventID: eventId,
 		UserID:  user.ID,
@@ -55,11 +63,12 @@ func (er *eventParticipantRepository) Participant(eventId uuid.UUID, userId int6
 	return true, nil
 }
 
-func (er *eventParticipantRepository) UnParticipant(eventId uuid.UUID, userId int64) (bool, error) {
-	sub := er.db.Table(`event_participants`).
+func (er *eventParticipantRepository) UnParticipant(ctx context.Context, eventId uuid.UUID, userId int64) (bool, error) {
+	sub := er.withScope(ctx).
+		Table("event_participants").
 		Select("event_participants.id").
-		Joins(`INNER JOIN users ON event_participants.user_id = users.id`).
-		Where(`event_participants.event_id = ? AND users.vk_id = ?`, eventId, userId)
+		Joins("INNER JOIN users ON event_participants.user_id = users.id").
+		Where("event_participants.event_id = ? AND users.vk_id = ?", eventId, userId)
 
 	result := er.db.
 		Where("id IN (?)", sub).

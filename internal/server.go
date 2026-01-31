@@ -21,7 +21,6 @@ func New(db *gorm.DB, secret string, appId int64) *Server {
 	userRepo := repository.NewUserRepository(db)
 	eventRepo := repository.NewEventRepository(db)
 	eventParticipantRepository := repository.NewEventParticipantRepository(db)
-	roleRepository := repository.NewRoleRepository(db)
 	eventQueueRepository := repository.NewEventQueueRepository(db)
 
 	userService := service.NewUserService(userRepo)
@@ -51,7 +50,7 @@ func New(db *gorm.DB, secret string, appId int64) *Server {
 		{
 			controller.ConfigureEventController(apiV1, eventService, eventParticipantService)
 			controller.ConfigureUserController(apiV1, userService)
-			apiV1.Use(middleware.AdminMiddleware(roleRepository))
+			apiV1.Use(middleware.AdminMiddleware())
 			{
 				controller.ConfigureAdminUserController(apiV1, userService)
 			}

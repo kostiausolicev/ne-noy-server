@@ -37,7 +37,7 @@ func (uc *userController) createUser(c *gin.Context) {
 		c.Error(err)
 		return
 	}
-	createUser, err := uc.service.CreateUser(user)
+	createUser, err := uc.service.CreateUser(c.Request.Context(), user)
 	if err != nil {
 		c.Error(err)
 		return
@@ -61,7 +61,7 @@ func (uc *userController) createUser(c *gin.Context) {
 //	@Security		VkAuth
 func (uc *userController) getAll(c *gin.Context) {
 	fio := c.Query("fio")
-	users, err := uc.service.GetAllUsers(fio)
+	users, err := uc.service.GetAllUsers(c.Request.Context(), fio)
 	if err != nil {
 		c.Error(err)
 		return
@@ -92,7 +92,7 @@ func (uc *userController) getByVkId(c *gin.Context) {
 		c.Error(err)
 		return
 	}
-	user, err := uc.service.GetUserByVkId(vkId)
+	user, err := uc.service.GetUserByVkId(c.Request.Context(), vkId)
 	if err != nil {
 		c.Error(err)
 		return
@@ -133,7 +133,7 @@ func (uc *userController) updateUser(c *gin.Context) {
 		c.Error(err)
 		return
 	}
-	err = uc.service.UpdatePermissions(permission, vkId, value)
+	err = uc.service.UpdatePermissions(c.Request.Context(), permission, vkId, value)
 	if err != nil {
 		c.Error(err)
 		return
@@ -172,7 +172,7 @@ func (uc *userController) updateUserRole(c *gin.Context) {
 		c.Error(err)
 		return
 	}
-	err = uc.service.UpdateRole(vkId, roleId)
+	err = uc.service.UpdateRole(c.Request.Context(), vkId, roleId)
 	if err != nil {
 		c.Error(err)
 		return

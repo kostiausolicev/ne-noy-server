@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"errors"
 	"ne_noy/internal/config"
 	"ne_noy/internal/dto"
@@ -11,76 +12,97 @@ import (
 	"github.com/google/uuid"
 )
 
-func NewUserService(ur repository.UserRepository) UserService {
-	return userService{r: ur}
-}
-
 type UserService interface {
-	UpdateRole(vkId int64, roleUuid uuid.UUID) error
-	GetAllUsers(fio string) (users []dto.UserMiniDto, err error)
-	UpdatePermissions(permission string, vkId int64, value bool) error
-	CreateUser(user dto.UserDto) (*dto.UserDto, error)
-	GetUserByVkId(vkId int64) (*dto.UserDto, error)
+	UpdateRole(ctx context.Context, vkId int64, roleUuid uuid.UUID) error
+	GetAllUsers(ctx context.Context, fio string) ([]dto.UserMiniDto, error)
+	UpdatePermissions(ctx context.Context, permission string, vkId int64, value bool) error
+	CreateUser(ctx context.Context, createUserDto dto.UserDto) (*dto.UserDto, error)
+	GetUserByVkId(ctx context.Context, vkId int64) (*dto.UserDto, error)
 }
 
 type userService struct {
-	r repository.UserRepository
+	r  repository.UserRepository
+	rr repository.RoleRepository
 }
 
-func (u userService) UpdateRole(vkId int64, roleUuid uuid.UUID) error {
-	u.r.Update(vkId, "role_id", roleUuid)
+func NewUserService(r repository.UserRepository) UserService {
+	return &userService{r: r}
+}
+
+func (s *userService) UpdateRole(ctx context.Context, vkId int64, roleUuid uuid.UUID) error {
+	updated, err := s.r.Update(ctx, vkId, "role_id", roleUuid)
+	if err != nil {
+		return err
+	}
+	if !updated {
+		return errors.New("user not found or role not changed")
+	}
 	return nil
 }
 
-func (u userService) GetAllUsers(fio string) (users []dto.UserMiniDto, err error) {
-	fioChancs := strings.Split(fio, " ")
-	var userModels []model.User
-	if len(fioChancs) < 1 {
-		err = errors.New("fio format error")
-		return
-	}
-	if len(fioChancs) == 1 {
-		if fioChancs[0] == "" {
-			userModels, err = u.r.GetAll()
-		} else {
-			userModels, err = u.r.GetAllByFirstNameAndRole(fioChancs[0])
+func (s *userService) GetAllUsers(ctx context.Context, fio string) ([]dto.UserMiniDto, error) {
+	fio = strings.TrimSpace(fio)
+	if fio == "" {
+		users, err := s.r.GetAll(ctx)
+		if err != nil {
+			return nil, err
 		}
-	} else {
-		userModels, err = u.r.GetAllByFirstNameAndLastNameAndRole(fioChancs[0], fioChancs[1])
+		return s.toMiniDtos(users), nil
 	}
-	if err != nil {
-		return
-	}
-	users = make([]dto.UserMiniDto, len(userModels))
-	for i, userModel := range userModels {
-		users[i] = dto.UserMiniDto{
-			ID:        userModel.ID,
-			FirstName: userModel.FirstName,
-			LastName:  userModel.LastName,
-			PhotoURL:  userModel.PhotoURL,
-			VkId:      userModel.VkID,
+
+	parts := strings.Fields(fio)
+	switch len(parts) {
+	case 1:
+		users, err := s.r.GetAllByFirstNameAndRole(ctx, parts[0])
+		if err != nil {
+			return nil, err
 		}
+		return s.toMiniDtos(users), nil
+
+	case 2:
+		users, err := s.r.GetAllByFirstNameAndLastNameAndRole(ctx, parts[0], parts[1])
+		if err != nil {
+			return nil, err
+		}
+		return s.toMiniDtos(users), nil
+
+	default:
+		return nil, errors.New("fio should contain at most first and last name")
 	}
-	return
 }
 
-func (u userService) UpdatePermissions(permission string, vkId int64, value bool) error {
+func (s *userService) UpdatePermissions(ctx context.Context, permission string, vkId int64, value bool) error {
+	var field string
+
 	switch permission {
 	case "geo":
-		u.r.Update(vkId, "geo_available", value)
+		field = "geo_available"
 	case "notification":
-		u.r.Update(vkId, "notification_available", value)
+		field = "notification_available"
 	default:
-		return errors.New("недопустимый параметр")
+		return errors.New("недопустимый параметр permission")
+	}
+
+	updated, err := s.r.Update(ctx, vkId, field, value)
+	if err != nil {
+		return err
+	}
+	if !updated {
+		return errors.New("user not found")
 	}
 	return nil
 }
 
-func (u userService) CreateUser(createUserDto dto.UserDto) (*dto.UserDto, error) {
-	defaultRole, err := u.r.GetRole()
+func (s *userService) CreateUser(ctx context.Context, createUserDto dto.UserDto) (*dto.UserDto, error) {
+	defaultRole, err := s.rr.GetByCode(ctx, config.RoleDefault)
 	if err != nil {
 		return nil, err
 	}
+
+	if defaultRole == nil {
+		return nil, errors.New("default role not found")
+	}
+
 	user := model.User{
 		FirstName:             createUserDto.FirstName,
 		LastName:              createUserDto.LastName,
@@ -91,47 +113,67 @@ func (u userService) CreateUser(createUserDto dto.UserDto) (*dto.UserDto, error)
 		Role:                  defaultRole,
 		RoleID:                &defaultRole.ID,
 	}
-	newUser, err := u.r.Create(&user)
+
+	err = s.r.Create(ctx, &user)
 	if err != nil {
 		return nil, err
 	}
-	return u.userModelToDto(newUser), nil
+
+	return s.userModelToDto(user), nil
 }
 
-func (u userService) GetUserByVkId(vkId int64) (*dto.UserDto, error) {
-	userModel, err := u.r.GetByVkId(vkId)
+func (s *userService) GetUserByVkId(ctx context.Context, vkId int64) (*dto.UserDto, error) {
+	userModel, err := s.r.GetByVkId(ctx, vkId)
 	if err != nil {
 		return nil, err
 	}
 	if userModel == nil {
 		return nil, nil
 	}
-	return u.userModelToDto(userModel), nil
+
+	return s.userModelToDto(*userModel), nil
 }
 
-func (u userService) userModelToDto(userModel *model.User) *dto.UserDto {
-	userDto := &dto.UserDto{}
-	roleDto := &dto.RoleDto{}
-	roleDto.ID = userModel.Role.ID
-	roleDto.Name = userModel.Role.Name
-	roleDto.DisplayName = userModel.Role.DisplayName
-
-	userDto.ID = userModel.ID
-	userDto.FirstName = userModel.FirstName
-	userDto.LastName = userModel.LastName
-	userDto.GeoAvailable = userModel.GeoAvailable
-	userDto.NotificationAvailable = userModel.NotificationAvailable
-	userDto.Role = *roleDto
-	userDto.IsAdmin = userModel.Role.Name == config.RoleAdmin || func(userId uuid.UUID) bool {
-		e, err := u.r.ExistEventOrg(userId)
-		if err != nil {
-			return false
+func (s *userService) toMiniDtos(users []model.User) []dto.UserMiniDto {
+	dtos := make([]dto.UserMiniDto, len(users))
+	for i, u := range users {
+		dtos[i] = dto.UserMiniDto{
+			ID:        u.ID,
+			FirstName: u.FirstName,
+			LastName:  u.LastName,
+			PhotoURL:  u.PhotoURL,
+			VkId:      u.VkID,
 		}
-		return e
-	}(userModel.ID)
-	userDto.IsEduParticipant = userModel.Role.Name == config.RoleEduPart
-	userDto.VkId = userModel.VkID
-	userDto.PhotoURL = userModel.PhotoURL
+	}
+	return dtos
+}
 
-	return userDto
+func (s *userService) userModelToDto(user model.User) *dto.UserDto {
+	roleDto := dto.RoleDto{
+		ID:          user.Role.ID,
+		Name:        user.Role.Name,
+		DisplayName: user.Role.DisplayName,
+	}
+
+	isAdmin := user.Role.Name == config.RoleAdmin ||
+		func() bool {
+			exists, err := s.r.ExistEventOrg(context.Background(), user.ID) // ← внимание!
+			if err != nil {
+				return false
+			}
+			return exists
+		}()
+
+	return &dto.UserDto{
+		ID:                    user.ID,
+		FirstName:             user.FirstName,
+		LastName:              user.LastName,
+		GeoAvailable:          user.GeoAvailable,
+		NotificationAvailable: user.NotificationAvailable,
+		Role:                  roleDto,
+		IsAdmin:               isAdmin,
+		IsEduParticipant:      user.Role.Name == config.RoleEduPart,
+		VkId:                  user.VkID,
+		PhotoURL:              user.PhotoURL,
+	}
 }

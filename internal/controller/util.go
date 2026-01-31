@@ -25,14 +25,10 @@ func GetCtxInt64(c *gin.Context, key string) (int64, error) {
 	return val.(int64), nil
 }
 
-func GetCtxUUID(c *gin.Context, key string) (uuid.UUID, error) {
+func GetCtxString(c *gin.Context, key string) (string, error) {
 	val, ok := c.Get(key)
 	if !ok {
-		return uuid.Nil, ParseError
+		return "", ParseError
 	}
-	id, err := uuid.Parse(val.(string))
-	if err != nil {
-		return uuid.Nil, ParseError
-	}
-	return id, nil
+	return val.(string), nil
 }

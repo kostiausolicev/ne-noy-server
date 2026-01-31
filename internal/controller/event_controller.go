@@ -32,7 +32,7 @@ func (uc *eventController) getAllEvents(c *gin.Context) {
 		return
 	}
 
-	events, err := uc.eventService.GetAll(vkId)
+	events, err := uc.eventService.GetAll(c.Request.Context(), vkId)
 	if err != nil {
 		c.Error(err)
 		return
@@ -65,7 +65,7 @@ func (uc *eventController) getEvent(c *gin.Context) {
 		return
 	}
 
-	event, err := uc.eventService.GetEvent(eventId, vkId)
+	event, err := uc.eventService.GetEvent(c.Request.Context(), eventId, vkId)
 	if err != nil {
 		c.Error(err)
 		return
@@ -93,7 +93,7 @@ func (uc *eventController) createEvent(c *gin.Context) {
 		return
 	}
 
-	event, err := uc.eventService.CreateEvent(updateEventDto)
+	event, err := uc.eventService.CreateEvent(c.Request.Context(), updateEventDto)
 	if err != nil {
 		c.Error(err)
 		return
@@ -130,7 +130,7 @@ func (uc *eventController) updateEvent(c *gin.Context) {
 		return
 	}
 
-	event, err := uc.eventService.UpdateEvent(eventId, updateEventDto)
+	event, err := uc.eventService.UpdateEvent(c.Request.Context(), eventId, updateEventDto)
 	if err != nil {
 		c.Error(err)
 		return
@@ -159,7 +159,7 @@ func (uc *eventController) getEventParticipants(c *gin.Context) {
 		return
 	}
 
-	participants, err := uc.eventService.GetEventParticipants(eventId)
+	participants, err := uc.eventService.GetEventParticipants(c.Request.Context(), eventId)
 	if err != nil {
 		c.Error(err)
 		return
@@ -180,13 +180,13 @@ func (uc *eventController) getEventParticipants(c *gin.Context) {
 //	@Router		/v1/events/available [get]
 //	@Security	VkAuth
 func (uc *eventController) getEventsAvailable(c *gin.Context) {
-	roleId, err := GetCtxUUID(c, config.UserRoleContextKey)
+	role, err := GetCtxString(c, config.UserRoleContextKey)
 	if err != nil {
 		c.Error(err)
 		return
 	}
 
-	events, err := uc.eventService.GetEventsByRole(roleId)
+	events, err := uc.eventService.GetEventsByRole(c.Request.Context(), role)
 	if err != nil {
 		c.Error(err)
 		return
@@ -207,13 +207,13 @@ func (uc *eventController) getEventsAvailable(c *gin.Context) {
 //	@Router		/v1/events/archive [get]
 //	@Security	VkAuth
 func (uc *eventController) getEventsArchive(c *gin.Context) {
-	roleId, err := GetCtxUUID(c, config.UserRoleContextKey)
+	role, err := GetCtxString(c, config.UserRoleContextKey)
 	if err != nil {
 		c.Error(err)
 		return
 	}
 
-	events, err := uc.eventService.GetArchiveEvents(roleId)
+	events, err := uc.eventService.GetArchiveEvents(c.Request.Context(), role)
 	if err != nil {
 		c.Error(err)
 		return
@@ -249,7 +249,7 @@ func (uc *eventController) participateToEvent(c *gin.Context) {
 		return
 	}
 
-	_, err = uc.eventParticipantService.ParticipantToEvent(eventId, vkId)
+	_, err = uc.eventParticipantService.ParticipantToEvent(c.Request.Context(), eventId, vkId)
 	if err != nil {
 		c.Error(err)
 		return
@@ -284,7 +284,7 @@ func (uc *eventController) unParticipateToEvent(c *gin.Context) {
 		return
 	}
 
-	_, err = uc.eventParticipantService.UpParticipantToEvent(eventId, vkId)
+	_, err = uc.eventParticipantService.UpParticipantToEvent(c.Request.Context(), eventId, vkId)
 	if err != nil {
 		c.Error(err)
 		return
@@ -313,7 +313,7 @@ func (uc *eventController) checkParticipate(c *gin.Context) {
 		c.Error(err)
 		return
 	}
-	err := uc.eventParticipantService.CheckParticipant(checkEventDto)
+	err := uc.eventParticipantService.CheckParticipant(c.Request.Context(), checkEventDto)
 	if err != nil {
 		c.Error(err)
 	}

@@ -29,7 +29,7 @@ func (cb vkCallBackController) postNewHandler(c *gin.Context, dto callback_dto.G
 		c.Error(err)
 		return
 	}
-	err = cb.service.AddPostToQueue(newPost)
+	err = cb.service.AddPostToQueue(c.Request.Context(), newPost)
 	if err != nil {
 		c.Error(err)
 		return
@@ -45,7 +45,7 @@ func (cb vkCallBackController) pollVoteNew(c *gin.Context, dto callback_dto.Grou
 		c.Error(err)
 		return
 	}
-	err = cb.service.ApplyVote(newVote)
+	err = cb.service.ApplyVote(c.Request.Context(), newVote)
 	if err != nil {
 		c.Error(err)
 		return

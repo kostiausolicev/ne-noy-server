@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"ne_noy/internal/config"
 	"ne_noy/internal/dto"
 	"ne_noy/internal/model"
@@ -14,14 +15,14 @@ func NewEventService(r repository.EventRepository, u UserService) EventService {
 }
 
 type EventService interface {
-	CreateEvent(eventDto dto.CreateUpdateEventDto) (*dto.EventMiniDto, error)
-	UpdateEvent(eventId uuid.UUID, eventDto dto.CreateUpdateEventDto) (*dto.EventMiniDto, error)
-	GetAll(vkId int64) ([]dto.EventMiniDto, error)
-	GetEventParticipants(id uuid.UUID) ([]dto.EventParticipantDto, error)
-	GetEvent(id uuid.UUID, userVkId int64) (*dto.EventDto, error)
-	GetEventsByRole(roleId uuid.UUID) ([]dto.EventMiniDto, error)
-	GetArchiveEvents(roleId uuid.UUID) ([]dto.EventMiniDto, error)
-	GetEduEvents() ([]dto.EventMiniDto, error)
+	CreateEvent(ctx context.Context, eventDto dto.CreateUpdateEventDto) (*dto.EventMiniDto, error)
+	UpdateEvent(ctx context.Context, eventId uuid.UUID, eventDto dto.CreateUpdateEventDto) (*dto.EventMiniDto, error)
+	GetAll(ctx context.Context, vkId int64) ([]dto.EventMiniDto, error)
+	GetEventParticipants(ctx context.Context, id uuid.UUID) ([]dto.EventParticipantDto, error)
+	GetEvent(ctx context.Context, id uuid.UUID, userVkId int64) (*dto.EventDto, error)
+	GetEventsByRole(ctx context.Context, role string) ([]dto.EventMiniDto, error)
+	GetArchiveEvents(ctx context.Context, role string) ([]dto.EventMiniDto, error)
+	GetEduEvents(ctx context.Context) ([]dto.EventMiniDto, error)
 }
 
 type eventService struct {
@@ -29,7 +30,7 @@ type eventService struct {
 	u UserService
 }
 
-func (e eventService) CreateEvent(eventDto dto.CreateUpdateEventDto) (*dto.EventMiniDto, error) {
+func (e eventService) CreateEvent(ctx context.Context, eventDto dto.CreateUpdateEventDto) (*dto.EventMiniDto, error) {
 	eventId, err := uuid.NewUUID()
 	if err != nil {
 		return nil, err
@@ -39,19 +40,20 @@ func (e eventService) CreateEvent(eventDto dto.CreateUpdateEventDto) (*dto.Event
 		return nil, err
 	}
 
-	newEvent, err := e.r.Create(event)
+	newEvent, err := e.r.Create(ctx, event)
 	if err != nil {
 		return nil, err
 	}
 	return e.parseModelToDto(newEvent)
 }
 
-func (e eventService) UpdateEvent(eventId uuid.UUID, eventDto dto.CreateUpdateEventDto) (*dto.EventMiniDto, error) {
+// UpdateEvent TODO надо оптимизировать на патч
+func (e eventService) UpdateEvent(ctx context.Context, eventId uuid.UUID, eventDto dto.CreateUpdateEventDto) (*dto.EventMiniDto, error) {
 	event, err := e.parseDtoToModel(eventDto, eventId)
 	if err != nil {
 		return nil, err
 	}
-	updatedEvent, err := e.r.Update(event)
+	updatedEvent, err := e.r.Update(ctx, event)
 	if err != nil {
 		return nil, err
 	}
@@ -59,9 +61,9 @@ func (e eventService) UpdateEvent(eventId uuid.UUID, eventDto dto.CreateUpdateEv
 	return e.parseModelToDto(updatedEvent)
 }
 
-func (e eventService) GetAll(vkId int64) ([]dto.EventMiniDto, error) {
+func (e eventService) GetAll(ctx context.Context, vkId int64) ([]dto.EventMiniDto, error) {
 	// Получаем пользователя
-	user, err := e.u.GetUserByVkId(vkId)
+	user, err := e.u.GetUserByVkId(ctx, vkId)
 	if err != nil {
 		return nil, err
 	}
@@ -69,20 +71,20 @@ func (e eventService) GetAll(vkId int64) ([]dto.EventMiniDto, error) {
 
 	if user.Role.Name == config.RoleAdmin {
 		// Если админ, возвращаем все мероприятия
-		events, err = e.r.GetAll()
+		events, err = e.r.GetAll(ctx)
 	} else {
 		// Иначе, возвращаем только те, где пользователь организатор
-		events, err = e.r.GetAllByOrg(user.ID)
+		events, err = e.r.GetAllByOrg(ctx, user.ID)
 	}
 	if err != nil {
 		return nil, err
 	}
 
-	return e.parseModelsToDtos(events)
+	return e.parseModelsToDtos(ctx, events)
 }
 
-func (e eventService) GetEventParticipants(id uuid.UUID) ([]dto.EventParticipantDto, error) {
-	eventParticipants, err := e.r.GetParticipants(id)
+func (e eventService) GetEventParticipants(ctx context.Context, id uuid.UUID) ([]dto.EventParticipantDto, error) {
+	eventParticipants, err := e.r.GetParticipants(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -105,8 +107,8 @@ func (e eventService) GetEventParticipants(id uuid.UUID) ([]dto.EventParticipant
 	return participants, nil
 }
 
-func (e eventService) GetEvent(id uuid.UUID, userId int64) (*dto.EventDto, error) {
-	event, err := e.r.GetById(id)
+func (e eventService) GetEvent(ctx context.Context, id uuid.UUID, userId int64) (*dto.EventDto, error) {
+	event, err := e.r.GetById(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -137,7 +139,7 @@ func (e eventService) GetEvent(id uuid.UUID, userId int64) (*dto.EventDto, error
 	for i, att := range event.Attachments {
 		attachments[i] = att.AttachmentLink
 	}
-	isParticipant, err := e.r.GetUserParticipationInEvent(event.ID, userId)
+	isParticipant, err := e.r.GetUserParticipationInEvent(ctx, event.ID, userId)
 	if err != nil {
 		return nil, err
 	}
@@ -161,30 +163,30 @@ func (e eventService) GetEvent(id uuid.UUID, userId int64) (*dto.EventDto, error
 	return eventDto, nil
 }
 
-func (e eventService) GetEventsByRole(roleId uuid.UUID) ([]dto.EventMiniDto, error) {
-	events, err := e.r.GetAllByRole(roleId)
+func (e eventService) GetEventsByRole(ctx context.Context, role string) ([]dto.EventMiniDto, error) {
+	events, err := e.r.GetAllByRole(ctx, role)
 	if err != nil {
 		return nil, err
 	}
 
-	return e.parseModelsToDtos(events)
+	return e.parseModelsToDtos(ctx, events)
 }
 
-func (e eventService) GetArchiveEvents(roleId uuid.UUID) ([]dto.EventMiniDto, error) {
-	events, err := e.r.GetAllArchive(roleId)
+func (e eventService) GetArchiveEvents(ctx context.Context, role string) ([]dto.EventMiniDto, error) {
+	events, err := e.r.GetAllArchive(ctx, role)
 	if err != nil {
 		return nil, err
 	}
 
-	return e.parseModelsToDtos(events)
+	return e.parseModelsToDtos(ctx, events)
 }
 
-func (e eventService) GetEduEvents() ([]dto.EventMiniDto, error) {
+func (e eventService) GetEduEvents(ctx context.Context) ([]dto.EventMiniDto, error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (e eventService) parseModelsToDtos(events []*model.Event) ([]dto.EventMiniDto, error) {
+func (e eventService) parseModelsToDtos(ctx context.Context, events []*model.Event) ([]dto.EventMiniDto, error) {
 	eventsDto := make([]dto.EventMiniDto, len(events))
 
 	for i, event := range events {

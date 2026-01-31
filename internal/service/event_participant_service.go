@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"errors"
 	"ne_noy/internal/dto"
 	"ne_noy/internal/model"
@@ -19,28 +20,28 @@ func NewEventParticipantService(epr repository.EventParticipantRepository, er re
 }
 
 type EventParticipantService interface {
-	ParticipantToEvent(eventID uuid.UUID, userVkID int64) (bool, error)
-	UpParticipantToEvent(eventID uuid.UUID, userVkID int64) (bool, error)
-	CheckParticipant(participantData dto.CheckEventParticipant) error
+	ParticipantToEvent(ctx context.Context, eventID uuid.UUID, userVkID int64) (bool, error)
+	UpParticipantToEvent(ctx context.Context, eventID uuid.UUID, userVkID int64) (bool, error)
+	CheckParticipant(ctx context.Context, participantData dto.CheckEventParticipant) error
 }
 
-func (eps eventParticipantService) ParticipantToEvent(eventID uuid.UUID, userVkID int64) (bool, error) {
-	return eps.epr.Participant(eventID, userVkID)
+func (eps eventParticipantService) ParticipantToEvent(ctx context.Context, eventID uuid.UUID, userVkID int64) (bool, error) {
+	return eps.epr.Participant(ctx, eventID, userVkID)
 }
 
-func (eps eventParticipantService) UpParticipantToEvent(eventID uuid.UUID, userVkID int64) (bool, error) {
-	return eps.epr.UnParticipant(eventID, userVkID)
+func (eps eventParticipantService) UpParticipantToEvent(ctx context.Context, eventID uuid.UUID, userVkID int64) (bool, error) {
+	return eps.epr.UnParticipant(ctx, eventID, userVkID)
 }
 
-func (eps eventParticipantService) CheckParticipant(participantData dto.CheckEventParticipant) (err error) {
+func (eps eventParticipantService) CheckParticipant(ctx context.Context, participantData dto.CheckEventParticipant) (err error) {
 	switch participantData.CheckType {
 	case "Personal QR":
 		{
-			err = eps.checkByAdmin(participantData)
+			err = eps.checkByAdmin(ctx, participantData)
 		}
 	case "Admin panel":
 		{
-			err = eps.checkByAdmin(participantData)
+			err = eps.checkByAdmin(ctx, participantData)
 		}
 	case "Event QR":
 		{
@@ -50,8 +51,8 @@ func (eps eventParticipantService) CheckParticipant(participantData dto.CheckEve
 	return err
 }
 
-func (eps eventParticipantService) checkByAdmin(participantData dto.CheckEventParticipant) error {
-	orgs, err := eps.er.GetEventOrgs(participantData.EventId)
+func (eps eventParticipantService) checkByAdmin(ctx context.Context, participantData dto.CheckEventParticipant) error {
+	orgs, err := eps.er.GetEventOrgs(ctx, participantData.EventId)
 	if err != nil {
 		return err
 	}
@@ -67,7 +68,7 @@ func (eps eventParticipantService) checkByAdmin(participantData dto.CheckEventPa
 				CheckType:      participantData.CheckType,
 				CheckAuthor:    &eventOrg.ID,
 			}
-			err := eps.epr.CheckParticipant(&participant)
+			err := eps.epr.CheckParticipant(ctx, &participant)
 			return err
 		}
 	}
