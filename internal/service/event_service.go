@@ -16,6 +16,7 @@ func NewEventService(r repository.EventRepository, u UserService) EventService {
 
 type EventService interface {
 	CreateEvent(ctx context.Context, eventDto dto.CreateUpdateEventDto) (*dto.EventMiniDto, error)
+	PublishEvent(ctx context.Context, eventId uuid.UUID) (*dto.EventMiniDto, error)
 	UpdateEvent(ctx context.Context, eventId uuid.UUID, eventDto dto.CreateUpdateEventDto) (*dto.EventMiniDto, error)
 	GetAll(ctx context.Context, vkId int64) ([]dto.EventMiniDto, error)
 	GetEventParticipants(ctx context.Context, id uuid.UUID) ([]dto.EventParticipantDto, error)
@@ -47,13 +48,56 @@ func (e eventService) CreateEvent(ctx context.Context, eventDto dto.CreateUpdate
 	return e.parseModelToDto(newEvent)
 }
 
-// UpdateEvent TODO надо оптимизировать на патч
-func (e eventService) UpdateEvent(ctx context.Context, eventId uuid.UUID, eventDto dto.CreateUpdateEventDto) (*dto.EventMiniDto, error) {
-	event, err := e.parseDtoToModel(eventDto, eventId)
+func (e eventService) PublishEvent(ctx context.Context, eventId uuid.UUID) (*dto.EventMiniDto, error) {
+	fields := make(map[string]interface{})
+	fields["status"] = "ACTIVE"
+	updatedEvent, err := e.r.Update(ctx, eventId, fields, nil, nil)
 	if err != nil {
 		return nil, err
 	}
-	updatedEvent, err := e.r.Update(ctx, event)
+
+	return e.parseModelToDto(updatedEvent)
+}
+
+func (e eventService) UpdateEvent(ctx context.Context, eventId uuid.UUID, eventDto dto.CreateUpdateEventDto) (*dto.EventMiniDto, error) {
+	// Собираем поля которые нужно обновить
+	fields := make(map[string]interface{})
+	if eventDto.Title != nil {
+		fields["name"] = *eventDto.Title
+	}
+	if eventDto.Description != nil {
+		fields["description"] = eventDto.Description
+	}
+	if eventDto.VkPostId != nil {
+		fields["vk_post_id"] = eventDto.VkPostId
+	}
+	if eventDto.PhotoURL != nil {
+		fields["cover"] = eventDto.PhotoURL
+	}
+	if eventDto.Address != nil {
+		fields["address"] = eventDto.Address
+	}
+	if eventDto.Lat != nil {
+		fields["lat"] = eventDto.Lat
+	}
+	if eventDto.Long != nil {
+		fields["long"] = eventDto.Long
+	}
+	if eventDto.StartsAt != nil {
+		fields["starts_at"] = eventDto.StartsAt
+	}
+
+	// Формируем слайс организаторов и ролей (если переданы)
+	orgs := make([]model.User, 0)
+	for _, orgId := range eventDto.Orgs {
+		orgs = append(orgs, model.User{ID: orgId})
+	}
+	roles := make([]model.Role, 0)
+	for _, roleId := range eventDto.AvailableRoles {
+		roles = append(roles, model.Role{ID: roleId})
+	}
+
+	updatedEvent, err := e.r.Update(ctx, eventId, fields, orgs, roles)
 	if err != nil {
 		return nil, err
 	}
@@ -220,8 +264,8 @@ func (e eventService) parseModelsToDtos(ctx context.Context, events []*model.Eve
 			StartsAt:          *event.StartsAt,
 			ParticipantsCount: event.ParticipantsCount,
 			Orgs:              orgs,
-			Status:            *event.Status,
 			Participants:      participants,
+			Status:            *event.Status,
 		}
 	}
 
@@ -293,8 +337,8 @@ func (e eventService) parseDtoToModel(eventDto dto.CreateUpdateEventDto, eventId
 	if eventDto.Long != nil {
 		event.Long = eventDto.Long
 	}
-	if eventDto.Status != "" {
-		event.Status = &eventDto.Status
+	if eventDto.Status != nil {
+		event.Status = eventDto.Status
 	}
 	if eventDto.StartsAt != nil {
 		event.StartsAt = eventDto.StartsAt

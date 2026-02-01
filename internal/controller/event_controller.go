@@ -101,6 +101,42 @@ func (uc *eventController) createEvent(c *gin.Context) {
 	c.JSON(200, event)
 }
 
+// publishEvent godoc
+//
+//	@Summary	Опубликовать мероприятие
+//	@Tags		events
+//	@Accept		json
+//	@Produce	json
+//	@Param		X-Request-Id	header		string						true	"Уникальный идентификатор запроса"
+//	@Param		id				path		string						true	"UUID мероприятия для запроса"
+//	@Success	200				{object}	dto.EventDto
+//	@Failure	400				{object}	dto.ErrorResponse	"Некорректные данные"
+//	@Failure	401				{object}	dto.ErrorResponse
+//	@Failure	404				{object}	dto.ErrorResponse
+//	@Failure	500				{object}	dto.ErrorResponse
+//	@Router		/v1/events/{id}/publish [post]
+//	@Security	VkAuth
+func (uc *eventController) publishEvent(c *gin.Context) {
+	eventId, err := ParseUUID(c, "id")
+	if err != nil {
+		c.Error(err)
+		return
+	}
+
+	var updateEventDto dto.CreateUpdateEventDto
+	if err := c.ShouldBindJSON(&updateEventDto); err != nil {
+		c.Error(err)
+		return
+	}
+
+	event, err := uc.eventService.UpdateEvent(c.Request.Context(), eventId, updateEventDto)
+	if err != nil {
+		c.Error(err)
+		return
+	}
+	c.JSON(200, event)
+}
+
 // updateEvent godoc
 //
 //	@Summary	Обновить мероприятие
@@ -334,6 +370,7 @@ func ConfigureEventController(
 
 	r.GET("/events", ec.getAllEvents)
 	r.GET("/events/:id", ec.getEvent)
+	r.POST("/events/:id/publish", ec.updateEvent)
 	r.PATCH("/events/:id", ec.updateEvent)
 	r.GET("/events/:id/participants", ec.getEventParticipants)
 

@@ -46,7 +46,7 @@ type CreateUpdateEventDto struct {
 	Lat               *float64    `json:"lat"`
 	Long              *float64    `json:"long"`
 	Orgs              []uuid.UUID `json:"orgs"`
-	Status            string      `json:"status"`
+	Status            *string     `json:"status"`
 	StartsAt          *time.Time  `json:"startsAt"`
 	AvailableRoles    []uuid.UUID `json:"availableRoles"` // TODO передать на коды ролей
 }

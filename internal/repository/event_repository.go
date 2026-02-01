@@ -35,7 +35,7 @@ type EventRepository interface {
 	GetById(ctx context.Context, id uuid.UUID) (*model.Event, error)
 	GetParticipants(ctx context.Context, id uuid.UUID) ([]model.EventParticipant, error)
 	Create(ctx context.Context, event *model.Event) (*model.Event, error)
-	Update(ctx context.Context, event *model.Event) (*model.Event, error)
+	Update(ctx context.Context, id uuid.UUID, fields map[string]interface{}, orgs []model.User, availableRoles []model.Role) (*model.Event, error)
 	Delete(ctx context.Context, id uuid.UUID) error
 }
 
@@ -224,7 +224,7 @@ func (r *eventRepository) Create(ctx context.Context, event *model.Event) (*mode
 	return &created, nil
 }
 
-func (r *eventRepository) Update(ctx context.Context, event *model.Event) (*model.Event, error) {
+func (r *eventRepository) Update(ctx context.Context, id uuid.UUID, fields map[string]interface{}, orgs []model.User, availableRoles []model.Role) (*model.Event, error) {
 	tx := r.db.WithContext(ctx).Begin()
 	if tx.Error != nil {
 		return nil, tx.Error
@@ -232,68 +232,41 @@ func (r *eventRepository) Update(ctx context.Context, event *model.Event) (*mode
 	defer func() {
 		if r := recover(); r != nil {
 			tx.Rollback()
-			panic(r) // Пробрасываем панику дальше
 		}
 	}()
 
 	var existingEvent model.Event
-	if err := tx.First(&existingEvent, "id = ?", event.ID).Error; err != nil {
+	if err := tx.First(&existingEvent, "id = ?", id).Error; err != nil {
 		tx.Rollback()
 		return nil, fmt.Errorf("event not found: %w", err)
 	}
 
-	// Используем Updates для патчинга (лучше, чем вручную)
-	updateMap := map[string]interface{}{}
-	if event.Name != "" {
-		updateMap["name"] = event.Name
-	}
-	if event.Description != nil {
-		updateMap["description"] = event.Description
-	}
-	if event.Cover != nil {
-		updateMap["cover"] = event.Cover
-	}
-	if event.VkPostId != nil {
-		updateMap["vk_post_id"] = event.VkPostId
-	}
-	if event.Address != nil {
-		updateMap["address"] = event.Address
-	}
-	if event.Lat != nil {
-		updateMap["lat"] = event.Lat
-	}
-	if event.Long != nil {
-		updateMap["long"] = event.Long
-	}
-	if event.Status != nil {
-		updateMap["status"] = event.Status
-	}
-	if event.StartsAt != nil {
-		updateMap["starts_at"] = event.StartsAt
+	// Обновляем только переданные поля
+	if len(fields) > 0 {
+		if err := tx.Model(&existingEvent).Omit("ParticipantsCount").Updates(fields).Error; err != nil {
+			tx.Rollback()
+			return nil, fmt.Errorf("failed to update event: %w", err)
+		}
 	}
 
-	if err := tx.Model(&existingEvent).Omit("ParticipantsCount").Updates(updateMap).Error; err != nil {
-		tx.Rollback()
-		return nil, fmt.Errorf("failed to save event: %w", err)
-	}
-
-	if err := tx.Model(&existingEvent).Association("Orgs").Clear(); err != nil {
-		tx.Rollback()
-		return nil, fmt.Errorf("failed to clear orgs: %w", err)
-	}
-	if err := tx.Model(&existingEvent).Association("AvailableRoles").Clear(); err != nil {
-		tx.Rollback()
-		return nil, fmt.Errorf("failed to clear roles: %w", err)
-	}
-
-	if len(event.Orgs) > 0 {
-		if err := tx.Model(&existingEvent).Association("Orgs").Append(event.Orgs); err != nil {
+	// Обновляем ассоциации только если они переданы
+	if orgs != nil {
+		if err := tx.Model(&existingEvent).Association("Orgs").Clear(); err != nil {
+			tx.Rollback()
+			return nil, fmt.Errorf("failed to clear orgs: %w", err)
+		}
+		if err := tx.Model(&existingEvent).Association("Orgs").Append(orgs); err != nil {
 			tx.Rollback()
 			return nil, fmt.Errorf("failed to append orgs: %w", err)
 		}
 	}
-	if len(event.AvailableRoles) > 0 {
-		if err := tx.Model(&existingEvent).Association("AvailableRoles").Append(event.AvailableRoles); err != nil {
+
+	if availableRoles != nil {
+		if err := tx.Model(&existingEvent).Association("AvailableRoles").Clear(); err != nil {
+			tx.Rollback()
+			return nil, fmt.Errorf("failed to clear roles: %w", err)
+		}
+		if err := tx.Model(&existingEvent).Association("AvailableRoles").Append(availableRoles); err != nil {
 			tx.Rollback()
 			return nil, fmt.Errorf("failed to append roles: %w", err)
 		}
@@ -304,7 +277,7 @@ func (r *eventRepository) Update(ctx context.Context, event *model.Event) (*mode
 		Preload("Orgs").
 		Preload("AvailableRoles").
 		Preload("Attachments").
-		First(&updatedEvent, "id = ?", event.ID).Error; err != nil {
+		First(&updatedEvent, "id = ?", id).Error; err != nil {
 		tx.Rollback()
 		return nil, fmt.Errorf("failed to load updated event: %w", err)
 	}

@@ -35,7 +35,7 @@ func TestCreateEvent_Success(t *testing.T) {
 		Title:          ptrString("Test event"),
 		Description:    ptrString("desc"),
 		StartsAt:       &startsAt,
-		Status:         status,
+		Status:         &status,
 		Orgs:           []uuid.UUID{},
 		AvailableRoles: []uuid.UUID{},
 	}
@@ -88,19 +88,27 @@ func TestUpdateEvent_Success(t *testing.T) {
 
 	id := uuid.New()
 
-	mockRepo.EXPECT().Update(gomock.Any(), gomock.Any()).DoAndReturn(func(_ context.Context, ev *model.Event) (*model.Event, error) {
-		// формируем корректный ответ репозитория: заполняем StartsAt/Status, устанавливаем новый Title
-		ev.Name = "Updated"
-		if ev.StartsAt == nil {
-			now := time.Now()
-			ev.StartsAt = &now
-		}
-		if ev.Status == nil {
-			s := "ACTIVE"
-			ev.Status = &s
-		}
-		return ev, nil
-	})
+	mockRepo.EXPECT().Update(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
+		func(_ context.Context, id uuid.UUID, fields map[string]interface{}, orgs []model.User, availableRoles []model.Role) (*model.Event, error) {
+			// формируем корректный ответ репозитория: используем id и поля из fields
+			ev := &model.Event{ID: id}
+			if nameVal, ok := fields["name"]; ok {
+				if nameStr, ok2 := nameVal.(string); ok2 {
+					ev.Name = nameStr
+				} else if p, ok3 := nameVal.(*string); ok3 && p != nil {
+					ev.Name = *p
+				}
+			}
+			if ev.StartsAt == nil {
+				now := time.Now()
+				ev.StartsAt = &now
+			}
+			if ev.Status == nil {
+				s := "ACTIVE"
+				ev.Status = &s
+			}
+			return ev, nil
+		})
 
 	inDto := dto.CreateUpdateEventDto{Title: ptrString("Updated")}
 	res, err := svc.UpdateEvent(ctx, id, inDto)
@@ -121,7 +129,7 @@ func TestUpdateEvent_NotFound(t *testing.T) {
 	svc := NewEventService(mockRepo, mockUserSvc)
 	ctx := context.Background()
 
-	mockRepo.EXPECT().Update(gomock.Any(), gomock.Any()).Return(nil, errors.New("not found"))
+	mockRepo.EXPECT().Update(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, errors.New("not found"))
 	res, err := svc.UpdateEvent(ctx, uuid.New(), dto.CreateUpdateEventDto{Title: ptrString("x")})
 	require.Error(t, err)
 	require.Nil(t, res)
