@@ -25,8 +25,8 @@ type userService struct {
 	rr repository.RoleRepository
 }
 
-func NewUserService(r repository.UserRepository) UserService {
-	return &userService{r: r}
+func NewUserService(r repository.UserRepository, rr repository.RoleRepository) UserService {
+	return &userService{r: r, rr: rr}
 }
 
 func (s *userService) UpdateRole(ctx context.Context, vkId int64, roleUuid uuid.UUID) error {

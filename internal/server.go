@@ -23,7 +23,7 @@ func New(db *gorm.DB, secret string, appId int64) *Server {
 	eventParticipantRepository := repository.NewEventParticipantRepository(db)
 	eventQueueRepository := repository.NewEventQueueRepository(db)
 
-	userService := service.NewUserService(userRepo)
+	userService := service.NewUserService(userRepo, repository.NewRoleRepository(db))
 	eventService := service.NewEventService(eventRepo, userService)
 	eventParticipantService := service.NewEventParticipantService(eventParticipantRepository, eventRepo)
 	eventQueueService := service.NewVkCallbackService(eventQueueRepository, eventRepo, eventParticipantService)
