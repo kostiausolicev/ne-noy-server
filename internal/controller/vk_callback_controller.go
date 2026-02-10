@@ -15,7 +15,7 @@ type vkCallBackController struct {
 }
 
 func (cb vkCallBackController) confirmHandler(c *gin.Context) {
-	_, err := c.Writer.Write([]byte("3460e36c"))
+	_, err := c.Writer.Write([]byte("9d05d280"))
 	if err != nil {
 		c.Error(err)
 		return
@@ -65,7 +65,7 @@ func (cb vkCallBackController) handleConfirm(c *gin.Context) {
 		return
 	}
 	switch callback.EventType {
-	case "confirm":
+	case "confirmation":
 		cb.confirmHandler(c)
 	case "wall_post_new":
 		cb.postNewHandler(c, callback)

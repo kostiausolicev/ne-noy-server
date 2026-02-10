@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"ne_noy/internal/database"
 	"testing"
 	"time"
 
@@ -12,11 +13,10 @@ import (
 	"ne_noy/internal/config"
 	"ne_noy/internal/dto"
 	"ne_noy/internal/repository"
-	"ne_noy/tests"
 )
 
 func setupServiceWithDB(t *testing.T) (*userService, *gorm.DB, func()) {
-	gormDB := tests.SetupPostgres(t)
+	gormDB := database.SetupPostgres(t)
 	repo := repository.NewUserRepository(gormDB)
 	roleRepo := repository.NewRoleRepository(gormDB)
 
@@ -160,13 +160,13 @@ func TestUserModelToDto_IsEduAndAdmin(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, userModel)
 	require.NotNil(t, userModel.Role)
-	require.Equal(t, config.RoleEduPart, userModel.Role.Name, "role name in DB should match config.RoleEduPart")
+	require.Equal(t, config.RoleEduPart, userModel.Role.Code, "role name in DB should match config.RoleEduPart")
 
 	got, err := svc.GetUserByVkId(ctx, vk)
 	require.NoError(t, err)
 	require.NotNil(t, got)
 	// IsEduParticipant определяется по имени роли
-	require.Equal(t, userModel.Role.Name == config.RoleEduPart, got.IsEduParticipant)
+	require.Equal(t, userModel.Role.Code == config.RoleEduPart, got.IsEduParticipant)
 
 	// Ensure IsAdmin false unless admin or event_orgs exists
 	require.False(t, got.IsAdmin)

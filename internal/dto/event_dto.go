@@ -48,5 +48,5 @@ type CreateUpdateEventDto struct {
 	Orgs              []uuid.UUID `json:"orgs"`
 	Status            *string     `json:"status"`
 	StartsAt          *time.Time  `json:"startsAt"`
-	AvailableRoles    []uuid.UUID `json:"availableRoles"` // TODO передать на коды ролей
+	AvailableRoles    []string    `json:"availableRoles"`
 }

@@ -1,7 +1,7 @@
 APP_NAME := ne-noy
 CMD_DIR := ./cmd/$(APP_NAME)
 CONFIG_FILE := ./configs/config.yaml
-MOCKS_DESTINATION=tests/mocks
+MOCKS_DESTINATION=mocks
 DOC_DESTINATION=docs
 
 .PHONY: build run test clean fmt vet migrate-up migrate-down doc mocks

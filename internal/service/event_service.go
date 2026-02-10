@@ -10,8 +10,12 @@ import (
 	"github.com/google/uuid"
 )
 
-func NewEventService(r repository.EventRepository, u UserService) EventService {
-	return eventService{r: r, u: u}
+func NewEventService(
+	r repository.EventRepository,
+	u UserService,
+	rr repository.RoleRepository,
+) EventService {
+	return eventService{r: r, u: u, rr: rr}
 }
 
 type EventService interface {
@@ -27,8 +31,9 @@ type EventService interface {
 }
 
 type eventService struct {
-	r repository.EventRepository
-	u UserService
+	r  repository.EventRepository
+	rr repository.RoleRepository
+	u  UserService
 }
 
 func (e eventService) CreateEvent(ctx context.Context, eventDto dto.CreateUpdateEventDto) (*dto.EventMiniDto, error) {
@@ -36,7 +41,7 @@ func (e eventService) CreateEvent(ctx context.Context, eventDto dto.CreateUpdate
 	if err != nil {
 		return nil, err
 	}
-	event, err := e.parseDtoToModel(eventDto, eventId)
+	event, err := e.parseDtoToModel(ctx, eventDto, eventId)
 	if err != nil {
 		return nil, err
 	}
@@ -93,8 +98,12 @@ func (e eventService) UpdateEvent(ctx context.Context, eventId uuid.UUID, eventD
 		orgs = append(orgs, model.User{ID: orgId})
 	}
 	roles := make([]model.Role, 0)
-	for _, roleId := range eventDto.AvailableRoles {
-		roles = append(roles, model.Role{ID: roleId})
+	for _, roleCode := range eventDto.AvailableRoles {
+		role, err := e.rr.GetByCode(ctx, roleCode)
+		if err != nil {
+			return nil, err
+		}
+		roles = append(roles, *role)
 	}
 
 	updatedEvent, err := e.r.Update(ctx, eventId, fields, orgs, roles)
@@ -309,7 +318,7 @@ func (e eventService) parseModelToDto(event *model.Event) (*dto.EventMiniDto, er
 	return eventDto, nil
 }
 
-func (e eventService) parseDtoToModel(eventDto dto.CreateUpdateEventDto, eventId uuid.UUID) (*model.Event, error) {
+func (e eventService) parseDtoToModel(ctx context.Context, eventDto dto.CreateUpdateEventDto, eventId uuid.UUID) (*model.Event, error) {
 	// Создаем event с минимальными данными
 	event := model.Event{
 		ID: eventId,
@@ -352,8 +361,12 @@ func (e eventService) parseDtoToModel(eventDto dto.CreateUpdateEventDto, eventId
 
 	// Создаем роли только с ID (теперь AvailableRoles - это []uuid.UUID)
 	event.AvailableRoles = make([]model.Role, len(eventDto.AvailableRoles))
-	for i, roleId := range eventDto.AvailableRoles {
-		event.AvailableRoles[i] = model.Role{ID: roleId}
+	for i, roleCode := range eventDto.AvailableRoles {
+		role, err := e.rr.GetByCode(ctx, roleCode)
+		if err != nil {
+			return nil, err
+		}
+		event.AvailableRoles[i] = *role
 	}
 
 	return &event, nil

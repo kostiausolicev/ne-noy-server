@@ -107,8 +107,8 @@ func (uc *eventController) createEvent(c *gin.Context) {
 //	@Tags		events
 //	@Accept		json
 //	@Produce	json
-//	@Param		X-Request-Id	header		string						true	"Уникальный идентификатор запроса"
-//	@Param		id				path		string						true	"UUID мероприятия для запроса"
+//	@Param		X-Request-Id	header		string	true	"Уникальный идентификатор запроса"
+//	@Param		id				path		string	true	"UUID мероприятия для запроса"
 //	@Success	200				{object}	dto.EventDto
 //	@Failure	400				{object}	dto.ErrorResponse	"Некорректные данные"
 //	@Failure	401				{object}	dto.ErrorResponse

@@ -12,7 +12,7 @@ import (
 //	@version		1.0
 //	@description	API к ИС Не-Ной
 
-//	@host		localhost:8080
+//	@host		https://simply-funny-spearfish.cloudpub.ru
 //	@BasePath	/api
 
 // @securityDefinitions.apikey	VkAuth

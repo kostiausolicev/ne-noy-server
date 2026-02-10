@@ -20,13 +20,17 @@ type Server struct {
 func New(db *gorm.DB, secret string, appId int64) *Server {
 	userRepo := repository.NewUserRepository(db)
 	eventRepo := repository.NewEventRepository(db)
+	roleRepo := repository.NewRoleRepository(db)
 	eventParticipantRepository := repository.NewEventParticipantRepository(db)
 	eventQueueRepository := repository.NewEventQueueRepository(db)
 
-	userService := service.NewUserService(userRepo, repository.NewRoleRepository(db))
-	eventService := service.NewEventService(eventRepo, userService)
+	userService := service.NewUserService(userRepo, roleRepo)
+	eventService := service.NewEventService(eventRepo, userService, roleRepo)
 	eventParticipantService := service.NewEventParticipantService(eventParticipantRepository, eventRepo)
-	eventQueueService := service.NewVkCallbackService(eventQueueRepository, eventRepo, eventParticipantService)
+	// сервис для обработки callback'ов VK (добавление в очередь и т.п.)
+	vkCallbackService := service.NewVkCallbackService(eventQueueRepository, eventRepo, eventParticipantService)
+	// сервис для получения записей очереди
+	eventQueueService := service.NewEventQueueService(eventQueueRepository)
 
 	router := gin.Default()
 	// TODO Вынести в конфиг файл
@@ -45,13 +49,14 @@ func New(db *gorm.DB, secret string, appId int64) *Server {
 			controller.ConfigureServiceController(public, userRepo)
 		}
 		apiV1 := router.Group("/api/v1")
-		controller.ConfigureVkCallBackController(apiV1, secret, eventQueueService)
+		controller.ConfigureVkCallBackController(apiV1, secret, vkCallbackService)
 		apiV1.Use(middleware.AuthMiddleware(secret, appId))
 		{
 			controller.ConfigureEventController(apiV1, eventService, eventParticipantService)
 			controller.ConfigureUserController(apiV1, userService)
 			apiV1.Use(middleware.AdminMiddleware())
 			{
+				controller.ConfigureEventQueueController(apiV1, eventQueueService)
 				controller.ConfigureAdminUserController(apiV1, userService)
 			}
 		}

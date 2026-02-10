@@ -251,24 +251,20 @@ func (r *eventRepository) Update(ctx context.Context, id uuid.UUID, fields map[s
 
 	// Обновляем ассоциации только если они переданы
 	if orgs != nil {
-		if err := tx.Model(&existingEvent).Association("Orgs").Clear(); err != nil {
+		// Используем временный объект с заполненным ID, чтобы GORM корректно понял родителя
+		parent := model.Event{ID: id}
+		if err := tx.Model(&parent).Association("Orgs").Replace(orgs); err != nil {
 			tx.Rollback()
-			return nil, fmt.Errorf("failed to clear orgs: %w", err)
-		}
-		if err := tx.Model(&existingEvent).Association("Orgs").Append(orgs); err != nil {
-			tx.Rollback()
-			return nil, fmt.Errorf("failed to append orgs: %w", err)
+			return nil, fmt.Errorf("failed to replace orgs: %w", err)
 		}
 	}
 
 	if availableRoles != nil {
-		if err := tx.Model(&existingEvent).Association("AvailableRoles").Clear(); err != nil {
+		// Аналогично для ролей
+		parent := model.Event{ID: id}
+		if err := tx.Model(&parent).Association("AvailableRoles").Replace(availableRoles); err != nil {
 			tx.Rollback()
-			return nil, fmt.Errorf("failed to clear roles: %w", err)
-		}
-		if err := tx.Model(&existingEvent).Association("AvailableRoles").Append(availableRoles); err != nil {
-			tx.Rollback()
-			return nil, fmt.Errorf("failed to append roles: %w", err)
+			return nil, fmt.Errorf("failed to replace roles: %w", err)
 		}
 	}
 

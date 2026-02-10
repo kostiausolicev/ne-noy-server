@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"ne_noy/internal/database"
 	"testing"
 	"time"
 
@@ -11,15 +12,14 @@ import (
 	"ne_noy/internal/dto"
 	"ne_noy/internal/model"
 	"ne_noy/internal/repository"
-	"ne_noy/tests"
 )
 
 // Интеграционный тест: создаёт Event в реальной БД и затем получает его через сервис.
-// Входные данные: модель Event с заполненным ID, Name, StartsAt, Status.
+// Входные данные: модель Event с заполненным ID, Code, StartsAt, Status.
 // Ожидаем: Create через репозиторий проходит без ошибки, EventService.GetEvent возвращает DTO с тем же ID.
 func TestEventService_CreateAndGetById_Integration(t *testing.T) {
 	// Setup real postgres test container with migrations
-	db := tests.SetupPostgres(t)
+	db := database.SetupPostgres(t)
 	ctx := context.Background()
 
 	eRepo := repository.NewEventRepository(db)
@@ -52,7 +52,7 @@ func TestEventService_CreateAndGetById_Integration(t *testing.T) {
 // Ожидаем: UpdateEvent возвращает DTO с новым Title; в БД появится запись в event_orgs и event_roles.
 func TestEventService_UpdateEvent_Integration(t *testing.T) {
 	// Setup DB
-	db := tests.SetupPostgres(t)
+	db := database.SetupPostgres(t)
 	ctx := context.Background()
 
 	userRepo := repository.NewUserRepository(db)

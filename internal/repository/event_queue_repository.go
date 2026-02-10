@@ -8,6 +8,7 @@ import (
 )
 
 type EventQueueRepository interface {
+	GetAll(ctx context.Context) ([]model.EventQueueModel, error)
 	AddPostToQueue(ctx context.Context, eventQueue *model.EventQueueModel) error
 	RemovePostFromQueue(ctx context.Context, postId int64) error
 }
@@ -20,6 +21,16 @@ type eventQueueRepository struct {
 	db *gorm.DB
 }
 
+func (e *eventQueueRepository) GetAll(ctx context.Context) ([]model.EventQueueModel, error) {
+	var result []model.EventQueueModel
+	res := e.withScope(ctx).
+		Table("queue_events").
+		Select("queue_events.*").
+		Find(&result)
+
+	return result, res.Error
+}
+
 func (e *eventQueueRepository) AddPostToQueue(ctx context.Context, eventQueue *model.EventQueueModel) error {
 	result := e.withScope(ctx).
 		Create(eventQueue)
@@ -27,8 +38,7 @@ func (e *eventQueueRepository) AddPostToQueue(ctx context.Context, eventQueue *m
 }
 
 func (e *eventQueueRepository) RemovePostFromQueue(ctx context.Context, postId int64) error {
-	//TODO implement me
-	panic("implement me")
+	return e.withScope(ctx).Delete(&model.EventQueueModel{PostID: postId}).Error
 }
 
 func NewEventQueueRepository(db *gorm.DB) EventQueueRepository {
