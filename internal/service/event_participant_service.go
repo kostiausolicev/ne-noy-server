@@ -20,16 +20,16 @@ func NewEventParticipantService(epr repository.EventParticipantRepository, er re
 }
 
 type EventParticipantService interface {
-	ParticipantToEvent(ctx context.Context, eventID uuid.UUID, userVkID int64) (bool, error)
-	UpParticipantToEvent(ctx context.Context, eventID uuid.UUID, userVkID int64) (bool, error)
+	ParticipantToEvent(ctx context.Context, eventID uuid.UUID, userVkID int64, prepareType string) (bool, error)
+	UnParticipantToEvent(ctx context.Context, eventID uuid.UUID, userVkID int64) (bool, error)
 	CheckParticipant(ctx context.Context, participantData dto.CheckEventParticipant) error
 }
 
-func (eps eventParticipantService) ParticipantToEvent(ctx context.Context, eventID uuid.UUID, userVkID int64) (bool, error) {
-	return eps.epr.Participant(ctx, eventID, userVkID)
+func (eps eventParticipantService) ParticipantToEvent(ctx context.Context, eventID uuid.UUID, userVkID int64, prepareType string) (bool, error) {
+	return eps.epr.Participant(ctx, eventID, userVkID, prepareType)
 }
 
-func (eps eventParticipantService) UpParticipantToEvent(ctx context.Context, eventID uuid.UUID, userVkID int64) (bool, error) {
+func (eps eventParticipantService) UnParticipantToEvent(ctx context.Context, eventID uuid.UUID, userVkID int64) (bool, error) {
 	return eps.epr.UnParticipant(ctx, eventID, userVkID)
 }
 

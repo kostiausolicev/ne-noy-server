@@ -6,6 +6,7 @@ import (
 	"ne_noy/internal/dto"
 	"ne_noy/internal/model"
 	"ne_noy/internal/repository"
+	"sync"
 
 	"github.com/google/uuid"
 )
@@ -81,6 +82,9 @@ func (e eventService) UpdateEvent(ctx context.Context, eventId uuid.UUID, eventD
 	}
 	if eventDto.Address != nil {
 		fields["address"] = eventDto.Address
+	}
+	if eventDto.AdAddress != nil {
+		fields["ad_address"] = eventDto.AdAddress
 	}
 	if eventDto.Lat != nil {
 		fields["lat"] = eventDto.Lat
@@ -165,33 +169,53 @@ func (e eventService) GetEvent(ctx context.Context, id uuid.UUID, userId int64) 
 	if err != nil {
 		return nil, err
 	}
+	var wg = sync.WaitGroup{}
 	// преобразуем организаторов
 	orgs := make([]dto.UserMiniDto, len(event.Orgs))
-	for j, org := range event.Orgs {
-		orgs[j] = dto.UserMiniDto{
-			ID:        org.ID,
-			FirstName: org.FirstName,
-			LastName:  org.LastName,
-			VkId:      org.VkID,
-			PhotoURL:  org.PhotoURL,
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for j, org := range event.Orgs {
+			orgs[j] = dto.UserMiniDto{
+				ID:        org.ID,
+				FirstName: org.FirstName,
+				LastName:  org.LastName,
+				VkId:      org.VkID,
+				PhotoURL:  org.PhotoURL,
+			}
 		}
-	}
+	}()
+
 	// преобразуем участников
 	participants := make([]dto.UserMiniDto, len(event.EventParticipants))
-	for j, ep := range event.EventParticipants {
-		participants[j] = dto.UserMiniDto{
-			ID:        ep.User.ID,
-			FirstName: ep.User.FirstName,
-			LastName:  ep.User.LastName,
-			VkId:      ep.User.VkID,
-			PhotoURL:  ep.User.PhotoURL,
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for j, ep := range event.EventParticipants {
+			participants[j] = dto.UserMiniDto{
+				ID:        ep.User.ID,
+				FirstName: ep.User.FirstName,
+				LastName:  ep.User.LastName,
+				VkId:      ep.User.VkID,
+				PhotoURL:  ep.User.PhotoURL,
+			}
 		}
-	}
+	}()
 
-	attachments := make([]string, len(event.Attachments))
-	for i, att := range event.Attachments {
-		attachments[i] = att.AttachmentLink
-	}
+	attachments := make([]dto.AttachmentDto, len(event.Attachments))
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for i, att := range event.Attachments {
+			attachments[i] = dto.AttachmentDto{
+				ID:    att.Attachment.ID,
+				Url:   att.Attachment.Url,
+				Title: att.Attachment.Filename,
+			}
+		}
+	}()
+
+	wg.Wait()
 	isParticipant, err := e.r.GetUserParticipationInEvent(ctx, event.ID, userId)
 	if err != nil {
 		return nil, err
@@ -208,6 +232,7 @@ func (e eventService) GetEvent(ctx context.Context, id uuid.UUID, userId int64) 
 		ParticipantsCount:        event.ParticipantsCount,
 		Orgs:                     orgs,
 		Address:                  event.Address,
+		AdAddress:                event.AdditionalAddress,
 		Participants:             participants,
 		StartsAt:                 *event.StartsAt,
 		Status:                   *event.Status,

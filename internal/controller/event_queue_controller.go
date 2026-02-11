@@ -38,10 +38,10 @@ func (ec *eventQueueController) getAllPosts(c *gin.Context) {
 //	@Tags		EventQueue
 //	@Accept		json
 //	@Produce	json
-//	@Param		X-Request-Id	header		string	true	"X-Request-Id"
+//	@Param		X-Request-Id	header	string	true	"X-Request-Id"
 //	@Success	200
-//	@Failure	401				{object}	dto.ErrorResponse
-//	@Failure	500				{object}	dto.ErrorResponse
+//	@Failure	401	{object}	dto.ErrorResponse
+//	@Failure	500	{object}	dto.ErrorResponse
 //	@Router		/v1/events/queue [post]
 //	@Security	VkAuth
 func (ec *eventQueueController) createEventFromPost(c *gin.Context) {

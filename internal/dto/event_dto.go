@@ -17,36 +17,35 @@ type EventMiniDto struct {
 }
 
 type EventDto struct {
-	ID       uuid.UUID `json:"id"`
-	VkPostId *int64    `json:"vkPostId"`
-	PhotoURL *string   `json:"photoUrl"`
-
-	Title       string        `json:"title"`
-	Description *string       `json:"description"`
-	Attachments []string      `json:"attachments"`
-	Orgs        []UserMiniDto `json:"orgs"`
-	Address     *string       `json:"address"`
-
-	Participants             []UserMiniDto `json:"participants"`
-	ParticipantsCount        int           `json:"participantsCount"`
-	Status                   string        `json:"status"`
-	StartsAt                 time.Time     `json:"startAt"`
-	CurrentUserIsParticipant *bool         `json:"currentUserIsParticipant,omitempty"`
+	ID                       uuid.UUID       `json:"id"`
+	VkPostId                 *int64          `json:"vkPostId"`
+	PhotoURL                 *string         `json:"photoUrl"`
+	Title                    string          `json:"title"`
+	Description              *string         `json:"description"`
+	Attachments              []AttachmentDto `json:"attachments"`
+	Orgs                     []UserMiniDto   `json:"orgs"`
+	Address                  *string         `json:"address"`
+	AdAddress                *string         `json:"adAddress"`
+	Participants             []UserMiniDto   `json:"participants"`
+	ParticipantsCount        int             `json:"participantsCount"`
+	Status                   string          `json:"status"`
+	StartsAt                 time.Time       `json:"startAt"`
+	CurrentUserIsParticipant *bool           `json:"currentUserIsParticipant,omitempty"`
 }
 
 type CreateUpdateEventDto struct {
 	VkPostId *int64  `json:"vkPostId"`
 	PhotoURL *string `json:"photoUrl"`
 
-	Title             *string     `json:"title"`
-	Description       *string     `json:"description"`
-	Attachments       *[]string   `json:"attachments"`
-	Address           *string     `json:"address"`
-	AdditionalAddress *string     `json:"address"`
-	Lat               *float64    `json:"lat"`
-	Long              *float64    `json:"long"`
-	Orgs              []uuid.UUID `json:"orgs"`
-	Status            *string     `json:"status"`
-	StartsAt          *time.Time  `json:"startsAt"`
-	AvailableRoles    []string    `json:"availableRoles"`
+	Title          *string     `json:"title"`
+	Description    *string     `json:"description"`
+	Attachments    *[]string   `json:"attachments"`
+	Address        *string     `json:"address"`
+	AdAddress      *string     `json:"adAddress"`
+	Lat            *float64    `json:"lat"`
+	Long           *float64    `json:"long"`
+	Orgs           []uuid.UUID `json:"orgs"`
+	Status         *string     `json:"status"`
+	StartsAt       *time.Time  `json:"startsAt"`
+	AvailableRoles []string    `json:"availableRoles"`
 }

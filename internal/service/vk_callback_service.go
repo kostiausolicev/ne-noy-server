@@ -24,11 +24,15 @@ type vkCallBackService struct {
 
 // ApplyVote TODO надо сделать записи в отдельную таблицу, чтобы не терять данные до создания события
 func (v vkCallBackService) ApplyVote(ctx context.Context, dto callback_dto.PollVoteNewDto) error {
-	event, err := v.eventRepository.GetByVkPollAnswerId(ctx, dto.OptionID)
+	event, err := v.eventRepository.GetByVkPollId(ctx, dto.PollID)
 	if err != nil {
 		return err
 	}
-	_, err = v.eventParticipantService.ParticipantToEvent(ctx, event.ID, dto.UserID)
+	if event.VkPollAnswerID != nil && *event.VkPollAnswerID == dto.OptionID {
+		_, err = v.eventParticipantService.ParticipantToEvent(ctx, event.ID, dto.UserID, "vote")
+	} else if event.VkPollAnswerID != nil && *event.VkPollAnswerID != dto.OptionID {
+		_, err = v.eventParticipantService.UnParticipantToEvent(ctx, event.ID, dto.UserID)
+	}
 	if err != nil {
 		return err
 	}

@@ -285,7 +285,7 @@ func (uc *eventController) participateToEvent(c *gin.Context) {
 		return
 	}
 
-	_, err = uc.eventParticipantService.ParticipantToEvent(c.Request.Context(), eventId, vkId)
+	_, err = uc.eventParticipantService.ParticipantToEvent(c.Request.Context(), eventId, vkId, "app")
 	if err != nil {
 		c.Error(err)
 		return
@@ -320,7 +320,7 @@ func (uc *eventController) unParticipateToEvent(c *gin.Context) {
 		return
 	}
 
-	_, err = uc.eventParticipantService.UpParticipantToEvent(c.Request.Context(), eventId, vkId)
+	_, err = uc.eventParticipantService.UnParticipantToEvent(c.Request.Context(), eventId, vkId)
 	if err != nil {
 		c.Error(err)
 		return

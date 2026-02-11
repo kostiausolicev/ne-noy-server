@@ -7,9 +7,10 @@ import (
 )
 
 type EventAttachment struct {
-	ID             uuid.UUID `gorm:"type:uuid;primaryKey;default:uuid_generate_v4()"`
-	EventID        uuid.UUID `gorm:"type:uuid"`
-	Event          Event     `gorm:"foreignKey:EventID"`
-	AttachmentLink string    `gorm:"not null"`
-	CreatedAt      time.Time `gorm:"autoCreateTime"`
+	ID           uuid.UUID
+	EventID      uuid.UUID
+	Event        Event `gorm:"foreignKey:EventID"`
+	AttachmentID uuid.UUID
+	Attachment   Attachment
+	CreatedAt    time.Time
 }

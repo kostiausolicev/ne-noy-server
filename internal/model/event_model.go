@@ -14,6 +14,7 @@ type Event struct {
 	Cover             *string
 	VkPostId          *int64   `gorm:"column:vk_post_id"`
 	VkVoteID          *int64   `gorm:"column:vk_vote_id"`
+	VkPollAnswerID    *int64   `gorm:"column:vk_poll_answer_id"`
 	Lat               *float64 `gorm:"type:decimal(10,8)"`
 	Long              *float64 `gorm:"column:lon;type:decimal(11,8)"`
 	Address           *string
@@ -27,4 +28,8 @@ type Event struct {
 	Attachments       []EventAttachment `gorm:"many2many:event_attachments"`
 	Orgs              []User            `gorm:"many2many:event_orgs"`
 	EventParticipants []EventParticipant
+}
+
+func (e Event) TableName() string {
+	return "events"
 }

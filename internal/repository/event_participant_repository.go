@@ -23,7 +23,7 @@ func (er *eventParticipantRepository) withScope(ctx context.Context) *gorm.DB {
 
 type EventParticipantRepository interface {
 	CheckParticipant(ctx context.Context, participant *model.EventParticipant) error
-	Participant(ctx context.Context, eventID uuid.UUID, userId int64) (bool, error)
+	Participant(ctx context.Context, eventID uuid.UUID, userId int64, prepareType string) (bool, error)
 	UnParticipant(ctx context.Context, eventID uuid.UUID, userId int64) (bool, error)
 }
 
@@ -45,7 +45,7 @@ func (er *eventParticipantRepository) CheckParticipant(ctx context.Context, part
 	return result.Error
 }
 
-func (er *eventParticipantRepository) Participant(ctx context.Context, eventId uuid.UUID, userId int64) (bool, error) {
+func (er *eventParticipantRepository) Participant(ctx context.Context, eventId uuid.UUID, userId int64, prepareType string) (bool, error) {
 	user := model.User{}
 	er.withScope(ctx).
 		Table("users").
@@ -53,8 +53,9 @@ func (er *eventParticipantRepository) Participant(ctx context.Context, eventId u
 		Where("vk_id = ?", userId).
 		Scan(&user)
 	eventParticipant := model.EventParticipant{
-		EventID: eventId,
-		UserID:  user.ID,
+		EventID:     eventId,
+		UserID:      user.ID,
+		PrepareType: prepareType,
 	}
 	result := er.db.Create(&eventParticipant)
 	if result.Error != nil {

@@ -31,7 +31,7 @@ type EventRepository interface {
 	GetEventLocationData(ctx context.Context, id uuid.UUID) (*model.Event, error)
 	GetUserParticipationInEvent(ctx context.Context, eventId uuid.UUID, userVkId int64) (bool, error)
 	GetEventOrgs(ctx context.Context, eventId uuid.UUID) ([]model.User, error)
-	GetByVkPollAnswerId(ctx context.Context, answerId int64) (*model.Event, error)
+	GetByVkPollId(ctx context.Context, pollId int64) (*model.Event, error)
 	GetById(ctx context.Context, id uuid.UUID) (*model.Event, error)
 	GetParticipants(ctx context.Context, id uuid.UUID) ([]model.EventParticipant, error)
 	Create(ctx context.Context, event *model.Event) (*model.Event, error)
@@ -75,16 +75,14 @@ func (r *eventRepository) GetUserParticipationInEvent(ctx context.Context, event
 	return exists, nil
 }
 
-func (r *eventRepository) GetByVkPollAnswerId(ctx context.Context, vkPollAnswerId int64) (*model.Event, error) {
+func (r *eventRepository) GetByVkPollId(ctx context.Context, vkPollId int64) (*model.Event, error) {
 	var event model.Event
 	err := r.db.WithContext(ctx).
 		Table("events").
-		Where("vk_poll_answer_id = ?", vkPollAnswerId).
+		Select("vk_poll_answer_id").
+		Where("vk_vote_id = ?", vkPollId).
 		First(&event).Error
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, nil // Или кастомная ошибка NotFound
-		}
 		return nil, err
 	}
 	return &event, nil
@@ -149,7 +147,7 @@ func (r *eventRepository) GetParticipants(ctx context.Context, id uuid.UUID) ([]
 func (r *eventRepository) GetById(ctx context.Context, id uuid.UUID) (*model.Event, error) {
 	var event model.Event
 	result := r.db.WithContext(ctx).
-		Model(&model.Event{}).
+		Table(event.TableName()).
 		Preload("Orgs", func(db *gorm.DB) *gorm.DB {
 			return db.Select(selectUserFields)
 		}).
@@ -161,10 +159,10 @@ func (r *eventRepository) GetById(ctx context.Context, id uuid.UUID) (*model.Eve
 		Preload("EventParticipants.User", func(db *gorm.DB) *gorm.DB {
 			return db.Select(selectUserFields)
 		}).
-		Preload("Attachments", func(db *gorm.DB) *gorm.DB {
-			return db.Select(`event_attachments.id, event_attachments.attachment_link`)
+		Preload("Attachments.Attachment", func(db *gorm.DB) *gorm.DB {
+			return db.Select(`attachments.id, attachments.filename, attachments.url`)
 		}).
-		Select(`id, name, cover, description, address, vk_post_id, vk_vote_id, status, starts_at`).
+		Select("id, name, cover, description, address, additional_address, vk_post_id, vk_vote_id, status, starts_at").
 		Where("id = ?", id).
 		First(&event)
 	if result.Error != nil {
