@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"ne_noy/internal/config"
 	"ne_noy/internal/model"
 
 	"github.com/google/uuid"
@@ -26,7 +25,7 @@ func (r *roleRepository) GetByCode(ctx context.Context, code string) (*model.Rol
 	var role model.Role
 	err := r.withScope(ctx).
 		Select("id", "name", "display_name").
-		Where("name = ?", config.RoleDefault).
+		Where("name = ?", code).
 		First(&role).Error
 
 	if err != nil {

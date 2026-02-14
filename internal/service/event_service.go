@@ -86,11 +86,17 @@ func (e eventService) UpdateEvent(ctx context.Context, eventId uuid.UUID, eventD
 	if eventDto.AdAddress != nil {
 		fields["ad_address"] = eventDto.AdAddress
 	}
+	if eventDto.VkPollAnswerID != nil {
+		fields["vk_poll_answer_id"] = eventDto.VkPollAnswerID
+	}
+	if eventDto.VkVoteID != nil {
+		fields["vk_vote_id"] = eventDto.VkVoteID
+	}
 	if eventDto.Lat != nil {
 		fields["lat"] = eventDto.Lat
 	}
 	if eventDto.Long != nil {
-		fields["long"] = eventDto.Long
+		fields["lon"] = eventDto.Long
 	}
 	if eventDto.StartsAt != nil {
 		fields["starts_at"] = eventDto.StartsAt
@@ -222,10 +228,14 @@ func (e eventService) GetEvent(ctx context.Context, id uuid.UUID, userId int64) 
 	}
 
 	eventDto := &dto.EventDto{
-		ID:       event.ID,
-		VkPostId: event.VkPostId,
-		PhotoURL: event.Cover,
+		ID:             event.ID,
+		VkPostId:       event.VkPostId,
+		PhotoURL:       event.Cover,
+		VkPollAnswerID: event.VkPollAnswerID,
+		VkVoteID:       event.VkVoteID,
 
+		Lat:                      event.Lat,
+		Long:                     event.Long,
 		Title:                    event.Name,
 		Description:              event.Description,
 		Attachments:              attachments,
@@ -364,6 +374,12 @@ func (e eventService) parseDtoToModel(ctx context.Context, eventDto dto.CreateUp
 	}
 	if eventDto.Address != nil {
 		event.Address = eventDto.Address
+	}
+	if eventDto.VkPollAnswerID != nil {
+		event.VkPollAnswerID = eventDto.VkPollAnswerID
+	}
+	if eventDto.VkVoteID != nil {
+		event.VkVoteID = eventDto.VkVoteID
 	}
 	if eventDto.Lat != nil {
 		event.Lat = eventDto.Lat

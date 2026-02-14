@@ -14,8 +14,10 @@ type vkCallBackController struct {
 	service service.VkCallbackService
 }
 
+const vkConfirmationResponse = "0bf0212a"
+
 func (cb vkCallBackController) confirmHandler(c *gin.Context) {
-	_, err := c.Writer.Write([]byte("9d05d280"))
+	_, err := c.Writer.Write([]byte(vkConfirmationResponse))
 	if err != nil {
 		c.Error(err)
 		return
@@ -34,8 +36,8 @@ func (cb vkCallBackController) postNewHandler(c *gin.Context, dto callback_dto.G
 		c.Error(err)
 		return
 	}
+	c.Writer.Write([]byte(vkConfirmationResponse))
 	c.Status(200)
-	return
 }
 
 func (cb vkCallBackController) pollVoteNew(c *gin.Context, dto callback_dto.GroupEvent) {
@@ -50,6 +52,7 @@ func (cb vkCallBackController) pollVoteNew(c *gin.Context, dto callback_dto.Grou
 		c.Error(err)
 		return
 	}
+	c.Writer.Write([]byte(vkConfirmationResponse))
 	c.Status(200)
 }
 

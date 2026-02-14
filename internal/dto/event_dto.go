@@ -19,6 +19,10 @@ type EventMiniDto struct {
 type EventDto struct {
 	ID                       uuid.UUID       `json:"id"`
 	VkPostId                 *int64          `json:"vkPostId"`
+	VkVoteID                 *int64          `json:"vk_vote_id"`
+	VkPollAnswerID           *int64          `json:"vk_poll_answer_id"`
+	Lat                      *float64        `json:"lat"`
+	Long                     *float64        `json:"long"`
 	PhotoURL                 *string         `json:"photoUrl"`
 	Title                    string          `json:"title"`
 	Description              *string         `json:"description"`
@@ -34,8 +38,10 @@ type EventDto struct {
 }
 
 type CreateUpdateEventDto struct {
-	VkPostId *int64  `json:"vkPostId"`
-	PhotoURL *string `json:"photoUrl"`
+	VkPostId       *int64  `json:"vkPostId"`
+	VkVoteID       *int64  `json:"vk_vote_id"`
+	VkPollAnswerID *int64  `json:"vk_poll_answer_id"`
+	PhotoURL       *string `json:"photoUrl"`
 
 	Title          *string     `json:"title"`
 	Description    *string     `json:"description"`

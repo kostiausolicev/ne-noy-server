@@ -162,7 +162,7 @@ func (r *eventRepository) GetById(ctx context.Context, id uuid.UUID) (*model.Eve
 		Preload("Attachments.Attachment", func(db *gorm.DB) *gorm.DB {
 			return db.Select(`attachments.id, attachments.filename, attachments.url`)
 		}).
-		Select("id, name, cover, description, address, additional_address, vk_post_id, vk_vote_id, status, starts_at").
+		Select("id, name, cover, description, address, additional_address, vk_post_id, vk_vote_id, status, starts_at, lat, lon").
 		Where("id = ?", id).
 		First(&event)
 	if result.Error != nil {
