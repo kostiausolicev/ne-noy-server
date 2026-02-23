@@ -23,7 +23,7 @@ type userController struct {
 //	@Accept			json
 //	@Produce		json
 //	@Param			X-Request-Id	header		string		true	"Уникальный идентификатор запроса для трассировки"
-//	@Param			user			body		dto.UserDto	true	"Данные нового пользователя"
+//	@Param			user			body		dto.CreateUserDto	true	"Данные нового пользователя"
 //	@Success		201				{object}	dto.UserDto
 //	@Failure		400				{object}	dto.ErrorResponse	"Некорректные входные данные"
 //	@Failure		401				{object}	dto.ErrorResponse	"Не авторизован"
@@ -32,7 +32,7 @@ type userController struct {
 //	@Router			/v1/users [post]
 //	@Security		VkAuth
 func (uc *userController) createUser(c *gin.Context) {
-	var user dto.UserDto
+	var user dto.CreateUserDto
 	if err := c.ShouldBindJSON(&user); err != nil {
 		c.Error(err)
 		return

@@ -137,7 +137,7 @@ func (e eventService) GetAll(ctx context.Context, vkId int64) ([]dto.EventMiniDt
 		events, err = e.r.GetAll(ctx)
 	} else {
 		// Иначе, возвращаем только те, где пользователь организатор
-		events, err = e.r.GetAllByOrg(ctx, user.ID)
+		events, err = e.r.GetAllByOrg(ctx, *user.ID)
 	}
 	if err != nil {
 		return nil, err

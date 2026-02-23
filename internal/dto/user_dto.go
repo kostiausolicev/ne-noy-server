@@ -6,17 +6,24 @@ import (
 	"github.com/google/uuid"
 )
 
+type CreateUserDto struct {
+	VkId      int64  `json:"vkId"`
+	FirstName string `json:"firstName"`
+	LastName  string `json:"lastName"`
+	PhotoURL  string `json:"photo"`
+}
+
 type UserDto struct {
-	ID                    uuid.UUID `json:"id"`
-	VkId                  int64     `json:"vkId"`
-	FirstName             string    `json:"firstName"`
-	LastName              string    `json:"lastName"`
-	PhotoURL              string    `json:"photo"`
-	Role                  RoleDto   `json:"role"`
-	GeoAvailable          bool      `json:"geoAvailable"`
-	NotificationAvailable bool      `json:"notificationAvailable"`
-	IsAdmin               bool      `json:"isAdmin,omitempty"`
-	IsEduParticipant      bool      `json:"isEduParticipant,omitempty"`
+	ID                    *uuid.UUID `json:"id,omitempty"`
+	VkId                  int64      `json:"vkId"`
+	FirstName             string     `json:"firstName"`
+	LastName              string     `json:"lastName"`
+	PhotoURL              string     `json:"photo"`
+	Role                  RoleDto    `json:"role"`
+	GeoAvailable          bool       `json:"geoAvailable"`
+	NotificationAvailable bool       `json:"notificationAvailable"`
+	IsAdmin               bool       `json:"isAdmin,omitempty"`
+	IsEduParticipant      bool       `json:"isEduParticipant,omitempty"`
 }
 
 type UserMiniDto struct {

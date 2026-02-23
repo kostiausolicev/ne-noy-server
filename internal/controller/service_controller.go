@@ -3,6 +3,7 @@ package controller
 import (
 	"ne_noy/internal/repository"
 	"runtime/metrics"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus"
@@ -42,12 +43,22 @@ func init() {
 	samples[1].Name = nMem
 
 	go func() {
-		//for {
-		//	metrics.Read(samples)
-		//	nGoroutines.Set(float64(samples[0].Value.Uint64()))
-		//	nMemory.Set(float64(samples[1].Value.Uint64()))
-		//	time.Sleep(5 * time.Second)
-		//}
+		for {
+			metrics.Read(samples)
+
+			if samples[0].Value.Kind() == metrics.KindUint64 {
+				nGoroutines.Set(float64(samples[0].Value.Uint64()))
+			}
+
+			switch samples[1].Value.Kind() {
+			case metrics.KindUint64:
+				nMemory.Set(float64(samples[1].Value.Uint64()))
+			case metrics.KindFloat64:
+				nMemory.Set(samples[1].Value.Float64())
+			}
+
+			time.Sleep(5 * time.Second)
+		}
 	}()
 }
 

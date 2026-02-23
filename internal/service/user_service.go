@@ -16,7 +16,7 @@ type UserService interface {
 	UpdateRole(ctx context.Context, vkId int64, roleUuid uuid.UUID) error
 	GetAllUsers(ctx context.Context, fio string) ([]dto.UserMiniDto, error)
 	UpdatePermissions(ctx context.Context, permission string, vkId int64, value bool) error
-	CreateUser(ctx context.Context, createUserDto dto.UserDto) (*dto.UserDto, error)
+	CreateUser(ctx context.Context, createUserDto dto.CreateUserDto) (*dto.UserDto, error)
 	GetUserByVkId(ctx context.Context, vkId int64) (*dto.UserDto, error)
 }
 
@@ -93,7 +93,7 @@ func (s *userService) UpdatePermissions(ctx context.Context, permission string, 
 	return nil
 }
 
-func (s *userService) CreateUser(ctx context.Context, createUserDto dto.UserDto) (*dto.UserDto, error) {
+func (s *userService) CreateUser(ctx context.Context, createUserDto dto.CreateUserDto) (*dto.UserDto, error) {
 	defaultRole, err := s.rr.GetByCode(ctx, config.RoleDefault)
 	if err != nil {
 		return nil, err
@@ -104,12 +104,13 @@ func (s *userService) CreateUser(ctx context.Context, createUserDto dto.UserDto)
 	}
 
 	user := model.User{
+		ID:                    uuid.New(),
 		FirstName:             createUserDto.FirstName,
 		LastName:              createUserDto.LastName,
 		VkID:                  createUserDto.VkId,
 		PhotoURL:              createUserDto.PhotoURL,
-		GeoAvailable:          createUserDto.GeoAvailable,
-		NotificationAvailable: createUserDto.NotificationAvailable,
+		GeoAvailable:          false,
+		NotificationAvailable: false,
 		Role:                  defaultRole,
 		RoleID:                &defaultRole.ID,
 	}
@@ -165,7 +166,7 @@ func (s *userService) userModelToDto(user model.User) *dto.UserDto {
 		}()
 
 	return &dto.UserDto{
-		ID:                    user.ID,
+		ID:                    &user.ID,
 		FirstName:             user.FirstName,
 		LastName:              user.LastName,
 		GeoAvailable:          user.GeoAvailable,
