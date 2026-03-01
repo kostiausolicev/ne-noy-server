@@ -84,7 +84,7 @@ func (e eventService) UpdateEvent(ctx context.Context, eventId uuid.UUID, eventD
 		fields["address"] = eventDto.Address
 	}
 	if eventDto.AdAddress != nil {
-		fields["ad_address"] = eventDto.AdAddress
+		fields["additional_address"] = eventDto.AdAddress
 	}
 	if eventDto.VkPollAnswerID != nil {
 		fields["vk_poll_answer_id"] = eventDto.VkPollAnswerID
@@ -101,11 +101,14 @@ func (e eventService) UpdateEvent(ctx context.Context, eventId uuid.UUID, eventD
 	if eventDto.StartsAt != nil {
 		fields["starts_at"] = eventDto.StartsAt
 	}
+	if eventDto.Status != nil {
+		fields["status"] = eventDto.Status
+	}
 
 	// Формируем слайс организаторов и ролей (если переданы)
 	orgs := make([]model.User, 0)
-	for _, orgId := range eventDto.Orgs {
-		orgs = append(orgs, model.User{ID: orgId})
+	for _, org := range eventDto.Orgs {
+		orgs = append(orgs, model.User{ID: org.ID})
 	}
 	roles := make([]model.Role, 0)
 	for _, roleCode := range eventDto.AvailableRoles {
@@ -396,8 +399,8 @@ func (e eventService) parseDtoToModel(ctx context.Context, eventDto dto.CreateUp
 
 	// Создаем организаторов только с ID
 	event.Orgs = make([]model.User, len(eventDto.Orgs))
-	for i, orgId := range eventDto.Orgs {
-		event.Orgs[i] = model.User{ID: orgId}
+	for i, org := range eventDto.Orgs {
+		event.Orgs[i] = model.User{ID: org.ID}
 	}
 
 	// Создаем роли только с ID (теперь AvailableRoles - это []uuid.UUID)

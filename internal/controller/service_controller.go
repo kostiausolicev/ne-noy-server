@@ -80,9 +80,26 @@ func (sc *serviceController) healthCheck(c *gin.Context) {
 	c.JSON(200, gin.H{"status": "ok"})
 }
 
+// validateSign godoc
+//
+//	@Summary	Проверка подписи
+//	@Tags		service
+//	@Param		X-Request-Id	header	string						true	"X-Request-Id"
+//	@Success	200
+//	@Failure	401	{object}	dto.ErrorResponse
+//	@Router		/v1/validate [get]
+//	@Security	VkAuth
+func validateSign(c *gin.Context) {
+	c.Status(200)
+}
+
 func ConfigureServiceController(router *gin.RouterGroup, userRepository repository.UserRepository) {
 	sc := &serviceController{userRepository: userRepository}
 	router.GET("/health", sc.healthCheck)
 	router.GET("/metrics", gin.WrapH(promhttp.Handler()))
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+}
+
+func ApiServiceController(router *gin.RouterGroup) {
+	router.GET("/validate", validateSign)
 }

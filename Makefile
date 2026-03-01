@@ -3,8 +3,9 @@ CMD_DIR := ./cmd/$(APP_NAME)
 CONFIG_FILE := ./configs/config.yaml
 MOCKS_DESTINATION=mocks
 DOC_DESTINATION=docs
+DOCKER_VERSION=0.0.5
 
-.PHONY: build run test clean fmt vet migrate-up migrate-down doc mocks
+.PHONY: build run test clean fmt vet migrate-up migrate-down doc mocks docker-build docker-save
 
 migrate-up:
 	goose -dir ./migrations up
@@ -51,3 +52,9 @@ vet:
 doc:
 	@rm -rf $(DOC_DESTINATION)
 	swag init -g main.go -d cmd/ne-noy,internal
+
+docker-build:
+	docker buildx build --platform linux/amd64 -f ./build/package/Dockerfile -t $(APP_NAME):$(DOCKER_VERSION) --load .
+
+docker-save: docker-build
+	docker save $(APP_NAME):$(DOCKER_VERSION) -o $(APP_NAME)-$(DOCKER_VERSION).tar

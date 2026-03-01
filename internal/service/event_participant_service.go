@@ -3,6 +3,8 @@ package service
 import (
 	"context"
 	"errors"
+	"math"
+	"ne_noy/internal/apperror"
 	"ne_noy/internal/dto"
 	"ne_noy/internal/model"
 	"ne_noy/internal/repository"
@@ -45,7 +47,7 @@ func (eps eventParticipantService) CheckParticipant(ctx context.Context, partici
 		}
 	case "Event QR":
 		{
-
+			err = eps.checkByQr(ctx, participantData)
 		}
 	}
 	return err
@@ -73,4 +75,64 @@ func (eps eventParticipantService) checkByAdmin(ctx context.Context, participant
 		}
 	}
 	return errors.New("participant not exist")
+}
+
+func (eps eventParticipantService) checkByQr(ctx context.Context, participantData dto.CheckEventParticipant) error {
+	event, err := eps.er.GetLocationById(ctx, participantData.EventId)
+	if err != nil {
+		return err
+	}
+	if event.Lat == nil || event.Long == nil {
+		return apperror.EventLocationNotSetErr
+	}
+
+	diff := haversineDistance(*event.Lat, *event.Long, *participantData.Lat, *participantData.Long)
+
+	// Вынести в конфиги
+	if diff > 200 {
+		return apperror.ParticipantLocationTooLageErr
+	}
+
+	participant := model.EventParticipant{
+		EventID:        participantData.EventId,
+		UserID:         participantData.UserId,
+		IsChecked:      true,
+		CheckTimestamp: &participantData.Timestamp,
+		CheckLat:       participantData.Lat,
+		CheckLong:      participantData.Long,
+		CheckType:      participantData.CheckType,
+	}
+	err = eps.epr.CheckParticipant(ctx, &participant)
+	if errors.Is(err, apperror.ParticipantNotExistErr) {
+		err = nil
+		// Если участника не было, то
+		_, err := eps.epr.ParticipantById(ctx, participantData.EventId, participantData.UserId, "app")
+		if err != nil {
+			return err
+		}
+		err = eps.epr.CheckParticipant(ctx, &participant)
+		if err != nil {
+			return err
+		}
+	}
+	return err
+}
+
+func haversineDistance(lat1, lon1, lat2, lon2 float64) float64 {
+	lat1Rad := lat1 * math.Pi / 180
+	lat2Rad := lat2 * math.Pi / 180
+
+	// Средняя широта для коррекции долготы
+	avgLat := (lat1Rad + lat2Rad) / 2
+
+	// Разница координат в радианах
+	dlat := (lat2 - lat1) * math.Pi / 180
+	dlon := (lon2 - lon1) * math.Pi / 180
+
+	// Корректировка долготы с учетом широты
+	x := dlon * math.Cos(avgLat)
+	y := dlat
+
+	// Расстояние по теореме Пифагора
+	return 6371.0 * math.Sqrt(x*x+y*y) * 1000
 }

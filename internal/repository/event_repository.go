@@ -33,6 +33,7 @@ type EventRepository interface {
 	GetEventOrgs(ctx context.Context, eventId uuid.UUID) ([]model.User, error)
 	GetByVkPollId(ctx context.Context, pollId int64) (*model.Event, error)
 	GetById(ctx context.Context, id uuid.UUID) (*model.Event, error)
+	GetLocationById(ctx context.Context, id uuid.UUID) (*model.Event, error)
 	GetParticipants(ctx context.Context, id uuid.UUID) ([]model.EventParticipant, error)
 	Create(ctx context.Context, event *model.Event) (*model.Event, error)
 	Update(ctx context.Context, id uuid.UUID, fields map[string]interface{}, orgs []model.User, availableRoles []model.Role) (*model.Event, error)
@@ -107,7 +108,7 @@ func (r *eventRepository) GetAllByRole(ctx context.Context, role string) ([]*mod
 	result := r.baseEventQuery(ctx).
 		Joins("JOIN event_roles er ON er.event_id = events.id").
 		Joins("JOIN roles r ON r.id = er.role_id").
-		Where("r.name = ? AND events.starts_at > NOW()", role).
+		Where("r.name = ? AND events.starts_at > NOW() AND events.status = 'ACTIVE'", role).
 		Find(&events)
 	if result.Error != nil {
 		return nil, result.Error
@@ -120,7 +121,7 @@ func (r *eventRepository) GetAllArchive(ctx context.Context, role string) ([]*mo
 	result := r.baseEventQuery(ctx).
 		Joins("JOIN event_roles er ON er.event_id = events.id").
 		Joins("JOIN roles r ON r.id = er.role_id").
-		Where("r.name = ? AND events.starts_at < NOW()", role).
+		Where("r.name = ? AND events.starts_at < NOW() AND events.status = 'ACTIVE'", role).
 		Find(&events)
 	if result.Error != nil {
 		return nil, result.Error
@@ -162,7 +163,23 @@ func (r *eventRepository) GetById(ctx context.Context, id uuid.UUID) (*model.Eve
 		Preload("Attachments.Attachment", func(db *gorm.DB) *gorm.DB {
 			return db.Select(`attachments.id, attachments.filename, attachments.url`)
 		}).
-		Select("id, name, cover, description, address, additional_address, vk_post_id, vk_vote_id, status, starts_at, lat, lon").
+		Select("id, name, cover, description, address, additional_address, vk_post_id, vk_vote_id, vk_poll_answer_id, status, starts_at, lat, lon").
+		Where("id = ?", id).
+		First(&event)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return nil, nil // Или кастомная ошибка
+		}
+		return nil, result.Error
+	}
+	return &event, nil
+}
+
+func (r *eventRepository) GetLocationById(ctx context.Context, id uuid.UUID) (*model.Event, error) {
+	var event model.Event
+	result := r.db.WithContext(ctx).
+		Table(event.TableName()).
+		Select("id, lat, lon").
 		Where("id = ?", id).
 		First(&event)
 	if result.Error != nil {

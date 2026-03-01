@@ -52,6 +52,7 @@ func New(db *gorm.DB, secret string, appId int64) *Server {
 		controller.ConfigureVkCallBackController(apiV1, secret, vkCallbackService)
 		apiV1.Use(middleware.AuthMiddleware(secret, appId))
 		{
+			controller.ApiServiceController(apiV1)
 			controller.ConfigureEventController(apiV1, eventService, eventParticipantService)
 			controller.ConfigureUserController(apiV1, userService)
 			apiV1.Use(middleware.AdminMiddleware())

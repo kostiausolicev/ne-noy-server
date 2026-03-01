@@ -18,3 +18,7 @@ type User struct {
 	NotificationAvailable bool      `gorm:"default:true"`
 	CreatedAt             time.Time `gorm:"autoCreateTime"`
 }
+
+func (e User) TableName() string {
+	return "users"
+}

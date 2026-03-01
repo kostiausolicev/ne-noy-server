@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"errors"
+	"ne_noy/internal/apperror"
 	"ne_noy/internal/controller"
 	"ne_noy/internal/dto"
 	"net/http"
@@ -27,6 +28,8 @@ func ErrorHandler() gin.HandlerFunc {
 				c.JSON(http.StatusUnauthorized, dto.ErrorResponse{Error: err.Error(), Timestamp: time.Now(), RequestId: requestId})
 			} else if errors.Is(err, gorm.ErrRecordNotFound) {
 				c.JSON(http.StatusNotFound, dto.ErrorResponse{Error: err.Error(), Timestamp: time.Now(), RequestId: requestId})
+			} else if errors.Is(err, apperror.ParticipantLocationTooLageErr) {
+				c.JSON(http.StatusBadRequest, dto.ErrorResponse{Error: err.Error(), Timestamp: time.Now(), RequestId: requestId})
 			} else {
 				c.JSON(http.StatusInternalServerError, dto.ErrorResponse{Error: err.Error(), Timestamp: time.Now(), RequestId: requestId})
 			}

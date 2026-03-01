@@ -43,15 +43,15 @@ type CreateUpdateEventDto struct {
 	VkPollAnswerID *int64  `json:"vk_poll_answer_id"`
 	PhotoURL       *string `json:"photoUrl"`
 
-	Title          *string     `json:"title"`
-	Description    *string     `json:"description"`
-	Attachments    *[]string   `json:"attachments"`
-	Address        *string     `json:"address"`
-	AdAddress      *string     `json:"adAddress"`
-	Lat            *float64    `json:"lat"`
-	Long           *float64    `json:"long"`
-	Orgs           []uuid.UUID `json:"orgs"`
-	Status         *string     `json:"status"`
-	StartsAt       *time.Time  `json:"startsAt"`
-	AvailableRoles []string    `json:"availableRoles"`
+	Title          *string       `json:"title"`
+	Description    *string       `json:"description"`
+	Attachments    *[]string     `json:"attachments"`
+	Address        *string       `json:"address"`
+	AdAddress      *string       `json:"adAddress"`
+	Lat            *float64      `json:"lat"`
+	Long           *float64      `json:"long"`
+	Orgs           []UserMiniDto `json:"orgs"`
+	Status         *string       `json:"status"`
+	StartsAt       *time.Time    `json:"startsAt"`
+	AvailableRoles []string      `json:"availableRoles"`
 }

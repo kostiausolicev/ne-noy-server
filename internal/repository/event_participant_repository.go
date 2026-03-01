@@ -2,8 +2,9 @@ package repository
 
 import (
 	"context"
-	"errors"
+	"ne_noy/internal/apperror"
 	"ne_noy/internal/model"
+	"slices"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -23,12 +24,26 @@ func (er *eventParticipantRepository) withScope(ctx context.Context) *gorm.DB {
 
 type EventParticipantRepository interface {
 	CheckParticipant(ctx context.Context, participant *model.EventParticipant) error
-	Participant(ctx context.Context, eventID uuid.UUID, userId int64, prepareType string) (bool, error)
+	Participant(ctx context.Context, eventID uuid.UUID, userVkId int64, prepareType string) (bool, error)
+	ParticipantById(ctx context.Context, eventID uuid.UUID, userId uuid.UUID, prepareType string) (bool, error)
 	UnParticipant(ctx context.Context, eventID uuid.UUID, userId int64) (bool, error)
 }
 
 func (er *eventParticipantRepository) CheckParticipant(ctx context.Context, participant *model.EventParticipant) error {
+	var exists bool
 	result := er.withScope(ctx).
+		Raw("SELECT EXISTS(SELECT 1 FROM event_participants WHERE event_id = ? AND user_id = ?)", participant.EventID, participant.UserID).
+		Scan(&exists)
+
+	if result.Error != nil {
+		return result.Error
+	}
+
+	if !exists {
+		return apperror.ParticipantNotExistErr
+	}
+
+	result = er.withScope(ctx).
 		Model(&model.EventParticipant{}).
 		Where("event_id = ? AND user_id = ?", participant.EventID, participant.UserID).
 		Updates(map[string]interface{}{
@@ -39,25 +54,63 @@ func (er *eventParticipantRepository) CheckParticipant(ctx context.Context, part
 			"check_type":      participant.CheckType,
 			"check_author":    participant.CheckAuthor,
 		})
-	if result.RowsAffected == 0 {
-		return errors.New("participant not exist")
-	}
 	return result.Error
 }
 
-func (er *eventParticipantRepository) Participant(ctx context.Context, eventId uuid.UUID, userId int64, prepareType string) (bool, error) {
+func (er *eventParticipantRepository) Participant(ctx context.Context, eventId uuid.UUID, userVkId int64, prepareType string) (bool, error) {
 	user := model.User{}
+	event := model.Event{}
 	er.withScope(ctx).
-		Table("users").
+		Table(user.TableName()).
+		Select("\"users\".id").
+		Joins("Role").
+		Where("\"users\".vk_id = ?", userVkId).
+		First(&user)
+	er.withScope(ctx).
+		Table(event.TableName()).
 		Select("id").
-		Where("vk_id = ?", userId).
-		Scan(&user)
+		Preload("AvailableRoles").
+		Where("id = ?", eventId).
+		First(&event)
+	if !slices.Contains(event.AvailableRoles, *user.Role) {
+		return false, apperror.UserRoleNotInAvailableRolesErr
+	}
 	eventParticipant := model.EventParticipant{
 		EventID:     eventId,
 		UserID:      user.ID,
 		PrepareType: prepareType,
 	}
-	result := er.db.Create(&eventParticipant)
+	result := er.db.WithContext(ctx).Create(&eventParticipant)
+	if result.Error != nil {
+		return false, result.Error
+	}
+	return true, nil
+}
+
+func (er *eventParticipantRepository) ParticipantById(ctx context.Context, eventId uuid.UUID, userId uuid.UUID, prepareType string) (bool, error) {
+	user := model.User{}
+	event := model.Event{}
+	er.withScope(ctx).
+		Table(user.TableName()).
+		Select("\"users\".id").
+		Joins("Role").
+		Where("\"users\".id = ?", userId).
+		First(&user)
+	er.withScope(ctx).
+		Table(event.TableName()).
+		Select("id").
+		Preload("AvailableRoles").
+		Where("id = ?", eventId).
+		First(&event)
+	if !slices.Contains(event.AvailableRoles, *user.Role) {
+		return false, apperror.UserRoleNotInAvailableRolesErr
+	}
+	eventParticipant := model.EventParticipant{
+		EventID:     eventId,
+		UserID:      userId,
+		PrepareType: prepareType,
+	}
+	result := er.db.WithContext(ctx).Create(&eventParticipant)
 	if result.Error != nil {
 		return false, result.Error
 	}
