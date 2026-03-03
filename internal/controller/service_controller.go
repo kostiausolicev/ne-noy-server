@@ -84,7 +84,7 @@ func (sc *serviceController) healthCheck(c *gin.Context) {
 //
 //	@Summary	Проверка подписи
 //	@Tags		service
-//	@Param		X-Request-Id	header	string						true	"X-Request-Id"
+//	@Param		X-Request-Id	header	string	true	"X-Request-Id"
 //	@Success	200
 //	@Failure	401	{object}	dto.ErrorResponse
 //	@Router		/v1/validate [get]

@@ -9,10 +9,11 @@ import (
 )
 
 type Config struct {
-	Server   ServerConfig `mapstructure:"server"`
-	Database DBConfig     `mapstructure:"database"`
-	Secret   string       `mapstructure:"secret"`
-	AppId    int64        `mapstructure:"appId"`
+	Server   ServerConfig   `mapstructure:"server"`
+	Database DBConfig       `mapstructure:"database"`
+	VK       VKClientConfig `mapstructure:"vk"`
+	Secret   string         `mapstructure:"secret"`
+	AppId    int64          `mapstructure:"appId"`
 }
 
 func init() {

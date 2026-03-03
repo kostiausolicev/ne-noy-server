@@ -22,7 +22,7 @@ type userController struct {
 //	@Tags			users
 //	@Accept			json
 //	@Produce		json
-//	@Param			X-Request-Id	header		string		true	"Уникальный идентификатор запроса для трассировки"
+//	@Param			X-Request-Id	header		string				true	"Уникальный идентификатор запроса для трассировки"
 //	@Param			user			body		dto.CreateUserDto	true	"Данные нового пользователя"
 //	@Success		201				{object}	dto.UserDto
 //	@Failure		400				{object}	dto.ErrorResponse	"Некорректные входные данные"
@@ -43,6 +43,34 @@ func (uc *userController) createUser(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusCreated, createUser)
+}
+
+// createUserByLinks godoc
+//
+//	@Summary		Создать пользователей из списка ссылок
+//	@Description	Создаёт пользоватей из списка ссылок
+//	@Tags			users
+//	@Accept			json
+//	@Produce		json
+//	@Param			X-Request-Id	header		string	true	"Уникальный идентификатор запроса для трассировки"
+//	@Param			user			body		dto.CreateUserByLinksDto	true	"Ссылки на новых пользователей"
+//	@Success		201				{array}		dto.UserDto
+//	@Failure		401				{object}	dto.ErrorResponse	"Не авторизован"
+//	@Failure		500				{object}	dto.ErrorResponse
+//	@Router			/v1/users/byLinks [post]
+//	@Security		VkAuth
+func (uc *userController) createUserByLinks(c *gin.Context) {
+	var users dto.CreateUserByLinksDto
+	if err := c.ShouldBindJSON(&users); err != nil {
+		c.Error(err)
+		return
+	}
+	createUsers, err := uc.service.CreateUserByLinks(c.Request.Context(), users.Links)
+	if err != nil {
+		c.Error(err)
+		return
+	}
+	c.JSON(http.StatusCreated, createUsers)
 }
 
 // getAll godoc
@@ -183,6 +211,7 @@ func (uc *userController) updateUserRole(c *gin.Context) {
 func ConfigureUserController(router *gin.RouterGroup, service service.UserService) {
 	uc := &userController{service: service}
 	router.POST("/users", uc.createUser)
+	router.POST("/users/byLinks", uc.createUserByLinks)
 	router.GET("/users", uc.getAll)
 	router.GET("/users/vk/:id", uc.getByVkId)
 	router.PATCH("/users/vk/:id/:permission", uc.updateUser)

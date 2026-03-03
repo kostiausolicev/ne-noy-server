@@ -2,6 +2,8 @@ package internal
 
 import (
 	"fmt"
+	vkClient "ne_noy/internal/client"
+	"ne_noy/internal/config"
 	"ne_noy/internal/controller"
 	"ne_noy/internal/controller/middleware"
 	"ne_noy/internal/repository"
@@ -17,14 +19,16 @@ type Server struct {
 	DB     *gorm.DB
 }
 
-func New(db *gorm.DB, secret string, appId int64) *Server {
+func New(db *gorm.DB, config config.Config) *Server {
 	userRepo := repository.NewUserRepository(db)
 	eventRepo := repository.NewEventRepository(db)
 	roleRepo := repository.NewRoleRepository(db)
 	eventParticipantRepository := repository.NewEventParticipantRepository(db)
 	eventQueueRepository := repository.NewEventQueueRepository(db)
 
-	userService := service.NewUserService(userRepo, roleRepo)
+	vkCl := vkClient.NewVkApiClient(config.VK.ServiceKey, config.VK.BaseURL)
+
+	userService := service.NewUserService(userRepo, roleRepo, vkCl)
 	eventService := service.NewEventService(eventRepo, userService, roleRepo)
 	eventParticipantService := service.NewEventParticipantService(eventParticipantRepository, eventRepo)
 	// сервис для обработки callback'ов VK (добавление в очередь и т.п.)
@@ -49,8 +53,8 @@ func New(db *gorm.DB, secret string, appId int64) *Server {
 			controller.ConfigureServiceController(public, userRepo)
 		}
 		apiV1 := router.Group("/api/v1")
-		controller.ConfigureVkCallBackController(apiV1, secret, vkCallbackService)
-		apiV1.Use(middleware.AuthMiddleware(secret, appId))
+		controller.ConfigureVkCallBackController(apiV1, config.Secret, vkCallbackService)
+		apiV1.Use(middleware.AuthMiddleware(config.Secret, config.AppId))
 		{
 			controller.ApiServiceController(apiV1)
 			controller.ConfigureEventController(apiV1, eventService, eventParticipantService)

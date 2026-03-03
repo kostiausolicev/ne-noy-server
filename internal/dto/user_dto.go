@@ -6,6 +6,10 @@ import (
 	"github.com/google/uuid"
 )
 
+type CreateUserByLinksDto struct {
+	Links []string `json:"links"`
+}
+
 type CreateUserDto struct {
 	VkId      int64  `json:"vkId"`
 	FirstName string `json:"firstName"`

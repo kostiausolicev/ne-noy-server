@@ -5,6 +5,10 @@ server:
 appId: -1
 secret: "SECRET_KEY"
 
+vk:
+  serviceKey: "SERVICE_KEY"
+  baseUrl: "hhh"
+
 database:
   host: localhost
   port: 5432

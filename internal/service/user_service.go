@@ -8,6 +8,9 @@ import (
 	"ne_noy/internal/model"
 	"ne_noy/internal/repository"
 	"strings"
+	"sync"
+
+	vkClient "ne_noy/internal/client"
 
 	"github.com/google/uuid"
 )
@@ -17,16 +20,18 @@ type UserService interface {
 	GetAllUsers(ctx context.Context, fio string) ([]dto.UserMiniDto, error)
 	UpdatePermissions(ctx context.Context, permission string, vkId int64, value bool) error
 	CreateUser(ctx context.Context, createUserDto dto.CreateUserDto) (*dto.UserDto, error)
+	CreateUserByLinks(ctx context.Context, userIds []string) ([]*dto.UserDto, error)
 	GetUserByVkId(ctx context.Context, vkId int64) (*dto.UserDto, error)
 }
 
 type userService struct {
 	r  repository.UserRepository
 	rr repository.RoleRepository
+	cl vkClient.VkApiClient
 }
 
-func NewUserService(r repository.UserRepository, rr repository.RoleRepository) UserService {
-	return &userService{r: r, rr: rr}
+func NewUserService(r repository.UserRepository, rr repository.RoleRepository, cl vkClient.VkApiClient) UserService {
+	return &userService{r: r, rr: rr, cl: cl}
 }
 
 func (s *userService) UpdateRole(ctx context.Context, vkId int64, roleUuid uuid.UUID) error {
@@ -121,6 +126,36 @@ func (s *userService) CreateUser(ctx context.Context, createUserDto dto.CreateUs
 	}
 
 	return s.userModelToDto(user), nil
+}
+
+func (s *userService) CreateUserByLinks(ctx context.Context, userIds []string) ([]*dto.UserDto, error) {
+	var wg sync.WaitGroup
+	createdUsers := make([]*dto.UserDto, 0)
+	dtos, err := s.cl.GetVkUsers(userIds)
+	if err != nil {
+		return nil, err
+	}
+	wg.Add(len(dtos))
+	for _, user := range dtos {
+		go func(dto dto.CreateUserDto) {
+			defer wg.Done()
+			select {
+			case <-ctx.Done():
+				return
+			default:
+				{
+					user, err := s.CreateUser(ctx, dto)
+					if err != nil {
+						return
+					}
+					createdUsers = append(createdUsers, user)
+				}
+			}
+		}(user)
+	}
+	wg.Wait()
+
+	return createdUsers, nil
 }
 
 func (s *userService) GetUserByVkId(ctx context.Context, vkId int64) (*dto.UserDto, error) {
