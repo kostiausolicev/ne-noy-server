@@ -3,7 +3,7 @@ CMD_DIR := ./cmd/$(APP_NAME)
 CONFIG_FILE := ./configs/config.yaml
 MOCKS_DESTINATION=mocks
 DOC_DESTINATION=docs
-DOCKER_VERSION=0.0.5
+DOCKER_VERSION=0.1.0
 
 .PHONY: build run test clean fmt vet migrate-up migrate-down doc mocks docker-build docker-save
 

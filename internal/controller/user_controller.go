@@ -52,7 +52,7 @@ func (uc *userController) createUser(c *gin.Context) {
 //	@Tags			users
 //	@Accept			json
 //	@Produce		json
-//	@Param			X-Request-Id	header		string	true	"Уникальный идентификатор запроса для трассировки"
+//	@Param			X-Request-Id	header		string						true	"Уникальный идентификатор запроса для трассировки"
 //	@Param			user			body		dto.CreateUserByLinksDto	true	"Ссылки на новых пользователей"
 //	@Success		201				{array}		dto.UserDto
 //	@Failure		401				{object}	dto.ErrorResponse	"Не авторизован"

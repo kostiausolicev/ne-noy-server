@@ -16,7 +16,7 @@ type SendMessageResponse struct {
 }
 
 type UsersGet struct {
-	VkId      int64  `json:"vk_id"`
+	VkId      int64  `json:"id"`
 	FirstName string `json:"first_name"`
 	LastName  string `json:"last_name"`
 	PhotoId   string `json:"photo_max"`

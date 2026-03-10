@@ -36,6 +36,15 @@ func New(db *gorm.DB, config config.Config) *Server {
 	// сервис для получения записей очереди
 	eventQueueService := service.NewEventQueueService(eventQueueRepository)
 
+	onboardingRepo := repository.NewOnboardingRepository(db)
+	onboardingService := service.NewOnboardingService(onboardingRepo)
+
+	sRouter := gin.New()
+	public := sRouter.Group("/")
+	{
+		controller.ConfigureServiceController(public, userRepo)
+	}
+
 	router := gin.Default()
 	// TODO Вынести в конфиг файл
 	router.Use(cors.New(cors.Config{
@@ -48,14 +57,11 @@ func New(db *gorm.DB, config config.Config) *Server {
 	}))
 	router.Use(middleware.ErrorHandler())
 	{
-		public := router.Group("/")
-		{
-			controller.ConfigureServiceController(public, userRepo)
-		}
 		apiV1 := router.Group("/api/v1")
 		controller.ConfigureVkCallBackController(apiV1, config.Secret, vkCallbackService)
 		apiV1.Use(middleware.AuthMiddleware(config.Secret, config.AppId))
 		{
+			controller.ConfigureOnboardingController(apiV1, onboardingService)
 			controller.ApiServiceController(apiV1)
 			controller.ConfigureEventController(apiV1, eventService, eventParticipantService)
 			controller.ConfigureUserController(apiV1, userService)
