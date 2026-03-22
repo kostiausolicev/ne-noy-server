@@ -13,12 +13,13 @@ import (
 )
 
 type eventParticipantService struct {
-	epr repository.EventParticipantRepository
-	er  repository.EventRepository
+	epr      repository.EventParticipantRepository
+	er       repository.EventRepository
+	distance int64
 }
 
-func NewEventParticipantService(epr repository.EventParticipantRepository, er repository.EventRepository) EventParticipantService {
-	return eventParticipantService{epr: epr, er: er}
+func NewEventParticipantService(epr repository.EventParticipantRepository, er repository.EventRepository, distance int64) EventParticipantService {
+	return eventParticipantService{epr: epr, er: er, distance: distance}
 }
 
 type EventParticipantService interface {
@@ -89,7 +90,7 @@ func (eps eventParticipantService) checkByQr(ctx context.Context, participantDat
 	diff := haversineDistance(*event.Lat, *event.Long, *participantData.Lat, *participantData.Long)
 
 	// Вынести в конфиги
-	if diff > 200 {
+	if diff > float64(eps.distance) {
 		return apperror.ParticipantLocationTooLageErr
 	}
 

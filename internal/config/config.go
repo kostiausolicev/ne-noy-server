@@ -14,6 +14,7 @@ type Config struct {
 	VK       VKClientConfig `mapstructure:"vk"`
 	Secret   string         `mapstructure:"secret"`
 	AppId    int64          `mapstructure:"appId"`
+	Distance int64          `mapstructure:"distance"`
 }
 
 func init() {

@@ -30,7 +30,7 @@ func New(db *gorm.DB, config config.Config) *Server {
 
 	userService := service.NewUserService(userRepo, roleRepo, vkCl)
 	eventService := service.NewEventService(eventRepo, userService, roleRepo)
-	eventParticipantService := service.NewEventParticipantService(eventParticipantRepository, eventRepo)
+	eventParticipantService := service.NewEventParticipantService(eventParticipantRepository, eventRepo, config.Distance)
 	// сервис для обработки callback'ов VK (добавление в очередь и т.п.)
 	vkCallbackService := service.NewVkCallbackService(eventQueueRepository, eventRepo, eventParticipantService)
 	// сервис для получения записей очереди

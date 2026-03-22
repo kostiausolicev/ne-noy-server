@@ -4,6 +4,7 @@ server:
 
 appId: -1
 secret: "SECRET_KEY"
+distance: 1000
 
 vk:
   serviceKey: "SERVICE_KEY"
