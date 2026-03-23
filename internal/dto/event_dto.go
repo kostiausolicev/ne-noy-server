@@ -34,6 +34,7 @@ type EventDto struct {
 	ParticipantsCount        int             `json:"participantsCount"`
 	Status                   string          `json:"status"`
 	StartsAt                 time.Time       `json:"startAt"`
+	EndsAt                   time.Time       `json:"endsAt"`
 	CurrentUserIsParticipant *bool           `json:"currentUserIsParticipant,omitempty"`
 }
 
@@ -53,5 +54,6 @@ type CreateUpdateEventDto struct {
 	Orgs           []UserMiniDto `json:"orgs"`
 	Status         *string       `json:"status"`
 	StartsAt       *time.Time    `json:"startsAt"`
+	EndsAt         *time.Time    `json:"endsAt"`
 	AvailableRoles []string      `json:"availableRoles"`
 }

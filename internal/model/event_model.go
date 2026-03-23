@@ -20,6 +20,7 @@ type Event struct {
 	Address           *string
 	AdditionalAddress *string
 	StartsAt          *time.Time
+	EndsAt            *time.Time
 	ParticipantsCount int       `gorm:"->"`
 	Type              *string   `gorm:"size:100"`
 	CreatedAt         time.Time `gorm:"autoCreateTime"`

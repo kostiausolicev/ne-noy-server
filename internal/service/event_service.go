@@ -101,6 +101,9 @@ func (e eventService) UpdateEvent(ctx context.Context, eventId uuid.UUID, eventD
 	if eventDto.StartsAt != nil {
 		fields["starts_at"] = eventDto.StartsAt
 	}
+	if eventDto.EndsAt != nil {
+		fields["ends_at"] = eventDto.EndsAt
+	}
 	if eventDto.Status != nil {
 		fields["status"] = eventDto.Status
 	}
@@ -248,6 +251,7 @@ func (e eventService) GetEvent(ctx context.Context, id uuid.UUID, userId int64) 
 		AdAddress:                event.AdditionalAddress,
 		Participants:             participants,
 		StartsAt:                 *event.StartsAt,
+		EndsAt:                   *event.EndsAt,
 		Status:                   *event.Status,
 		CurrentUserIsParticipant: &isParticipant,
 	}

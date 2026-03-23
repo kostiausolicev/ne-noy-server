@@ -108,7 +108,7 @@ func (r *eventRepository) GetAllByRole(ctx context.Context, role string) ([]*mod
 	result := r.baseEventQuery(ctx).
 		Joins("JOIN event_roles er ON er.event_id = events.id").
 		Joins("JOIN roles r ON r.id = er.role_id").
-		Where("r.name = ? AND events.starts_at > NOW() AND events.status = 'ACTIVE'", role).
+		Where("r.name = ? AND events.ends_at > NOW() AND events.status = 'ACTIVE'", role).
 		Find(&events)
 	if result.Error != nil {
 		return nil, result.Error
@@ -121,7 +121,7 @@ func (r *eventRepository) GetAllArchive(ctx context.Context, role string) ([]*mo
 	result := r.baseEventQuery(ctx).
 		Joins("JOIN event_roles er ON er.event_id = events.id").
 		Joins("JOIN roles r ON r.id = er.role_id").
-		Where("r.name = ? AND events.starts_at < NOW() AND events.status = 'ACTIVE'", role).
+		Where("r.name = ? AND events.ends_at < NOW() AND events.status = 'ACTIVE'", role).
 		Find(&events)
 	if result.Error != nil {
 		return nil, result.Error
@@ -163,7 +163,7 @@ func (r *eventRepository) GetById(ctx context.Context, id uuid.UUID) (*model.Eve
 		Preload("Attachments.Attachment", func(db *gorm.DB) *gorm.DB {
 			return db.Select(`attachments.id, attachments.filename, attachments.url`)
 		}).
-		Select("id, name, cover, description, address, additional_address, vk_post_id, vk_vote_id, vk_poll_answer_id, status, starts_at, lat, lon").
+		Select("id, name, cover, description, address, additional_address, vk_post_id, vk_vote_id, vk_poll_answer_id, status, starts_at, ends_at, lat, lon").
 		Where("id = ?", id).
 		First(&event)
 	if result.Error != nil {
