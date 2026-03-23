@@ -16,5 +16,6 @@
     <file url="file://$PROJECT_DIR$/migrations/005__create_post_queue_table.sql" dialect="PostgreSQL" />
     <file url="file://$PROJECT_DIR$/migrations/007__alter_table_participants.sql" dialect="PostgreSQL" />
     <file url="file://$PROJECT_DIR$/migrations/008__add table attachments.sql" dialect="PostgreSQL" />
+    <file url="file://$PROJECT_DIR$/migrations/015__add check constaint participant.sql" dialect="PostgreSQL" />
   </component>
 </project>
