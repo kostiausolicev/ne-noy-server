@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"log"
 	server "ne_noy/internal"
@@ -19,6 +20,7 @@ import (
 // @in							header
 // @name						Authorization
 func main() {
+	ctx := context.Background()
 	configPath := flag.String("config", "configs/config.yaml", "path to config file")
 	flag.Parse()
 
@@ -26,7 +28,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("cannot load config: %v", err)
 	}
-	db, err := database.Connect(cfg.Database)
+	db, err := database.Connect(ctx, cfg.Database)
 	if err != nil {
 		log.Fatalf("cannot connect to database: %v", err)
 	}

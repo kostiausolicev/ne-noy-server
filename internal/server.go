@@ -6,25 +6,24 @@ import (
 	"ne_noy/internal/config"
 	"ne_noy/internal/controller"
 	"ne_noy/internal/controller/middleware"
-	"ne_noy/internal/repository"
+	"ne_noy/internal/repository/pgx"
 	"ne_noy/internal/service"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type Server struct {
 	Router *gin.Engine
-	DB     *gorm.DB
 }
 
-func New(db *gorm.DB, config config.Config) *Server {
-	userRepo := repository.NewUserRepository(db)
-	eventRepo := repository.NewEventRepository(db)
-	roleRepo := repository.NewRoleRepository(db)
-	eventParticipantRepository := repository.NewEventParticipantRepository(db)
-	eventQueueRepository := repository.NewEventQueueRepository(db)
+func New(db *pgxpool.Pool, config config.Config) *Server {
+	userRepo := pgx.NewUserRepository(db)
+	eventRepo := pgx.NewEventRepositoryPgx(db)
+	roleRepo := pgx.NewRoleRepositoryPgx(db)
+	eventParticipantRepository := pgx.NewEventParticipantRepository(db)
+	eventQueueRepository := pgx.NewEventQueueRepository(db)
 
 	vkCl := vkClient.NewVkApiClient(config.VK.ServiceKey, config.VK.BaseURL)
 
@@ -36,7 +35,7 @@ func New(db *gorm.DB, config config.Config) *Server {
 	// сервис для получения записей очереди
 	eventQueueService := service.NewEventQueueService(eventQueueRepository)
 
-	onboardingRepo := repository.NewOnboardingRepository(db)
+	onboardingRepo := pgx.NewOnboardingRepository(db)
 	onboardingService := service.NewOnboardingService(onboardingRepo)
 
 	sRouter := gin.New()
@@ -72,10 +71,7 @@ func New(db *gorm.DB, config config.Config) *Server {
 			}
 		}
 	}
-	return &Server{
-		Router: router,
-		DB:     db,
-	}
+	return &Server{Router: router}
 }
 
 func (s *Server) Run(host string, port int) error {

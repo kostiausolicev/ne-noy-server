@@ -7,14 +7,14 @@ import (
 )
 
 type OnboardingModel struct {
-	ID        string         `gorm:"type:varchar(50);column:id;primaryKey"`
-	Platform  string         `gorm:"type:varchar(50);column:platform"`
-	IsActive  bool           `gorm:"type:boolean;column:is_active"`
-	Path      string         `gorm:"type:varchar(255);column:path"`
-	Data      datatypes.JSON `gorm:"type:jsonb;column:data"`
-	CreatedAt time.Time      `gorm:"type:timestamp;column:created_at"`
-	UpdatedAt time.Time      `gorm:"type:timestamp;column:updated_at"`
-	Users     []User         `gorm:"many2many:user_watches_onboardings;"`
+	ID        string
+	Platform  string
+	IsActive  bool
+	Path      string
+	Data      datatypes.JSON
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	Users     []User
 }
 
 func (o OnboardingModel) TableName() string {

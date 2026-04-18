@@ -6,6 +6,6 @@ import (
 )
 
 type EventEventHistory struct {
-	id   uuid.UUID      `gorm:"primary_key;type:uuid;default:uuid_generate_v4()"`
-	data datatypes.JSON `gorm:"type:jsonb"`
+	id   uuid.UUID
+	data datatypes.JSON
 }

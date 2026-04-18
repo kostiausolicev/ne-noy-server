@@ -9,7 +9,7 @@ import (
 type EventAttachment struct {
 	ID           uuid.UUID
 	EventID      uuid.UUID
-	Event        Event `gorm:"foreignKey:EventID"`
+	Event        Event
 	AttachmentID uuid.UUID
 	Attachment   Attachment
 	CreatedAt    time.Time

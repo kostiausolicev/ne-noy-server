@@ -7,18 +7,18 @@ import (
 )
 
 type EventParticipant struct {
-	ID      uuid.UUID `gorm:"type:uuid;primaryKey;default:uuid_generate_v4()"`
-	EventID uuid.UUID `gorm:"type:uuid;index;uniqueIndex:idx_event_user"`
-	Event   Event     `gorm:"foreignKey:EventID"`
-	UserID  uuid.UUID `gorm:"type:uuid;index;uniqueIndex:idx_event_user"`
-	User    User      `gorm:"foreignKey:UserID"`
+	ID      uuid.UUID
+	EventID uuid.UUID
+	Event   Event
+	UserID  uuid.UUID
+	User    User
 	// Способ предварительной отметки на мероприятии. Через приложение или через опрос
-	PrepareType    string `gorm:"size:5"` // vote | app
-	IsChecked      bool   `gorm:"default:false"`
+	PrepareType    string
+	IsChecked      bool
 	CheckTimestamp *time.Time
-	CheckLat       *float64   `gorm:"type:decimal(10,8)"`
-	CheckLong      *float64   `gorm:"column:check_lon;type:decimal(11,8)"`
-	CheckType      string     `gorm:"size:50"`
-	CheckAuthor    *uuid.UUID `gorm:"type:uuid"`
-	CreatedAt      time.Time  `gorm:"autoCreateTime"`
+	CheckLat       *float64
+	CheckLong      *float64
+	CheckType      string
+	CheckAuthor    *uuid.UUID
+	CreatedAt      time.Time
 }
