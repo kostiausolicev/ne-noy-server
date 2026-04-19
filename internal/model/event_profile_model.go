@@ -86,8 +86,8 @@ func (EventAsTeam) TableName() string {
 type EventAsActivity struct {
 	EventProfile
 	EventRelations
-	TrainParams         json.RawMessage
-	AvailableActivities json.RawMessage
+	TrainParams         json.RawMessage // []string
+	AvailableActivities json.RawMessage // []string
 }
 
 func (EventAsActivity) TableName() string {

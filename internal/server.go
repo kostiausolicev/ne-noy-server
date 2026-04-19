@@ -37,6 +37,7 @@ func New(db *pgxpool.Pool, config config.Config) *Server {
 
 	onboardingRepo := pgx.NewOnboardingRepository(db)
 	onboardingService := service.NewOnboardingService(onboardingRepo)
+	healthImportService := service.NewHealthImportService()
 
 	sRouter := gin.New()
 	public := sRouter.Group("/")
@@ -63,6 +64,7 @@ func New(db *pgxpool.Pool, config config.Config) *Server {
 			controller.ConfigureOnboardingController(apiV1, onboardingService)
 			controller.ApiServiceController(apiV1)
 			controller.ConfigureEventController(apiV1, eventService, eventParticipantService)
+			controller.ConfigureHealthImportController(apiV1, healthImportService)
 			controller.ConfigureUserController(apiV1, userService)
 			apiV1.Use(middleware.AdminMiddleware())
 			{
