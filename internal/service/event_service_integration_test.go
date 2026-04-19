@@ -136,7 +136,7 @@ func insertEvent(t *testing.T, db *sql.DB, name, status string, startsAt, endsAt
 
 	eventID := uuid.New()
 	_, err := db.Exec(`
-		INSERT INTO events (id, name, status, starts_at, ends_at, lat, lon)
+		INSERT INTO event_as_events (id, name, status, starts_at, ends_at, lat, lon)
 		VALUES ($1, $2, $3, $4, $5, $6, $7)
 	`, eventID, name, status, startsAt, endsAt, lat, lon)
 	require.NoError(t, err)
@@ -146,7 +146,7 @@ func insertEvent(t *testing.T, db *sql.DB, name, status string, startsAt, endsAt
 func linkEventOrg(t *testing.T, db *sql.DB, eventID, userID uuid.UUID) {
 	t.Helper()
 
-	_, err := db.Exec(`INSERT INTO event_orgs (event_id, user_id) VALUES ($1, $2)`, eventID, userID)
+	_, err := db.Exec(`INSERT INTO event_orgs (event_id, user_id, event_type) VALUES ($1, $2, $3)`, eventID, userID, "event")
 	require.NoError(t, err)
 }
 
@@ -154,7 +154,7 @@ func linkEventRole(t *testing.T, db *sql.DB, eventID uuid.UUID, roleName string)
 	t.Helper()
 
 	roleID := getRoleID(t, db, roleName)
-	_, err := db.Exec(`INSERT INTO event_roles (event_id, role_id) VALUES ($1, $2)`, eventID, roleID)
+	_, err := db.Exec(`INSERT INTO event_roles (event_id, role_id, event_type) VALUES ($1, $2, $3)`, eventID, roleID, "event")
 	require.NoError(t, err)
 }
 

@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"ne_noy/internal/config"
 	"ne_noy/internal/dto"
 	"ne_noy/internal/model"
@@ -177,17 +178,54 @@ func (e eventService) GetEventParticipants(ctx context.Context, id uuid.UUID) ([
 }
 
 func (e eventService) GetEvent(ctx context.Context, id uuid.UUID, userId int64) (*dto.EventDto, error) {
-	event, err := e.r.GetById(ctx, id)
+	eventType, err := e.r.GetEventTypeById(ctx, id)
 	if err != nil {
 		return nil, err
 	}
+
+	switch eventType {
+	case model.EventTypeEvent:
+		event, err := e.r.GetEventById(ctx, id)
+		if err != nil {
+			return nil, err
+		}
+		return e.parseEventModelToDto(ctx, event, userId)
+	case model.EventTypeActivity:
+		event, err := e.r.GetActivityById(ctx, id)
+		if err != nil {
+			return nil, err
+		}
+		return e.parseActivityModelToDto(ctx, event, userId)
+	case model.EventTypeTeam:
+		event, err := e.r.GetTeamById(ctx, id)
+		if err != nil {
+			return nil, err
+		}
+		return e.parseTeamModelToDto(ctx, event, userId)
+	case model.EventTypePoll:
+		event, err := e.r.GetPollById(ctx, id)
+		if err != nil {
+			return nil, err
+		}
+		return e.parsePollModelToDto(ctx, event, userId)
+	case model.EventTypeTest:
+		event, err := e.r.GetTestById(ctx, id)
+		if err != nil {
+			return nil, err
+		}
+		return e.parseTestModelToDto(ctx, event, userId)
+	default:
+		return nil, fmt.Errorf("unsupported event type: %s", eventType)
+	}
+}
+
+func (e eventService) buildUsersAndAttachments(relations model.EventRelations) ([]dto.UserMiniDto, []dto.UserMiniDto, []dto.AttachmentDto) {
 	var wg = sync.WaitGroup{}
-	// преобразуем организаторов
-	orgs := make([]dto.UserMiniDto, len(event.Orgs))
+	orgs := make([]dto.UserMiniDto, len(relations.Orgs))
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		for j, org := range event.Orgs {
+		for j, org := range relations.Orgs {
 			orgs[j] = dto.UserMiniDto{
 				ID:        org.ID,
 				FirstName: org.FirstName,
@@ -198,12 +236,11 @@ func (e eventService) GetEvent(ctx context.Context, id uuid.UUID, userId int64) 
 		}
 	}()
 
-	// преобразуем участников
-	participants := make([]dto.UserMiniDto, len(event.EventParticipants))
+	participants := make([]dto.UserMiniDto, len(relations.EventParticipants))
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		for j, ep := range event.EventParticipants {
+		for j, ep := range relations.EventParticipants {
 			participants[j] = dto.UserMiniDto{
 				ID:        ep.User.ID,
 				FirstName: ep.User.FirstName,
@@ -214,11 +251,11 @@ func (e eventService) GetEvent(ctx context.Context, id uuid.UUID, userId int64) 
 		}
 	}()
 
-	attachments := make([]dto.AttachmentDto, len(event.Attachments))
+	attachments := make([]dto.AttachmentDto, len(relations.Attachments))
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		for i, att := range event.Attachments {
+		for i, att := range relations.Attachments {
 			attachments[i] = dto.AttachmentDto{
 				ID:    att.Attachment.ID,
 				Url:   att.Attachment.Url,
@@ -228,20 +265,24 @@ func (e eventService) GetEvent(ctx context.Context, id uuid.UUID, userId int64) 
 	}()
 
 	wg.Wait()
+	return orgs, participants, attachments
+}
+
+func (e eventService) parseEventModelToDto(ctx context.Context, event *model.EventAsEvent, userId int64) (*dto.EventDto, error) {
+	orgs, participants, attachments := e.buildUsersAndAttachments(event.EventRelations)
 	isParticipant, err := e.r.GetUserParticipationInEvent(ctx, event.ID, userId)
 	if err != nil {
 		return nil, err
 	}
 
 	eventDto := &dto.EventDto{
-		ID:             event.ID,
-		VkPostId:       event.VkPostId,
-		PhotoURL:       event.Cover,
-		VkPollAnswerID: event.VkPollAnswerID,
-		VkVoteID:       event.VkVoteID,
-
+		ID:                       event.ID,
+		VkPostId:                 event.VkPostID,
+		PhotoURL:                 event.Cover,
+		VkPollAnswerID:           event.VkPollAnswerID,
+		VkVoteID:                 event.VkVoteID,
 		Lat:                      event.Lat,
-		Long:                     event.Long,
+		Long:                     event.Lon,
 		Title:                    event.Name,
 		Description:              event.Description,
 		Attachments:              attachments,
@@ -250,12 +291,111 @@ func (e eventService) GetEvent(ctx context.Context, id uuid.UUID, userId int64) 
 		Address:                  event.Address,
 		AdAddress:                event.AdditionalAddress,
 		Participants:             participants,
-		StartsAt:                 *event.StartsAt,
+		StartsAt:                 event.StartsAt,
 		EndsAt:                   *event.EndsAt,
-		Status:                   *event.Status,
+		Status:                   event.Status,
 		CurrentUserIsParticipant: &isParticipant,
 	}
 	return eventDto, nil
+}
+
+func (e eventService) parseActivityModelToDto(ctx context.Context, event *model.EventAsActivity, userId int64) (*dto.EventDto, error) {
+	orgs, participants, attachments := e.buildUsersAndAttachments(event.EventRelations)
+	isParticipant, err := e.r.GetUserParticipationInEvent(ctx, event.ID, userId)
+	if err != nil {
+		return nil, err
+	}
+
+	return &dto.EventDto{
+		ID:                       event.ID,
+		PhotoURL:                 event.Cover,
+		Title:                    event.Name,
+		Description:              event.Description,
+		Attachments:              attachments,
+		ParticipantsCount:        event.ParticipantsCount,
+		Orgs:                     orgs,
+		Participants:             participants,
+		StartsAt:                 event.StartsAt,
+		EndsAt:                   *event.EndsAt,
+		Status:                   event.Status,
+		CurrentUserIsParticipant: &isParticipant,
+	}, nil
+}
+
+func (e eventService) parseTeamModelToDto(ctx context.Context, event *model.EventAsTeam, userId int64) (*dto.EventDto, error) {
+	orgs, participants, attachments := e.buildUsersAndAttachments(event.EventRelations)
+	isParticipant, err := e.r.GetUserParticipationInEvent(ctx, event.ID, userId)
+	if err != nil {
+		return nil, err
+	}
+
+	return &dto.EventDto{
+		ID:                       event.ID,
+		VkPostId:                 event.VkPostID,
+		PhotoURL:                 event.Cover,
+		Lat:                      event.Lat,
+		Long:                     event.Lon,
+		Title:                    event.Name,
+		Description:              event.Description,
+		Attachments:              attachments,
+		ParticipantsCount:        event.ParticipantsCount,
+		Orgs:                     orgs,
+		Address:                  event.Address,
+		AdAddress:                event.AdditionalAddress,
+		Participants:             participants,
+		StartsAt:                 event.StartsAt,
+		EndsAt:                   *event.EndsAt,
+		Status:                   event.Status,
+		CurrentUserIsParticipant: &isParticipant,
+	}, nil
+}
+
+func (e eventService) parsePollModelToDto(ctx context.Context, event *model.EventAsPoll, userId int64) (*dto.EventDto, error) {
+	orgs, participants, attachments := e.buildUsersAndAttachments(event.EventRelations)
+	isParticipant, err := e.r.GetUserParticipationInEvent(ctx, event.ID, userId)
+	if err != nil {
+		return nil, err
+	}
+
+	return &dto.EventDto{
+		ID:                       event.ID,
+		VkPostId:                 event.VkPostID,
+		PhotoURL:                 event.Cover,
+		Title:                    event.Name,
+		Description:              event.Description,
+		Attachments:              attachments,
+		ParticipantsCount:        event.ParticipantsCount,
+		Orgs:                     orgs,
+		Participants:             participants,
+		StartsAt:                 event.StartsAt,
+		EndsAt:                   *event.EndsAt,
+		Status:                   event.Status,
+		CurrentUserIsParticipant: &isParticipant,
+	}, nil
+}
+
+func (e eventService) parseTestModelToDto(ctx context.Context, event *model.EventAsTest, userId int64) (*dto.EventDto, error) {
+	orgs, participants, attachments := e.buildUsersAndAttachments(event.EventRelations)
+	isParticipant, err := e.r.GetUserParticipationInEvent(ctx, event.ID, userId)
+	if err != nil {
+		return nil, err
+	}
+
+	return &dto.EventDto{
+		ID:                       event.ID,
+		VkPostId:                 event.VkPostID,
+		PhotoURL:                 event.Cover,
+		Title:                    event.Name,
+		Description:              event.Description,
+		Attachments:              attachments,
+		ParticipantsCount:        event.ParticipantsCount,
+		Orgs:                     orgs,
+		Participants:             participants,
+		StartsAt:                 event.StartsAt,
+		EndsAt:                   *event.EndsAt,
+		Status:                   event.Status,
+		CurrentUserIsParticipant: &isParticipant,
+	}, nil
 }
 
 func (e eventService) GetEventsByRole(ctx context.Context, role string) ([]dto.EventMiniDto, error) {
@@ -363,7 +503,8 @@ func (e eventService) parseModelToDto(event *model.Event) (*dto.EventMiniDto, er
 func (e eventService) parseDtoToModel(ctx context.Context, eventDto dto.CreateUpdateEventDto, eventId uuid.UUID) (*model.Event, error) {
 	// Создаем event с минимальными данными
 	event := model.Event{
-		ID: eventId,
+		ID:        eventId,
+		EventType: model.EventTypeEvent,
 	}
 
 	// Заполняем поля (проверяем на nil)
@@ -382,6 +523,9 @@ func (e eventService) parseDtoToModel(ctx context.Context, eventDto dto.CreateUp
 	if eventDto.Address != nil {
 		event.Address = eventDto.Address
 	}
+	if eventDto.AdAddress != nil {
+		event.AdditionalAddress = eventDto.AdAddress
+	}
 	if eventDto.VkPollAnswerID != nil {
 		event.VkPollAnswerID = eventDto.VkPollAnswerID
 	}
@@ -399,6 +543,9 @@ func (e eventService) parseDtoToModel(ctx context.Context, eventDto dto.CreateUp
 	}
 	if eventDto.StartsAt != nil {
 		event.StartsAt = eventDto.StartsAt
+	}
+	if eventDto.EndsAt != nil {
+		event.EndsAt = eventDto.EndsAt
 	}
 
 	// Создаем организаторов только с ID

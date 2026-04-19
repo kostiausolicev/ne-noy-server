@@ -9,6 +9,7 @@ import (
 type Event struct {
 	ID                uuid.UUID
 	Name              string
+	EventType         string
 	Status            *string
 	Description       *string
 	Cover             *string
@@ -34,3 +35,11 @@ type Event struct {
 func (e Event) TableName() string {
 	return "events"
 }
+
+const (
+	EventTypeEvent    = "event"
+	EventTypeActivity = "activity"
+	EventTypeTeam     = "team"
+	EventTypePoll     = "poll"
+	EventTypeTest     = "test"
+)
