@@ -18,7 +18,11 @@ func NewOnboardingRepository(pool *pgxpool.Pool) repository.OnboardingRepository
 }
 
 func (o *onboardingRepository) GetAllOnboardingCodesByPlatform(ctx context.Context, platform string) ([]model.OnboardingModel, error) {
-	rows, err := o.pool.Query(ctx, `SELECT id FROM onboardings WHERE platform = $1`, platform)
+	rows, err := o.pool.Query(ctx, `
+		SELECT id, platform, path, data
+		FROM onboardings
+		WHERE platform = $1
+	`, platform)
 	if err != nil {
 		return nil, err
 	}
@@ -27,7 +31,7 @@ func (o *onboardingRepository) GetAllOnboardingCodesByPlatform(ctx context.Conte
 	res := make([]model.OnboardingModel, 0)
 	for rows.Next() {
 		var m model.OnboardingModel
-		if err := rows.Scan(&m.ID); err != nil {
+		if err := rows.Scan(&m.ID, &m.Platform, &m.Path, &m.Data); err != nil {
 			return nil, err
 		}
 		res = append(res, m)

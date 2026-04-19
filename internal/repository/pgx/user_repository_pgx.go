@@ -7,6 +7,7 @@ import (
 	"ne_noy/internal/config"
 	"ne_noy/internal/model"
 	"ne_noy/internal/repository"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -41,7 +42,7 @@ func (u *userRepository) GetAll(ctx context.Context) ([]model.User, error) {
 		var user model.User
 
 		err := rows.Scan(&user.ID, &user.FirstName, &user.LastName, &user.GeoAvailable, &user.NotificationAvailable,
-			user.VkID, &user.PhotoURL, &role.ID, &role.Name, &role.DisplayName)
+			&user.VkID, &user.PhotoURL, &role.ID, &role.Name, &role.DisplayName)
 		if err != nil {
 			return nil, err
 		}
@@ -60,7 +61,7 @@ func (u *userRepository) GetAllByFirstNameAndRole(ctx context.Context, firstName
 		LEFT JOIN roles r ON r.id = u.role_id
 		WHERE 1=1
 			AND (u.first_name ILIKE $1 OR u.last_name ILIKE $1)
-			AND r.name IN ($3, $4)
+			AND r.name IN ($2, $3)
 	`, fmt.Sprintf("%%%s%%", firstName), config.RoleHikePart, config.RoleAdmin)
 	defer rows.Close()
 
@@ -74,7 +75,7 @@ func (u *userRepository) GetAllByFirstNameAndRole(ctx context.Context, firstName
 		var user model.User
 
 		err := rows.Scan(&user.ID, &user.FirstName, &user.LastName, &user.GeoAvailable, &user.NotificationAvailable,
-			user.VkID, &user.PhotoURL, &role.ID, &role.Name, &role.DisplayName)
+			&user.VkID, &user.PhotoURL, &role.ID, &role.Name, &role.DisplayName)
 		if err != nil {
 			return nil, err
 		}
@@ -108,7 +109,7 @@ func (u *userRepository) GetAllByFirstNameAndLastNameAndRole(ctx context.Context
 		var user model.User
 
 		err := rows.Scan(&user.ID, &user.FirstName, &user.LastName, &user.GeoAvailable, &user.NotificationAvailable,
-			user.VkID, &user.PhotoURL, &role.ID, &role.Name, &role.DisplayName)
+			&user.VkID, &user.PhotoURL, &role.ID, &role.Name, &role.DisplayName)
 		if err != nil {
 			return nil, err
 		}
@@ -140,10 +141,14 @@ func (u *userRepository) GetByVkId(ctx context.Context, vk int64) (*model.User, 
 }
 
 func (u *userRepository) Create(ctx context.Context, user *model.User) error {
+	if user.CreatedAt.IsZero() {
+		user.CreatedAt = time.Now().UTC()
+	}
+
 	_, err := u.pool.Exec(ctx, `
-		INSERT INTO users (vk_id, first_name, last_name, role_id, photo_url, geo_available, notification_available, created_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-	`, user.VkID, user.FirstName, user.LastName, user.RoleID, user.PhotoURL, user.GeoAvailable, user.NotificationAvailable, user.CreatedAt)
+		INSERT INTO users (id, vk_id, first_name, last_name, role_id, photo_url, geo_available, notification_available, created_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+	`, user.ID, user.VkID, user.FirstName, user.LastName, user.RoleID, user.PhotoURL, user.GeoAvailable, user.NotificationAvailable, user.CreatedAt)
 
 	if err != nil {
 		return err
