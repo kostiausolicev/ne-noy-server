@@ -43,9 +43,9 @@ func SetupPostgres(t *testing.T) *gorm.DB {
 	// Запускаем контейнер
 	container, err := tcPostgres.Run(ctx,
 		"postgres:17", // или postgres:16 / postgres:17-alpine — 17 иногда медленнее
-		tcPostgres.WithDatabase("test"),
-		tcPostgres.WithUsername("test"),
-		tcPostgres.WithPassword("test"),
+		tcPostgres.WithDatabase("as_test"),
+		tcPostgres.WithUsername("as_test"),
+		tcPostgres.WithPassword("as_test"),
 		testcontainers.WithWaitStrategy(
 			wait.ForLog("database system is ready to accept connections").
 				WithOccurrence(2). // иногда нужно 2 раза (primary + standby в некоторых образах)

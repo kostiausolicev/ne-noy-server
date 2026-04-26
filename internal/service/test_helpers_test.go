@@ -80,9 +80,9 @@ func startTestPostgres(t *testing.T) (string, func()) {
 	ctx := context.Background()
 	container, err := tcPostgres.Run(ctx,
 		"postgres:17",
-		tcPostgres.WithDatabase("test"),
-		tcPostgres.WithUsername("test"),
-		tcPostgres.WithPassword("test"),
+		tcPostgres.WithDatabase("as_test"),
+		tcPostgres.WithUsername("as_test"),
+		tcPostgres.WithPassword("as_test"),
 		testcontainers.WithWaitStrategy(
 			wait.ForLog("database system is ready to accept connections").
 				WithOccurrence(2).

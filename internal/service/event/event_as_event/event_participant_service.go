@@ -1,4 +1,4 @@
-package service
+package event_as_event
 
 import (
 	"context"

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"ne_noy/internal/model/events"
 	"ne_noy/internal/repository"
 	"time"
 
@@ -53,7 +54,7 @@ func (r *eventRepositoryPgx) resolveTableName(ctx context.Context, id uuid.UUID)
 	case model.EventTypeTest:
 		return "event_as_tests", eventType, nil
 	default:
-		return "", "", fmt.Errorf("unsupported event type: %s", eventType)
+		return "", "", fmt.Errorf("unsupported as_event type: %s", eventType)
 	}
 }
 
@@ -164,7 +165,7 @@ func (r *eventRepositoryPgx) loadEventRelations(ctx context.Context, eventID uui
 	return relations, nil
 }
 
-func (r *eventRepositoryPgx) GetAll(ctx context.Context) ([]*model.Event, error) {
+func (r *eventRepositoryPgx) GetAll(ctx context.Context) ([]*events.EventView, error) {
 	rows, err := r.pool.Query(ctx, `
 		SELECT id, name, status, (
 				SELECT COUNT(*) 
@@ -178,9 +179,9 @@ func (r *eventRepositoryPgx) GetAll(ctx context.Context) ([]*model.Event, error)
 	}
 	defer rows.Close()
 
-	var res []*model.Event
+	var res []*events.EventView
 	for rows.Next() {
-		var e model.Event
+		var e events.EventView
 		var participantsCount int
 		var startsAt *time.Time
 		if err := rows.Scan(&e.ID, &e.Name, &e.Status, &participantsCount, &startsAt, &e.EventType); err != nil {
@@ -193,7 +194,7 @@ func (r *eventRepositoryPgx) GetAll(ctx context.Context) ([]*model.Event, error)
 	return res, nil
 }
 
-func (r *eventRepositoryPgx) GetAllByOrg(ctx context.Context, orgId uuid.UUID) ([]*model.Event, error) {
+func (r *eventRepositoryPgx) GetAllByOrg(ctx context.Context, orgId uuid.UUID) ([]*events.EventView, error) {
 	rows, err := r.pool.Query(ctx, `
 		SELECT e.id, e.name, e.status, (
 				SELECT COUNT(*) 
@@ -209,9 +210,9 @@ func (r *eventRepositoryPgx) GetAllByOrg(ctx context.Context, orgId uuid.UUID) (
 	}
 	defer rows.Close()
 
-	var res []*model.Event
+	var res []*events.EventView
 	for rows.Next() {
-		var e model.Event
+		var e events.EventView
 		var participantsCount int
 		var startsAt *time.Time
 		if err := rows.Scan(&e.ID, &e.Name, &e.Status, &participantsCount, &startsAt, &e.EventType); err != nil {
@@ -224,7 +225,7 @@ func (r *eventRepositoryPgx) GetAllByOrg(ctx context.Context, orgId uuid.UUID) (
 	return res, nil
 }
 
-func (r *eventRepositoryPgx) GetAllByRole(ctx context.Context, role string) ([]*model.Event, error) {
+func (r *eventRepositoryPgx) GetAllByRole(ctx context.Context, role string) ([]*events.EventView, error) {
 	rows, err := r.pool.Query(ctx, `
 		SELECT e.id, e.name, e.status, e.starts_at, (
 				SELECT COUNT(*) 
@@ -241,9 +242,9 @@ func (r *eventRepositoryPgx) GetAllByRole(ctx context.Context, role string) ([]*
 	}
 	defer rows.Close()
 
-	var res []*model.Event
+	var res []*events.EventView
 	for rows.Next() {
-		var e model.Event
+		var e events.EventView
 		var participantsCount int
 		var startsAt *time.Time
 		if err := rows.Scan(&e.ID, &e.Name, &e.Status, &startsAt, &participantsCount, &e.EventType); err != nil {
@@ -256,7 +257,7 @@ func (r *eventRepositoryPgx) GetAllByRole(ctx context.Context, role string) ([]*
 	return res, nil
 }
 
-func (r *eventRepositoryPgx) GetAllArchive(ctx context.Context, role string) ([]*model.Event, error) {
+func (r *eventRepositoryPgx) GetAllArchive(ctx context.Context, role string) ([]*events.EventView, error) {
 	rows, err := r.pool.Query(ctx, `
 		SELECT e.id, e.name, e.status, (SELECT COUNT(*) FROM event_participants ep WHERE ep.event_id = e.id) AS participants_count, e.starts_at, e.type
 		FROM events e
@@ -269,9 +270,9 @@ func (r *eventRepositoryPgx) GetAllArchive(ctx context.Context, role string) ([]
 	}
 	defer rows.Close()
 
-	var res []*model.Event
+	var res []*events.EventView
 	for rows.Next() {
-		var e model.Event
+		var e events.EventView
 		var participantsCount int
 		var startsAt *time.Time
 		if err := rows.Scan(&e.ID, &e.Name, &e.Status, &participantsCount, &startsAt, &e.EventType); err != nil {
@@ -284,8 +285,8 @@ func (r *eventRepositoryPgx) GetAllArchive(ctx context.Context, role string) ([]
 	return res, nil
 }
 
-func (r *eventRepositoryPgx) GetEventLocationData(ctx context.Context, id uuid.UUID) (*model.Event, error) {
-	var e model.Event
+func (r *eventRepositoryPgx) GetEventLocationData(ctx context.Context, id uuid.UUID) (*events.EventView, error) {
+	var e events.EventView
 	tableName, eventType, err := r.resolveTableName(ctx, id)
 	if err != nil {
 		return nil, err
@@ -345,9 +346,9 @@ func (r *eventRepositoryPgx) GetEventOrgs(ctx context.Context, eventId uuid.UUID
 	return res, nil
 }
 
-func (r *eventRepositoryPgx) GetByVkPollId(ctx context.Context, vkPollId int64) (*model.Event, error) {
-	var e model.Event
-	row := r.pool.QueryRow(ctx, `SELECT id, vk_poll_answer_id, 'event' FROM event_as_events WHERE vk_vote_id = $1`, vkPollId)
+func (r *eventRepositoryPgx) GetByVkPollId(ctx context.Context, vkPollId int64) (*events.EventView, error) {
+	var e events.EventView
+	row := r.pool.QueryRow(ctx, `SELECT id, vk_poll_answer_id, 'as_event' FROM event_as_events WHERE vk_vote_id = $1`, vkPollId)
 	if err := row.Scan(&e.ID, &e.VkPollAnswerID, &e.EventType); err != nil {
 		return nil, err
 	}
@@ -537,8 +538,8 @@ func (r *eventRepositoryPgx) GetTestById(ctx context.Context, id uuid.UUID) (*mo
 	return &e, nil
 }
 
-func (r *eventRepositoryPgx) GetLocationById(ctx context.Context, id uuid.UUID) (*model.Event, error) {
-	var e model.Event
+func (r *eventRepositoryPgx) GetLocationById(ctx context.Context, id uuid.UUID) (*events.EventView, error) {
+	var e events.EventView
 	tableName, eventType, err := r.resolveTableName(ctx, id)
 	if err != nil {
 		return nil, err
@@ -582,7 +583,7 @@ func (r *eventRepositoryPgx) GetParticipants(ctx context.Context, id uuid.UUID) 
 	return res, nil
 }
 
-func (r *eventRepositoryPgx) Create(ctx context.Context, event *model.Event) (*model.Event, error) {
+func (r *eventRepositoryPgx) Create(ctx context.Context, event *events.EventView) (*events.EventView, error) {
 	// begin tx
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
@@ -606,7 +607,7 @@ func (r *eventRepositoryPgx) Create(ctx context.Context, event *model.Event) (*m
 	`, event.ID, event.Name, event.Cover, event.Description, event.Address, event.AdditionalAddress, event.VkPostId, event.VkVoteID, event.VkPollAnswerID, event.Status, event.StartsAt, event.EndsAt, event.Lat, event.Long)
 	if err != nil {
 		tx.Rollback(ctx)
-		return nil, fmt.Errorf("failed to save event: %w", err)
+		return nil, fmt.Errorf("failed to save as_event: %w", err)
 	}
 
 	for _, org := range event.Orgs {
@@ -625,7 +626,7 @@ func (r *eventRepositoryPgx) Create(ctx context.Context, event *model.Event) (*m
 		}
 	}
 
-	var created model.Event
+	var created events.EventView
 	row := tx.QueryRow(ctx, `
 		SELECT id, name, cover, description, address, additional_address, vk_post_id, vk_vote_id, vk_poll_answer_id, status, starts_at, ends_at, lat, lon
 		FROM event_as_events WHERE id = $1
@@ -644,7 +645,7 @@ func (r *eventRepositoryPgx) Create(ctx context.Context, event *model.Event) (*m
 	var lon *float64
 	if err := row.Scan(&created.ID, &created.Name, &cover, &description, &address, &additionalAddress, &vkPostId, &vkVoteId, &vkPollAns, &status, &startsAt, &endsAt, &lat, &lon); err != nil {
 		tx.Rollback(ctx)
-		return nil, fmt.Errorf("failed to load created event: %w", err)
+		return nil, fmt.Errorf("failed to load created as_event: %w", err)
 	}
 	created.EventType = eventType
 	created.Cover = cover
@@ -671,7 +672,7 @@ func (r *eventRepositoryPgx) Create(ctx context.Context, event *model.Event) (*m
 	return &created, nil
 }
 
-func (r *eventRepositoryPgx) Update(ctx context.Context, id uuid.UUID, fields map[string]interface{}, orgs []model.User, availableRoles []model.Role) (*model.Event, error) {
+func (r *eventRepositoryPgx) Update(ctx context.Context, id uuid.UUID, fields map[string]interface{}, orgs []model.User, availableRoles []model.Role) (*events.EventView, error) {
 	// begin tx
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
@@ -694,11 +695,11 @@ func (r *eventRepositoryPgx) Update(ctx context.Context, id uuid.UUID, fields ma
 	var exists bool
 	if err := tx.QueryRow(ctx, fmt.Sprintf(`SELECT EXISTS(SELECT 1 FROM %s WHERE id = $1)`, tableName), id).Scan(&exists); err != nil {
 		tx.Rollback(ctx)
-		return nil, fmt.Errorf("event check failed: %w", err)
+		return nil, fmt.Errorf("as_event check failed: %w", err)
 	}
 	if !exists {
 		tx.Rollback(ctx)
-		return nil, fmt.Errorf("event not found")
+		return nil, fmt.Errorf("as_event not found")
 	}
 
 	if len(fields) > 0 {
@@ -717,7 +718,7 @@ func (r *eventRepositoryPgx) Update(ctx context.Context, id uuid.UUID, fields ma
 		q := fmt.Sprintf("UPDATE %s SET %s WHERE id = $%d", tableName, set, i)
 		if _, err := tx.Exec(ctx, q, args...); err != nil {
 			tx.Rollback(ctx)
-			return nil, fmt.Errorf("failed to update event: %w", err)
+			return nil, fmt.Errorf("failed to update as_event: %w", err)
 		}
 	}
 
@@ -748,7 +749,7 @@ func (r *eventRepositoryPgx) Update(ctx context.Context, id uuid.UUID, fields ma
 		}
 	}
 
-	var updated model.Event
+	var updated events.EventView
 	row := tx.QueryRow(ctx, fmt.Sprintf(`
 		SELECT id, name, cover, description, address, additional_address, vk_post_id, vk_vote_id, vk_poll_answer_id, status, starts_at, ends_at, lat, lon
 		FROM %s WHERE id = $1
@@ -767,7 +768,7 @@ func (r *eventRepositoryPgx) Update(ctx context.Context, id uuid.UUID, fields ma
 	var lon *float64
 	if err := row.Scan(&updated.ID, &updated.Name, &cover, &description, &address, &additionalAddress, &vkPostId, &vkVoteId, &vkPollAns, &status, &startsAt, &endsAt, &lat, &lon); err != nil {
 		tx.Rollback(ctx)
-		return nil, fmt.Errorf("failed to load updated event: %w", err)
+		return nil, fmt.Errorf("failed to load updated as_event: %w", err)
 	}
 	updated.EventType = eventType
 	updated.Cover = cover

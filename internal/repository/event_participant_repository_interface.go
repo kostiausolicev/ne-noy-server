@@ -7,9 +7,9 @@ import (
 	"github.com/google/uuid"
 )
 
-// EventParticipantRepository describes persistence operations for event participants.
+// EventParticipantRepository describes persistence operations for as_event participants.
 type EventParticipantRepository interface {
-	// CheckParticipant marks an event participant as checked in.
+	// CheckParticipant marks an as_event participant as checked in.
 	CheckParticipant(ctx context.Context, participant *model.EventParticipant) error
 
 	// Participant creates a participation record for the specified VK user.

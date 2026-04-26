@@ -30,6 +30,6 @@ type UserRepository interface {
 	// Delete removes a user by identifier.
 	Delete(ctx context.Context, id uuid.UUID) error
 
-	// ExistEventOrg reports whether the user is assigned as an event organizer anywhere.
+	// ExistEventOrg reports whether the user is assigned as an as_event organizer anywhere.
 	ExistEventOrg(ctx context.Context, userId uuid.UUID) (bool, error)
 }

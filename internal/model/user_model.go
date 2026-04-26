@@ -1,13 +1,11 @@
 package model
 
 import (
-	"time"
-
 	"github.com/google/uuid"
 )
 
 type User struct {
-	ID                    uuid.UUID
+	BaseModel
 	VkID                  int64
 	FirstName             string
 	LastName              string
@@ -16,7 +14,6 @@ type User struct {
 	PhotoURL              string
 	GeoAvailable          bool
 	NotificationAvailable bool
-	CreatedAt             time.Time
 }
 
 func (e User) TableName() string {

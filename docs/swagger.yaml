@@ -1,5 +1,24 @@
 basePath: /api
 definitions:
+  dto.ActivityInfo:
+    properties:
+      activity:
+        type: string
+      ends:
+        type: string
+      params:
+        items:
+          $ref: '#/definitions/dto.ActivityInfoParams'
+        type: array
+      starts:
+        type: string
+    type: object
+  dto.ActivityInfoParams:
+    properties:
+      param:
+        type: string
+      value: {}
+    type: object
   dto.AnswerDto:
     properties:
       id:
@@ -272,6 +291,15 @@ definitions:
       type:
         type: string
     type: object
+  dto.UserActivitiesInfo:
+    properties:
+      activities:
+        items:
+          $ref: '#/definitions/dto.ActivityInfo'
+        type: array
+      user:
+        $ref: '#/definitions/dto.UserMiniDto'
+    type: object
   dto.UserDto:
     properties:
       firstName:
@@ -469,6 +497,93 @@ paths:
       summary: Обновить мероприятие
       tags:
       - events
+  /v1/events/{id}/health-import:
+    get:
+      consumes:
+      - application/json
+      description: Возвращает сохранённые данные текущего пользователя по тренировкам
+        в рамках конкретного события.
+      parameters:
+      - description: Уникальный идентификатор запроса
+        in: header
+        name: X-Request-Id
+        required: true
+        type: string
+      - description: UUID события
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.UserActivitiesInfo'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - VkAuth: []
+      summary: Получить данные пользователя по тренировкам в событии
+      tags:
+      - health-import events
+    post:
+      consumes:
+      - application/json
+      description: Сохраняет тренировки текущего пользователя в рамках конкретного
+        события.
+      parameters:
+      - description: Уникальный идентификатор запроса
+        in: header
+        name: X-Request-Id
+        required: true
+        type: string
+      - description: UUID события
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Данные тренировки
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UserActivitiesInfo'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - VkAuth: []
+      summary: Сохранить данные тренировки пользователя для события
+      tags:
+      - health-import events
   /v1/events/{id}/participants:
     get:
       consumes:
@@ -826,6 +941,52 @@ paths:
       summary: Создание события из поста в очереди
       tags:
       - EventQueue
+  /v1/health-import/apple/parse:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Принимает zip-архив c экспортом данных здоровья и возвращает распарсенные
+        метаданные тренировок.
+      parameters:
+      - description: Уникальный идентификатор запроса
+        in: header
+        name: X-Request-Id
+        required: true
+        type: string
+      - description: Платформа источника данных
+        in: formData
+        name: platform
+        required: true
+        type: string
+      - description: Zip-архив с метаданными
+        in: formData
+        name: archive
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.UserActivitiesInfo'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - VkAuth: []
+      summary: Распарсить метаданные тренировок из zip-файла
+      tags:
+      - health-import
   /v1/onboardings:
     get:
       consumes:

@@ -4,13 +4,14 @@ import (
 	"ne_noy/internal/config"
 	"ne_noy/internal/dto"
 	"ne_noy/internal/service"
+	"ne_noy/internal/service/event/event_as_event"
 
 	"github.com/gin-gonic/gin"
 )
 
 type eventController struct {
 	eventService            service.EventService
-	eventParticipantService service.EventParticipantService
+	eventParticipantService event_as_event.EventParticipantService
 }
 
 // getAllEvents godoc
@@ -359,7 +360,7 @@ func (uc *eventController) checkParticipate(c *gin.Context) {
 func ConfigureEventController(
 	r *gin.RouterGroup,
 	eventService service.EventService,
-	eventParticipantService service.EventParticipantService,
+	eventParticipantService event_as_event.EventParticipantService,
 ) {
 	ec := &eventController{
 		eventService:            eventService,

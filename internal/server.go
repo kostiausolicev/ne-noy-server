@@ -8,6 +8,7 @@ import (
 	"ne_noy/internal/controller/middleware"
 	"ne_noy/internal/repository/pgx"
 	"ne_noy/internal/service"
+	"ne_noy/internal/service/event/event_as_event"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -29,7 +30,7 @@ func New(db *pgxpool.Pool, config config.Config) *Server {
 
 	userService := service.NewUserService(userRepo, roleRepo, vkCl)
 	eventService := service.NewEventService(eventRepo, userService, roleRepo)
-	eventParticipantService := service.NewEventParticipantService(eventParticipantRepository, eventRepo, config.Distance)
+	eventParticipantService := event_as_event.NewEventParticipantService(eventParticipantRepository, eventRepo, config.Distance)
 	// сервис для обработки callback'ов VK (добавление в очередь и т.п.)
 	vkCallbackService := service.NewVkCallbackService(eventQueueRepository, eventRepo, eventParticipantService)
 	// сервис для получения записей очереди

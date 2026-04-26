@@ -54,7 +54,7 @@ func (h healthImportService) ParceAppleMetadataZip(
 		User: nil,
 		Activities: []dto.ActivityInfo{
 			{
-				Activity: "test",
+				Activity: "as_test",
 				Starts:   time.Now(),
 				Ends:     time.Now(),
 			},

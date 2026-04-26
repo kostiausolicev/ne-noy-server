@@ -2,10 +2,10 @@ package service
 
 import (
 	"context"
-	"fmt"
 	"ne_noy/internal/config"
 	"ne_noy/internal/dto"
 	"ne_noy/internal/model"
+	"ne_noy/internal/model/events"
 	"ne_noy/internal/repository"
 	"sync"
 
@@ -112,7 +112,7 @@ func (e eventService) UpdateEvent(ctx context.Context, eventId uuid.UUID, eventD
 	// Формируем слайс организаторов и ролей (если переданы)
 	orgs := make([]model.User, 0)
 	for _, org := range eventDto.Orgs {
-		orgs = append(orgs, model.User{ID: org.ID})
+		orgs = append(orgs, model.User{BaseModel: model.BaseModel{ID: org.ID}})
 	}
 	roles := make([]model.Role, 0)
 	for _, roleCode := range eventDto.AvailableRoles {
@@ -137,7 +137,7 @@ func (e eventService) GetAll(ctx context.Context, vkId int64) ([]dto.EventMiniDt
 	if err != nil {
 		return nil, err
 	}
-	var events []*model.Event
+	var events []*events.EventView
 
 	if user.Role.Name == config.RoleAdmin {
 		// Если админ, возвращаем все мероприятия
@@ -183,40 +183,11 @@ func (e eventService) GetEvent(ctx context.Context, id uuid.UUID, userId int64) 
 		return nil, err
 	}
 
-	switch eventType {
-	case model.EventTypeEvent:
-		event, err := e.r.GetEventById(ctx, id)
-		if err != nil {
-			return nil, err
-		}
-		return e.parseEventModelToDto(ctx, event, userId)
-	case model.EventTypeActivity:
-		event, err := e.r.GetActivityById(ctx, id)
-		if err != nil {
-			return nil, err
-		}
-		return e.parseActivityModelToDto(ctx, event, userId)
-	case model.EventTypeTeam:
-		event, err := e.r.GetTeamById(ctx, id)
-		if err != nil {
-			return nil, err
-		}
-		return e.parseTeamModelToDto(ctx, event, userId)
-	case model.EventTypePoll:
-		event, err := e.r.GetPollById(ctx, id)
-		if err != nil {
-			return nil, err
-		}
-		return e.parsePollModelToDto(ctx, event, userId)
-	case model.EventTypeTest:
-		event, err := e.r.GetTestById(ctx, id)
-		if err != nil {
-			return nil, err
-		}
-		return e.parseTestModelToDto(ctx, event, userId)
-	default:
-		return nil, fmt.Errorf("unsupported event type: %s", eventType)
+	event, err := e.r.GetEventById(ctx, id)
+	if err != nil {
+		return nil, err
 	}
+	return e.parseEventModelToDto(ctx, event, userId)
 }
 
 func (e eventService) buildUsersAndAttachments(relations model.EventRelations) ([]dto.UserMiniDto, []dto.UserMiniDto, []dto.AttachmentDto) {
@@ -421,7 +392,7 @@ func (e eventService) GetEduEvents(ctx context.Context) ([]dto.EventMiniDto, err
 	panic("implement me")
 }
 
-func (e eventService) parseModelsToDtos(ctx context.Context, events []*model.Event) ([]dto.EventMiniDto, error) {
+func (e eventService) parseModelsToDtos(ctx context.Context, events []*events.EventView) ([]dto.EventMiniDto, error) {
 	eventsDto := make([]dto.EventMiniDto, len(events))
 
 	for i, event := range events {
@@ -463,7 +434,7 @@ func (e eventService) parseModelsToDtos(ctx context.Context, events []*model.Eve
 	return eventsDto, nil
 }
 
-func (e eventService) parseModelToDto(event *model.Event) (*dto.EventMiniDto, error) {
+func (e eventService) parseModelToDto(event *events.EventView) (*dto.EventMiniDto, error) {
 	// преобразуем организаторов
 	orgs := make([]dto.UserMiniDto, len(event.Orgs))
 	for j, org := range event.Orgs {
@@ -500,9 +471,9 @@ func (e eventService) parseModelToDto(event *model.Event) (*dto.EventMiniDto, er
 	return eventDto, nil
 }
 
-func (e eventService) parseDtoToModel(ctx context.Context, eventDto dto.CreateUpdateEventDto, eventId uuid.UUID) (*model.Event, error) {
-	// Создаем event с минимальными данными
-	event := model.Event{
+func (e eventService) parseDtoToModel(ctx context.Context, eventDto dto.CreateUpdateEventDto, eventId uuid.UUID) (*events.EventView, error) {
+	// Создаем as_event с минимальными данными
+	event := events.EventView{
 		ID:        eventId,
 		EventType: model.EventTypeEvent,
 	}

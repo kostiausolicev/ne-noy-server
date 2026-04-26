@@ -5,7 +5,7 @@ import (
 	"ne_noy/internal/model"
 )
 
-// EventQueueRepository describes persistence operations for the event post queue.
+// EventQueueRepository describes persistence operations for the as_event post queue.
 type EventQueueRepository interface {
 	// GetAll returns all queued posts.
 	GetAll(ctx context.Context) ([]model.EventQueueModel, error)

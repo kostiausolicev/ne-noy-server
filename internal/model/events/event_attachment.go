@@ -1,17 +1,16 @@
-package model
+package events
 
 import (
-	"time"
+	"ne_noy/internal/model"
 
 	"github.com/google/uuid"
 )
 
 type EventAttachment struct {
-	ID           uuid.UUID
+	model.BaseModel
 	EventID      uuid.UUID
 	EventType    string
-	Event        Event
+	Event        EventProfile
 	AttachmentID int64
-	Attachment   Attachment
-	CreatedAt    time.Time
+	Attachment   model.Attachment
 }

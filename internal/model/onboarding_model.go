@@ -7,6 +7,7 @@ import (
 )
 
 type OnboardingModel struct {
+	BaseModel
 	ID        string
 	Platform  string
 	IsActive  bool

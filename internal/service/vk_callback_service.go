@@ -6,6 +6,7 @@ import (
 	"ne_noy/internal/dto/callback_dto"
 	"ne_noy/internal/model"
 	"ne_noy/internal/repository"
+	"ne_noy/internal/service/event/event_as_event"
 
 	"github.com/google/uuid"
 	"gorm.io/datatypes"
@@ -19,7 +20,7 @@ type VkCallbackService interface {
 type vkCallBackService struct {
 	repository              repository.EventQueueRepository
 	eventRepository         repository.EventRepository
-	eventParticipantService EventParticipantService
+	eventParticipantService event_as_event.EventParticipantService
 }
 
 // ApplyVote TODO надо сделать записи в отдельную таблицу, чтобы не терять данные до создания события
@@ -91,6 +92,6 @@ func (v vkCallBackService) AddPostToQueue(ctx context.Context, dto callback_dto.
 	return nil
 }
 
-func NewVkCallbackService(repository repository.EventQueueRepository, eventRepository repository.EventRepository, eventParticipantService EventParticipantService) VkCallbackService {
+func NewVkCallbackService(repository repository.EventQueueRepository, eventRepository repository.EventRepository, eventParticipantService event_as_event.EventParticipantService) VkCallbackService {
 	return vkCallBackService{repository: repository, eventRepository: eventRepository, eventParticipantService: eventParticipantService}
 }

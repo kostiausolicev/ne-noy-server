@@ -1,17 +1,18 @@
-package model
+package as_event
 
 import (
+	"ne_noy/internal/model"
 	"time"
 
 	"github.com/google/uuid"
 )
 
 type EventParticipant struct {
-	ID      uuid.UUID
+	model.BaseModel
 	EventID uuid.UUID
-	Event   Event
+	Event   AsEvent
 	UserID  uuid.UUID
-	User    User
+	User    model.User
 	// Способ предварительной отметки на мероприятии. Через приложение или через опрос
 	PrepareType    string
 	IsChecked      bool
@@ -20,5 +21,4 @@ type EventParticipant struct {
 	CheckLong      *float64
 	CheckType      string
 	CheckAuthor    *uuid.UUID
-	CreatedAt      time.Time
 }
