@@ -48,7 +48,7 @@ func (e eventService) CreateEvent(ctx context.Context, eventDto dto.CreateUpdate
 		return nil, err
 	}
 
-	newEvent, err := e.r.Create(ctx, event)
+	newEvent, err := e.r.CreateEvent(ctx, event)
 	if err != nil {
 		return nil, err
 	}
@@ -241,7 +241,7 @@ func (e eventService) buildUsersAndAttachments(relations model.EventRelations) (
 
 func (e eventService) parseEventModelToDto(ctx context.Context, event *model.EventAsEvent, userId int64) (*dto.EventDto, error) {
 	orgs, participants, attachments := e.buildUsersAndAttachments(event.EventRelations)
-	isParticipant, err := e.r.GetUserParticipationInEvent(ctx, event.ID, userId)
+	isParticipant, err := e.r.ExistUserParticipationInEvent(ctx, event.ID, userId)
 	if err != nil {
 		return nil, err
 	}
@@ -272,7 +272,7 @@ func (e eventService) parseEventModelToDto(ctx context.Context, event *model.Eve
 
 func (e eventService) parseActivityModelToDto(ctx context.Context, event *model.EventAsActivity, userId int64) (*dto.EventDto, error) {
 	orgs, participants, attachments := e.buildUsersAndAttachments(event.EventRelations)
-	isParticipant, err := e.r.GetUserParticipationInEvent(ctx, event.ID, userId)
+	isParticipant, err := e.r.ExistUserParticipationInEvent(ctx, event.ID, userId)
 	if err != nil {
 		return nil, err
 	}
@@ -295,7 +295,7 @@ func (e eventService) parseActivityModelToDto(ctx context.Context, event *model.
 
 func (e eventService) parseTeamModelToDto(ctx context.Context, event *model.EventAsTeam, userId int64) (*dto.EventDto, error) {
 	orgs, participants, attachments := e.buildUsersAndAttachments(event.EventRelations)
-	isParticipant, err := e.r.GetUserParticipationInEvent(ctx, event.ID, userId)
+	isParticipant, err := e.r.ExistUserParticipationInEvent(ctx, event.ID, userId)
 	if err != nil {
 		return nil, err
 	}
@@ -323,7 +323,7 @@ func (e eventService) parseTeamModelToDto(ctx context.Context, event *model.Even
 
 func (e eventService) parsePollModelToDto(ctx context.Context, event *model.EventAsPoll, userId int64) (*dto.EventDto, error) {
 	orgs, participants, attachments := e.buildUsersAndAttachments(event.EventRelations)
-	isParticipant, err := e.r.GetUserParticipationInEvent(ctx, event.ID, userId)
+	isParticipant, err := e.r.ExistUserParticipationInEvent(ctx, event.ID, userId)
 	if err != nil {
 		return nil, err
 	}
@@ -347,7 +347,7 @@ func (e eventService) parsePollModelToDto(ctx context.Context, event *model.Even
 
 func (e eventService) parseTestModelToDto(ctx context.Context, event *model.EventAsTest, userId int64) (*dto.EventDto, error) {
 	orgs, participants, attachments := e.buildUsersAndAttachments(event.EventRelations)
-	isParticipant, err := e.r.GetUserParticipationInEvent(ctx, event.ID, userId)
+	isParticipant, err := e.r.ExistUserParticipationInEvent(ctx, event.ID, userId)
 	if err != nil {
 		return nil, err
 	}

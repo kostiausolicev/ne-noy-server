@@ -2,7 +2,7 @@ package as_team
 
 import "ne_noy/internal/model/events"
 
-type EventAsTeam struct {
+type AsTeam struct {
 	events.EventProfile
 	events.EventRelations
 	TeamsConstraint   int

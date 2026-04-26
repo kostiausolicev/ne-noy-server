@@ -6,7 +6,7 @@ import (
 	"github.com/google/uuid"
 )
 
-type EventAsTest struct {
+type AsTest struct {
 	events.EventProfile
 	events.EventRelations
 	ExtLinkID *string
