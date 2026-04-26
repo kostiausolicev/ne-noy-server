@@ -6,7 +6,7 @@ import (
 	"math"
 	"ne_noy/internal/apperror"
 	"ne_noy/internal/dto"
-	"ne_noy/internal/model"
+	"ne_noy/internal/model/events/as_event"
 	"ne_noy/internal/repository"
 
 	"github.com/google/uuid"
@@ -55,13 +55,13 @@ func (eps eventParticipantService) CheckParticipant(ctx context.Context, partici
 }
 
 func (eps eventParticipantService) checkByAdmin(ctx context.Context, participantData dto.CheckEventParticipant) error {
-	orgs, err := eps.er.GetEventOrgs(ctx, participantData.EventId)
+	orgs, err := eps.er.GetEventOrgs(ctx, participantData.EventId, 0)
 	if err != nil {
 		return err
 	}
 	for _, eventOrg := range orgs {
 		if eventOrg.VkID == *participantData.CheckAuthorVkId {
-			participant := model.EventParticipant{
+			participant := as_event.EventParticipant{
 				EventID:        participantData.EventId,
 				UserID:         participantData.UserId,
 				IsChecked:      true,
@@ -79,22 +79,22 @@ func (eps eventParticipantService) checkByAdmin(ctx context.Context, participant
 }
 
 func (eps eventParticipantService) checkByQr(ctx context.Context, participantData dto.CheckEventParticipant) error {
-	event, err := eps.er.GetLocationById(ctx, participantData.EventId)
+	lat, long, err := eps.er.GetLocationById(ctx, participantData.EventId)
 	if err != nil {
 		return err
 	}
-	if event.Lat == nil || event.Long == nil {
+	if lat == nil || long == nil {
 		return apperror.EventLocationNotSetErr
 	}
 
-	diff := haversineDistance(*event.Lat, *event.Long, *participantData.Lat, *participantData.Long)
+	diff := haversineDistance(*lat, *long, *participantData.Lat, *participantData.Long)
 
 	// Вынести в конфиги
 	if diff > float64(eps.distance) {
 		return apperror.ParticipantLocationTooLageErr
 	}
 
-	participant := model.EventParticipant{
+	participant := as_event.EventParticipant{
 		EventID:        participantData.EventId,
 		UserID:         participantData.UserId,
 		IsChecked:      true,

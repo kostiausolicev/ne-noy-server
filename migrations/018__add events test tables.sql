@@ -15,14 +15,12 @@ CREATE TABLE questions
 -- Таблица для хранения вложений к вопросам (например, изображения, видео, документы)
 CREATE TABLE question_attachments
 (
-    id          UUID PRIMARY KEY         NOT NULL DEFAULT uuid_generate_v4(),
-    question_id UUID                     NOT NULL REFERENCES questions (id) ON DELETE CASCADE,
-    type        VARCHAR(50)              NOT NULL, -- тип вложения: image, video, document
-    file_name   VARCHAR(255)             NOT NULL,
-    url         TEXT                     NOT NULL,
+    id            UUID PRIMARY KEY         NOT NULL DEFAULT uuid_generate_v4(),
+    question_id   UUID                     NOT NULL REFERENCES questions (id) ON DELETE CASCADE,
+    attachment_id UUID                     REFERENCES attachments (id) ON DELETE SET NULL, -- ссылка на таблицу attachments для хранения файлов
 
-    created_at  TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
-    updated_at  TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+    created_at    TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+    updated_at    TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
 );
 
 -- Таблица для хранения вариантов ответов на вопросы типа single_choice и multiple_choice
@@ -30,7 +28,7 @@ CREATE TABLE answers
 (
     id          UUID PRIMARY KEY         NOT NULL DEFAULT uuid_generate_v4(),
     question_id UUID                     NOT NULL REFERENCES questions (id) ON DELETE CASCADE,
-    is_correct  BOOLEAN                  NOT NULL, -- для single_choice и multiple_choice
+    is_correct  BOOLEAN                  NOT NULL,           -- для single_choice и multiple_choice
     text        TEXT                     NOT NULL,
     points      INT                      NOT NULL DEFAULT 0, -- количество баллов за правильный ответ
 
@@ -42,10 +40,11 @@ CREATE TABLE answers
 CREATE TABLE user_answers
 (
     id          UUID PRIMARY KEY         NOT NULL DEFAULT uuid_generate_v4(),
-    user_id     UUID                     NOT NULL, -- ссылка на пользователя
+    user_id     UUID                     NOT NULL,           -- ссылка на пользователя
     question_id UUID                     NOT NULL REFERENCES questions (id) ON DELETE CASCADE,
     answer_id   UUID                     NOT NULL REFERENCES answers (id) ON DELETE CASCADE,
-    text        TEXT,                              -- для open_ended ответов
+    text        TEXT,                                        -- для open_ended ответов
+    points      INT                      NOT NULL DEFAULT 0, -- количество баллов за ответ пользователя
 
     created_at  TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
     updated_at  TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()

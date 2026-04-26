@@ -13,4 +13,6 @@ type AsTest struct {
 	Attempts  int
 	EventID   *uuid.UUID
 	VkPostID  *int64
+
+	Questions []*Question
 }

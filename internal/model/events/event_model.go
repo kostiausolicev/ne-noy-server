@@ -16,4 +16,5 @@ type EventView struct {
 	AvailableRoles []model.Role
 	Attachments    []EventAttachment
 	Orgs           []model.User
+	Participants   []model.User
 }
