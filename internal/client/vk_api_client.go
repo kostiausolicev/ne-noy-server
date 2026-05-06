@@ -2,6 +2,7 @@ package client
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"ne_noy/internal/dto"
@@ -9,11 +10,15 @@ import (
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type VkApiClient interface {
 	GetVkUsers(userIds []string) ([]dto.CreateUserDto, error)
 	SendNotification(userIds []string, messageText, fragment string) (dto.SendMessageResponse, error)
+	CreateChat(ctx context.Context, name string, userIds []uuid.UUID) (int64, error)
+	AddUserToChat(ctx context.Context, token string, chatId, userVkId int64) error
 }
 
 type vkApiClient struct {
@@ -88,6 +93,14 @@ func (v vkApiClient) SendNotification(userIds []string, messageText, fragment st
 		return dto.SendMessageResponse{}, err
 	}
 	return response, nil
+}
+
+func (v vkApiClient) CreateChat(ctx context.Context, name string, userIds []uuid.UUID) (int64, error) {
+	return 0, nil
+}
+
+func (v vkApiClient) AddUserToChat(ctx context.Context, token string, chatId, userVkId int64) error {
+	return nil
 }
 
 func mapUsers(userIds []string) string {

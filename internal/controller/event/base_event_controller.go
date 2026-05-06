@@ -3,7 +3,7 @@ package event
 import (
 	"ne_noy/internal/config"
 	"ne_noy/internal/controller"
-	"ne_noy/internal/dto"
+	"ne_noy/internal/dto/event_dto"
 	"ne_noy/internal/service/event"
 
 	"github.com/gin-gonic/gin"
@@ -117,7 +117,7 @@ func (uc *baseEventController) publishEvent(c *gin.Context) {
 		return
 	}
 
-	var updateEventDto dto.CreateUpdateEventDto
+	var updateEventDto event_dto.CreateUpdateEventDto
 	if err := c.ShouldBindJSON(&updateEventDto); err != nil {
 		c.Error(err)
 		return

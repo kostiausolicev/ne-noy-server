@@ -4,6 +4,7 @@ import (
 	"ne_noy/internal/config"
 	"ne_noy/internal/controller"
 	"ne_noy/internal/dto"
+	"ne_noy/internal/dto/event_dto"
 	"ne_noy/internal/service/event"
 	"ne_noy/internal/service/event/event_as_event"
 
@@ -67,7 +68,7 @@ func (uc *eventController) updateEvent(c *gin.Context) {
 		return
 	}
 
-	var updateEventDto dto.CreateUpdateEventDto
+	var updateEventDto event_dto.CreateUpdateEventDto
 	if err := c.ShouldBindJSON(&updateEventDto); err != nil {
 		c.Error(err)
 		return
@@ -95,7 +96,7 @@ func (uc *eventController) updateEvent(c *gin.Context) {
 //	@Router		/v1/events/event [post]
 //	@Security	VkAuth
 func (uc *eventController) createEvent(c *gin.Context) {
-	var updateEventDto dto.CreateUpdateEventDto
+	var updateEventDto event_dto.CreateUpdateEventDto
 	if err := c.ShouldBindJSON(&updateEventDto); err != nil {
 		c.Error(err)
 		return
@@ -131,7 +132,7 @@ func (uc *eventController) publishEvent(c *gin.Context) {
 		return
 	}
 
-	var updateEventDto dto.CreateUpdateEventDto
+	var updateEventDto event_dto.CreateUpdateEventDto
 	if err := c.ShouldBindJSON(&updateEventDto); err != nil {
 		c.Error(err)
 		return
