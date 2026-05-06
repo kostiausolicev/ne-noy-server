@@ -14,11 +14,11 @@ import (
 
 type eventParticipantService struct {
 	epr      repository.EventParticipantRepository
-	er       repository.EventRepository
+	er       repository.EventEventRepository
 	distance int64
 }
 
-func NewEventParticipantService(epr repository.EventParticipantRepository, er repository.EventRepository, distance int64) EventParticipantService {
+func NewEventParticipantService(epr repository.EventParticipantRepository, er repository.EventEventRepository, distance int64) EventParticipantService {
 	return eventParticipantService{epr: epr, er: er, distance: distance}
 }
 
@@ -61,7 +61,7 @@ func (eps eventParticipantService) checkByAdmin(ctx context.Context, participant
 	}
 	for _, eventOrg := range orgs {
 		if eventOrg.VkID == *participantData.CheckAuthorVkId {
-			participant := as_event.EventParticipant{
+			participant := as_event.EventParticipants{
 				EventID:        participantData.EventId,
 				UserID:         participantData.UserId,
 				IsChecked:      true,
@@ -94,7 +94,7 @@ func (eps eventParticipantService) checkByQr(ctx context.Context, participantDat
 		return apperror.ParticipantLocationTooLageErr
 	}
 
-	participant := as_event.EventParticipant{
+	participant := as_event.EventParticipants{
 		EventID:        participantData.EventId,
 		UserID:         participantData.UserId,
 		IsChecked:      true,

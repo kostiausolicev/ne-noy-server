@@ -10,7 +10,7 @@ import (
 // EventParticipantRepository describes persistence operations for as_event participants.
 type EventParticipantRepository interface {
 	// CheckParticipant marks an as_event participant as checked in.
-	CheckParticipant(ctx context.Context, participant *as_event.EventParticipant) error
+	CheckParticipant(ctx context.Context, participant *as_event.EventParticipants) error
 
 	// Participant creates a participation record for the specified VK user.
 	Participant(ctx context.Context, eventID uuid.UUID, userVkId int64, prepareType string) (bool, error)

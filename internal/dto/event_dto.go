@@ -52,7 +52,7 @@ type CreateUpdateEventDto struct {
 	Lat            *float64      `json:"lat"`
 	Long           *float64      `json:"long"`
 	Orgs           []UserMiniDto `json:"orgs"`
-	Status         *string       `json:"status"`
+	Status         string        `json:"status"`
 	StartsAt       *time.Time    `json:"startsAt"`
 	EndsAt         *time.Time    `json:"endsAt"`
 	AvailableRoles []string      `json:"availableRoles"`

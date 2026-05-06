@@ -14,5 +14,5 @@ type AsEvent struct {
 	AdditionalAddress *string
 
 	ParticipantsCount int
-	EventParticipants []EventParticipant
+	EventParticipants []EventParticipants
 }

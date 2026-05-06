@@ -17,7 +17,7 @@ import (
 	tcPostgres "github.com/testcontainers/testcontainers-go/modules/postgres"
 	"github.com/testcontainers/testcontainers-go/wait"
 
-	_ "github.com/jackc/pgx/v5/stdlib"
+	_ "github.com/jackc/impl/v5/stdlib"
 )
 
 func findMigrationsPath(t *testing.T) string {
@@ -105,7 +105,7 @@ func setupTestConnections(t *testing.T) (*sql.DB, *pgxpool.Pool, func()) {
 	connStr, stopContainer := startTestPostgres(t)
 	ctx := context.Background()
 
-	sqlDB, err := sql.Open("pgx", connStr)
+	sqlDB, err := sql.Open("impl", connStr)
 	require.NoError(t, err)
 	require.NoError(t, sqlDB.PingContext(ctx))
 

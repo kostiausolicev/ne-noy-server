@@ -8,7 +8,7 @@ import (
 	"ne_noy/internal/apperror"
 	"ne_noy/internal/config"
 	"ne_noy/internal/dto"
-	repopgx "ne_noy/internal/repository/pgx"
+	repopgx "ne_noy/internal/repository/impl"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -180,7 +180,7 @@ func TestEventParticipantServiceCheckParticipantByEventQRTooFar(t *testing.T) {
 }
 
 func newEventParticipantServiceForTest(pool *pgxpool.Pool) EventParticipantService {
-	eventRepo := repopgx.NewEventRepositoryPgx(pool)
+	eventRepo := repopgx.NewEventBaseRepository(pool)
 	participantRepo := repopgx.NewEventParticipantRepository(pool)
 	return NewEventParticipantService(participantRepo, eventRepo, 300)
 }

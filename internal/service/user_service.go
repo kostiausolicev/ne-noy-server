@@ -109,7 +109,9 @@ func (s *userService) CreateUser(ctx context.Context, createUserDto dto.CreateUs
 	}
 
 	user := model.User{
-		ID:                    uuid.New(),
+		BaseModel: model.BaseModel{
+			ID: uuid.New(),
+		},
 		FirstName:             createUserDto.FirstName,
 		LastName:              createUserDto.LastName,
 		VkID:                  createUserDto.VkId,

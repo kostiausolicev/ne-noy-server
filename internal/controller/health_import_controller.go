@@ -1,18 +1,11 @@
 package controller
 
 import (
-	"io"
-	"net/http"
-
-	"ne_noy/internal/config"
-	"ne_noy/internal/dto"
-	"ne_noy/internal/service"
-
 	"github.com/gin-gonic/gin"
 )
 
 type healthImportController struct {
-	service service.HealthImportService
+	//service service.HealthImportService
 }
 
 // parseAppleMetadataZip godoc
@@ -32,41 +25,41 @@ type healthImportController struct {
 //	@Router			/v1/health-import/apple/parse [post]
 //	@Security		VkAuth
 func (hc *healthImportController) parseAppleMetadataZip(c *gin.Context) {
-	vkID, err := GetCtxInt64(c, config.UserVkIdContextKey)
-	if err != nil {
-		c.Error(err)
-		return
-	}
+	//vkID, err := GetCtxInt64(c, config.UserVkIdContextKey)
+	//if err != nil {
+	//	c.Error(err)
+	//	return
+	//}
+	//
+	//file, err := c.FormFile("archive")
+	//if err != nil {
+	//	c.Error(err)
+	//	return
+	//}
+	//
+	//src, err := file.Open()
+	//if err != nil {
+	//	c.Error(err)
+	//	return
+	//}
+	//defer src.Close()
 
-	file, err := c.FormFile("archive")
-	if err != nil {
-		c.Error(err)
-		return
-	}
+	//archiveBytes, err := io.ReadAll(src)
+	//if err != nil {
+	//	c.Error(err)
+	//	return
+	//}
 
-	src, err := file.Open()
-	if err != nil {
-		c.Error(err)
-		return
-	}
-	defer src.Close()
+	//result, err := hc.service.ParceAppleMetadataZip(c.Request.Context(), vkID, dto.AppleArchiveZipDto{
+	//	Platform: c.PostForm("platform"),
+	//	Archive:  archiveBytes,
+	//})
+	//if err != nil {
+	//	c.Error(err)
+	//	return
+	//}
 
-	archiveBytes, err := io.ReadAll(src)
-	if err != nil {
-		c.Error(err)
-		return
-	}
-
-	result, err := hc.service.ParceAppleMetadataZip(c.Request.Context(), vkID, dto.AppleArchiveZipDto{
-		Platform: c.PostForm("platform"),
-		Archive:  archiveBytes,
-	})
-	if err != nil {
-		c.Error(err)
-		return
-	}
-
-	c.JSON(http.StatusOK, result)
+	//c.JSON(http.StatusOK, result)
 }
 
 // saveUserActivities godoc
@@ -86,30 +79,30 @@ func (hc *healthImportController) parseAppleMetadataZip(c *gin.Context) {
 //	@Router			/v1/events/{id}/health-import [post]
 //	@Security		VkAuth
 func (hc *healthImportController) saveUserActivities(c *gin.Context) {
-	eventID, err := ParseUUID(c, "id")
-	if err != nil {
-		c.Error(err)
-		return
-	}
-
-	vkID, err := GetCtxInt64(c, config.UserVkIdContextKey)
-	if err != nil {
-		c.Error(err)
-		return
-	}
-
-	var payload dto.UserActivitiesInfo
-	if err := c.ShouldBindJSON(&payload); err != nil {
-		c.Error(err)
-		return
-	}
-
-	if err := hc.service.SaveAppleMetadata(c.Request.Context(), vkID, eventID, &payload); err != nil {
-		c.Error(err)
-		return
-	}
-
-	c.Status(http.StatusCreated)
+	//eventID, err := ParseUUID(c, "id")
+	//if err != nil {
+	//	c.Error(err)
+	//	return
+	//}
+	//
+	//vkID, err := GetCtxInt64(c, config.UserVkIdContextKey)
+	//if err != nil {
+	//	c.Error(err)
+	//	return
+	//}
+	//
+	//var payload dto.UserActivitiesInfo
+	//if err := c.ShouldBindJSON(&payload); err != nil {
+	//	c.Error(err)
+	//	return
+	//}
+	//
+	//if err := hc.service.SaveAppleMetadata(c.Request.Context(), vkID, eventID, &payload); err != nil {
+	//	c.Error(err)
+	//	return
+	//}
+	//
+	//c.Status(http.StatusCreated)
 }
 
 // getUserActivities godoc
@@ -128,30 +121,30 @@ func (hc *healthImportController) saveUserActivities(c *gin.Context) {
 //	@Router			/v1/events/{id}/health-import [get]
 //	@Security		VkAuth
 func (hc *healthImportController) getUserActivities(c *gin.Context) {
-	eventID, err := ParseUUID(c, "id")
-	if err != nil {
-		c.Error(err)
-		return
-	}
-
-	vkID, err := GetCtxInt64(c, config.UserVkIdContextKey)
-	if err != nil {
-		c.Error(err)
-		return
-	}
-
-	result, err := hc.service.GetUserActivities(c.Request.Context(), vkID, eventID)
-	if err != nil {
-		c.Error(err)
-		return
-	}
-
-	c.JSON(http.StatusOK, result)
+	//eventID, err := ParseUUID(c, "id")
+	//if err != nil {
+	//	c.Error(err)
+	//	return
+	//}
+	//
+	//vkID, err := GetCtxInt64(c, config.UserVkIdContextKey)
+	//if err != nil {
+	//	c.Error(err)
+	//	return
+	//}
+	//
+	//result, err := hc.service.GetUserActivities(c.Request.Context(), vkID, eventID)
+	//if err != nil {
+	//	c.Error(err)
+	//	return
+	//}
+	//
+	//c.JSON(http.StatusOK, result)
 }
 
-func ConfigureHealthImportController(router *gin.RouterGroup, service service.HealthImportService) {
-	hc := &healthImportController{service: service}
-	router.POST("/health-import/apple/parse", hc.parseAppleMetadataZip)
-	router.POST("/events/:id/health-import", hc.saveUserActivities)
-	router.GET("/events/:id/health-import", hc.getUserActivities)
-}
+//func ConfigureHealthImportController(router *gin.RouterGroup, service service.HealthImportService) {
+//	hc := &healthImportController{service: service}
+//	router.POST("/health-import/apple/parse", hc.parseAppleMetadataZip)
+//	router.POST("/events/:id/health-import", hc.saveUserActivities)
+//	router.GET("/events/:id/health-import", hc.getUserActivities)
+//}

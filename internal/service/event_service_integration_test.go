@@ -3,12 +3,13 @@ package service
 import (
 	"context"
 	"database/sql"
+	"ne_noy/internal/service/event"
 	"testing"
 	"time"
 
 	"ne_noy/internal/config"
 	"ne_noy/internal/dto"
-	repopgx "ne_noy/internal/repository/pgx"
+	repopgx "ne_noy/internal/repository/impl"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -123,12 +124,12 @@ func TestEventServiceGetEventParticipants(t *testing.T) {
 	assert.Equal(t, map[int64]bool{504: true, 505: false}, checkedByVk)
 }
 
-func newEventServiceForTest(pool *pgxpool.Pool) EventService {
+func newEventServiceForTest(pool *pgxpool.Pool) event.EventService {
 	roleRepo := repopgx.NewRoleRepositoryPgx(pool)
 	userRepo := repopgx.NewUserRepository(pool)
 	userSvc := NewUserService(userRepo, roleRepo, stubVkClient{})
-	eventRepo := repopgx.NewEventRepositoryPgx(pool)
-	return NewEventService(eventRepo, userSvc, roleRepo)
+	eventRepo := repopgx.NewEventBaseRepository(pool)
+	return event.NewEventService(eventRepo, userSvc, roleRepo)
 }
 
 func insertEvent(t *testing.T, db *sql.DB, name, status string, startsAt, endsAt time.Time, lat, lon *float64) uuid.UUID {

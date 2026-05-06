@@ -5,9 +5,11 @@ import (
 	vkClient "ne_noy/internal/client"
 	"ne_noy/internal/config"
 	"ne_noy/internal/controller"
+	"ne_noy/internal/controller/event"
 	"ne_noy/internal/controller/middleware"
-	"ne_noy/internal/repository/pgx"
+	"ne_noy/internal/repository/impl"
 	"ne_noy/internal/service"
+	event2 "ne_noy/internal/service/event"
 	"ne_noy/internal/service/event/event_as_event"
 
 	"github.com/gin-contrib/cors"
@@ -20,25 +22,25 @@ type Server struct {
 }
 
 func New(db *pgxpool.Pool, config config.Config) *Server {
-	userRepo := pgx.NewUserRepository(db)
-	eventRepo := pgx.NewEventRepositoryPgx(db)
-	roleRepo := pgx.NewRoleRepositoryPgx(db)
-	eventParticipantRepository := pgx.NewEventParticipantRepository(db)
-	eventQueueRepository := pgx.NewEventQueueRepository(db)
+	userRepo := impl.NewUserRepository(db)
+	eventRepo := impl.NewEventBaseRepository(db)
+	eventAsEventRepo := impl.NewEventEventRepository(db)
+	roleRepo := impl.NewRoleRepositoryPgx(db)
+	eventParticipantRepository := impl.NewEventParticipantRepository(db)
+	eventQueueRepository := impl.NewEventQueueRepository(db)
 
 	vkCl := vkClient.NewVkApiClient(config.VK.ServiceKey, config.VK.BaseURL)
 
 	userService := service.NewUserService(userRepo, roleRepo, vkCl)
-	eventService := service.NewEventService(eventRepo, userService, roleRepo)
-	eventParticipantService := event_as_event.NewEventParticipantService(eventParticipantRepository, eventRepo, config.Distance)
+	eventService := event2.NewEventService(eventRepo, userService, roleRepo)
+	eventParticipantService := event_as_event.NewEventParticipantService(eventParticipantRepository, eventAsEventRepo, config.Distance)
 	// сервис для обработки callback'ов VK (добавление в очередь и т.п.)
-	vkCallbackService := service.NewVkCallbackService(eventQueueRepository, eventRepo, eventParticipantService)
+	vkCallbackService := service.NewVkCallbackService(eventQueueRepository, eventAsEventRepo, eventParticipantService)
 	// сервис для получения записей очереди
 	eventQueueService := service.NewEventQueueService(eventQueueRepository)
 
-	onboardingRepo := pgx.NewOnboardingRepository(db)
+	onboardingRepo := impl.NewOnboardingRepository(db)
 	onboardingService := service.NewOnboardingService(onboardingRepo)
-	healthImportService := service.NewHealthImportService()
 
 	sRouter := gin.New()
 	public := sRouter.Group("/")
@@ -64,8 +66,7 @@ func New(db *pgxpool.Pool, config config.Config) *Server {
 		{
 			controller.ConfigureOnboardingController(apiV1, onboardingService)
 			controller.ApiServiceController(apiV1)
-			controller.ConfigureEventController(apiV1, eventService, eventParticipantService)
-			controller.ConfigureHealthImportController(apiV1, healthImportService)
+			event.ConfigureEventController(apiV1, eventService, eventParticipantService)
 			controller.ConfigureUserController(apiV1, userService)
 			apiV1.Use(middleware.AdminMiddleware())
 			{

@@ -1,4 +1,4 @@
-package pgx
+package impl
 
 import (
 	"context"
@@ -19,7 +19,7 @@ func NewEventParticipantRepository(pool *pgxpool.Pool) repository.EventParticipa
 	return &eventParticipantRepository{pool: pool}
 }
 
-func (er *eventParticipantRepository) CheckParticipant(ctx context.Context, participant *as_event.EventParticipant) error {
+func (er *eventParticipantRepository) CheckParticipant(ctx context.Context, participant *as_event.EventParticipants) error {
 	var exists bool
 	row := er.pool.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM event_participants WHERE event_id = $1 AND user_id = $2)`, participant.EventID, participant.UserID)
 	if err := row.Scan(&exists); err != nil {

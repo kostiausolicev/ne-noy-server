@@ -19,7 +19,7 @@ type VkCallbackService interface {
 
 type vkCallBackService struct {
 	repository              repository.EventQueueRepository
-	eventRepository         repository.EventRepository
+	eventRepository         repository.EventEventRepository
 	eventParticipantService event_as_event.EventParticipantService
 }
 
@@ -73,7 +73,9 @@ func (v vkCallBackService) AddPostToQueue(ctx context.Context, dto callback_dto.
 	}
 	id, _ := uuid.NewUUID()
 	eventQueueModel := model.EventQueueModel{
-		ID:     id,
+		BaseModel: model.BaseModel{
+			ID: id,
+		},
 		PostID: dto.ID,
 		Text:   dto.Text,
 		//Lat:         dto.Geo.Place.Lat,
@@ -92,6 +94,6 @@ func (v vkCallBackService) AddPostToQueue(ctx context.Context, dto callback_dto.
 	return nil
 }
 
-func NewVkCallbackService(repository repository.EventQueueRepository, eventRepository repository.EventRepository, eventParticipantService event_as_event.EventParticipantService) VkCallbackService {
+func NewVkCallbackService(repository repository.EventQueueRepository, eventRepository repository.EventEventRepository, eventParticipantService event_as_event.EventParticipantService) VkCallbackService {
 	return vkCallBackService{repository: repository, eventRepository: eventRepository, eventParticipantService: eventParticipantService}
 }

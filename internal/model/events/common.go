@@ -1,6 +1,7 @@
 package events
 
 import (
+	"fmt"
 	"ne_noy/internal/model"
 	"time"
 )
@@ -24,4 +25,17 @@ type EventProfile struct {
 type EventRelations struct {
 	Orgs        []model.User
 	Attachments []EventAttachment
+}
+
+func GetEventTableName(eventType string) (string, error) {
+	switch eventType {
+	case EventAsEvent:
+		return "event_as_events", nil
+	case EventAsTeam:
+		return "event_as_teams", nil
+	case EventAsTest:
+		return "event_as_tests", nil
+	default:
+		return "", fmt.Errorf("unsupported event type: %s", eventType)
+	}
 }

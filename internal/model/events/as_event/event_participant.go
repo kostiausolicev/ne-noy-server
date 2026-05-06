@@ -7,7 +7,7 @@ import (
 	"github.com/google/uuid"
 )
 
-type EventParticipant struct {
+type EventParticipants struct {
 	model.BaseModel
 	EventID uuid.UUID
 	Event   AsEvent

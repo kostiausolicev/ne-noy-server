@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"ne_noy/internal/config"
-	repopgx "ne_noy/internal/repository/pgx"
+	repopgx "ne_noy/internal/repository/impl"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

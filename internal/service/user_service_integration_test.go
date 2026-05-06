@@ -7,7 +7,7 @@ import (
 
 	"ne_noy/internal/config"
 	"ne_noy/internal/dto"
-	repopgx "ne_noy/internal/repository/pgx"
+	repopgx "ne_noy/internal/repository/impl"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"

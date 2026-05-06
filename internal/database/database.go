@@ -40,7 +40,7 @@ func Connect(ctx context.Context, cfg config.DBConfig) (*pgxpool.Pool, error) {
 
 	pool, err := pgxpool.NewWithConfig(ctx, poolConfig)
 	if err != nil {
-		return nil, fmt.Errorf("create pgx pool: %w", err)
+		return nil, fmt.Errorf("create impl pool: %w", err)
 	}
 
 	// Проверка соединения
@@ -53,7 +53,7 @@ func Connect(ctx context.Context, cfg config.DBConfig) (*pgxpool.Pool, error) {
 }
 
 func runMigrations(dsn string) error {
-	db, err := sql.Open("pgx", dsn)
+	db, err := sql.Open("impl", dsn)
 	if err != nil {
 		return fmt.Errorf("open sql db for goose: %w", err)
 	}
