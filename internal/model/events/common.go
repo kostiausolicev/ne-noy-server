@@ -7,9 +7,11 @@ import (
 )
 
 const (
-	EventAsEvent = "as_event"
-	EventAsTest  = "as_test"
-	EventAsTeam  = "as_team"
+	EventAsEvent  = "event"
+	EventAsTest   = "test"
+	EventAsTeam   = "team"
+	EventAsPoll   = "poll"
+	EventActivity = "activity"
 )
 
 type EventProfile struct {
@@ -35,6 +37,10 @@ func GetEventTableName(eventType string) (string, error) {
 		return "event_as_teams", nil
 	case EventAsTest:
 		return "event_as_tests", nil
+	case EventAsPoll:
+		return "event_as_polls", nil
+	case EventActivity:
+		return "event_as_activities", nil
 	default:
 		return "", fmt.Errorf("unsupported event type: %s", eventType)
 	}

@@ -16,3 +16,7 @@ type AsEvent struct {
 	ParticipantsCount int
 	EventParticipants []EventParticipants
 }
+
+func (e AsEvent) TableName() string {
+	return "event_as_events"
+}

@@ -11,6 +11,6 @@ type EventAttachment struct {
 	EventID      uuid.UUID
 	EventType    string
 	Event        EventProfile
-	AttachmentID int64
-	Attachment   model.Attachment
+	AttachmentID *int64
+	Attachment   *model.Attachment
 }

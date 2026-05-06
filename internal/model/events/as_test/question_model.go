@@ -20,9 +20,10 @@ type Question struct {
 
 type QuestionAttachment struct {
 	model.BaseModel
-	QuestionId uuid.UUID
-	Question   Question
-	Attachment model.Attachment
+	QuestionID   uuid.UUID
+	Question     Question
+	AttachmentID *int64
+	Attachment   *model.Attachment
 }
 
 type Answer struct {
@@ -36,14 +37,31 @@ type Answer struct {
 
 type UserAnswer struct {
 	model.BaseModel
-	UserId uuid.UUID
+	UserID uuid.UUID
 	User   model.User
 
-	QuestionId uuid.UUID
+	QuestionID uuid.UUID
 	Question   Question
 
-	AnswerId uuid.UUID
-	Answer   Answer
+	AnswerID *uuid.UUID
+	Answer   *Answer
 
+	Text   *string
 	Points int
+}
+
+func (q Question) TableName() string {
+	return "questions"
+}
+
+func (q QuestionAttachment) TableName() string {
+	return "question_attachments"
+}
+
+func (a Answer) TableName() string {
+	return "answers"
+}
+
+func (u UserAnswer) TableName() string {
+	return "user_answers"
 }

@@ -14,3 +14,7 @@ type AsTeam struct {
 	AdditionalAddress *string
 	VkPostID          *int64
 }
+
+func (e AsTeam) TableName() string {
+	return "event_as_teams"
+}

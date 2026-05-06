@@ -17,3 +17,7 @@ type EventView struct {
 	Orgs           []model.User
 	Participants   []model.User
 }
+
+func (e EventView) TableName() string {
+	return "events"
+}

@@ -18,7 +18,11 @@ type EventParticipants struct {
 	IsChecked      bool
 	CheckTimestamp *time.Time
 	CheckLat       *float64
-	CheckLong      *float64
+	CheckLong      *float64 `gorm:"column:check_lon"`
 	CheckType      string
 	CheckAuthor    *uuid.UUID
+}
+
+func (e EventParticipants) TableName() string {
+	return "event_participants"
 }

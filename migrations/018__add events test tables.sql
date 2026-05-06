@@ -17,7 +17,7 @@ CREATE TABLE question_attachments
 (
     id            UUID PRIMARY KEY         NOT NULL DEFAULT uuid_generate_v4(),
     question_id   UUID                     NOT NULL REFERENCES questions (id) ON DELETE CASCADE,
-    attachment_id UUID                     REFERENCES attachments (id) ON DELETE SET NULL, -- ссылка на таблицу attachments для хранения файлов
+    attachment_id BIGINT                   REFERENCES attachments (id) ON DELETE SET NULL, -- ссылка на таблицу attachments для хранения файлов
 
     created_at    TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
     updated_at    TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
@@ -40,9 +40,9 @@ CREATE TABLE answers
 CREATE TABLE user_answers
 (
     id          UUID PRIMARY KEY         NOT NULL DEFAULT uuid_generate_v4(),
-    user_id     UUID                     NOT NULL,           -- ссылка на пользователя
+    user_id     UUID                     NOT NULL REFERENCES users (id) ON DELETE CASCADE,
     question_id UUID                     NOT NULL REFERENCES questions (id) ON DELETE CASCADE,
-    answer_id   UUID                     NOT NULL REFERENCES answers (id) ON DELETE CASCADE,
+    answer_id   UUID                     REFERENCES answers (id) ON DELETE CASCADE,
     text        TEXT,                                        -- для open_ended ответов
     points      INT                      NOT NULL DEFAULT 0, -- количество баллов за ответ пользователя
 

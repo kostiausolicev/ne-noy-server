@@ -16,3 +16,7 @@ type AsTest struct {
 
 	Questions []*Question
 }
+
+func (e AsTest) TableName() string {
+	return "event_as_tests"
+}
