@@ -1,9 +1,9 @@
 package team_dto
 
 import (
-	"ne_noy/internal/dto"
-
 	"github.com/google/uuid"
+
+	"ne_noy/internal/dto"
 )
 
 type TeamDto struct {
@@ -15,6 +15,6 @@ type TeamDto struct {
 }
 
 type CreateTeamDto struct {
-	Name      string          `json:"name"`
-	CaptainID dto.UserMiniDto `json:"captain_id"`
+	Name      string    `json:"name"`
+	CaptainID uuid.UUID `json:"captain_id"`
 }
