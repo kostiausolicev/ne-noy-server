@@ -12,6 +12,7 @@ import (
 	event2 "ne_noy/internal/service/event"
 	"ne_noy/internal/service/event/event_as_event"
 	"ne_noy/internal/service/event/event_as_team"
+	"ne_noy/internal/service/event/event_as_test"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -27,6 +28,7 @@ func New(db *pgxpool.Pool, config config.Config) *Server {
 	eventRepo := impl.NewEventBaseRepository(db)
 	eventAsEventRepo := impl.NewEventEventRepository(db)
 	eventTeamRepo := impl.NewEventTeamRepository(db)
+	eventTestRepo := impl.NewEventTestRepository(db)
 	roleRepo := impl.NewRoleRepositoryPgx(db)
 	eventParticipantRepository := impl.NewEventParticipantRepository(db)
 	eventQueueRepository := impl.NewEventQueueRepository(db)
@@ -37,6 +39,7 @@ func New(db *pgxpool.Pool, config config.Config) *Server {
 	eventService := event2.NewEventService(eventRepo, userService, roleRepo)
 	eventParticipantService := event_as_event.NewEventParticipantService(eventParticipantRepository, eventAsEventRepo, config.Distance)
 	eventTeamService := event_as_team.NewEventTeamService(eventTeamRepo, vkCl)
+	eventTestService := event_as_test.NewEventTestService(eventTestRepo)
 	// сервис для обработки callback'ов VK (добавление в очередь и т.п.)
 	vkCallbackService := service.NewVkCallbackService(eventQueueRepository, eventAsEventRepo, eventParticipantService)
 	// сервис для получения записей очереди
@@ -71,6 +74,7 @@ func New(db *pgxpool.Pool, config config.Config) *Server {
 			controller.ApiServiceController(apiV1)
 			event.ConfigureEventController(apiV1, eventService, eventParticipantService)
 			event.ConfigureTeamEventController(apiV1, eventService, eventTeamService)
+			event.ConfigureTestController(apiV1, eventService, eventTestService)
 			controller.ConfigureUserController(apiV1, userService)
 			apiV1.Use(middleware.AdminMiddleware())
 			{
