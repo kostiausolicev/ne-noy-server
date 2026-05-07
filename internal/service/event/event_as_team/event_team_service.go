@@ -23,6 +23,8 @@ type eventTeamService struct {
 type EventTeamService interface {
 	// GetTeamsOnEvent возвращает все команды в мероприятии
 	GetTeamsOnEvent(ctx context.Context, eventId uuid.UUID) ([]team_dto.TeamDto, error)
+	// GetTeam возвращает одну команду по ID
+	GetTeam(ctx context.Context, teamId uuid.UUID) (team_dto.TeamDto, error)
 	// CreateTeam создает команду в мероприятии
 	CreateTeam(ctx context.Context, eventId uuid.UUID, team team_dto.CreateTeamDto) (team_dto.TeamDto, error)
 	// JoinTeam присоединение пользователя к команде
@@ -49,6 +51,15 @@ func (e *eventTeamService) GetTeamsOnEvent(ctx context.Context, eventId uuid.UUI
 	}
 
 	return result, nil
+}
+
+func (e *eventTeamService) GetTeam(ctx context.Context, teamId uuid.UUID) (team_dto.TeamDto, error) {
+	team, err := e.repo.GetTeamByID(ctx, teamId)
+	if err != nil {
+		return team_dto.TeamDto{}, err
+	}
+
+	return e.teamToDto(*team), nil
 }
 
 func (e *eventTeamService) CreateTeam(ctx context.Context, eventId uuid.UUID, team team_dto.CreateTeamDto) (team_dto.TeamDto, error) {

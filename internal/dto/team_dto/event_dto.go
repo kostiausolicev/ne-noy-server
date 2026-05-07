@@ -18,3 +18,11 @@ type CreateTeamDto struct {
 	Name      string    `json:"name"`
 	CaptainID uuid.UUID `json:"captain_id"`
 }
+
+type CreateTeamRequestDto struct {
+	Name string `json:"name"`
+}
+
+type SendTeamNotificationDto struct {
+	Message string `json:"message"`
+}

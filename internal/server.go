@@ -73,7 +73,7 @@ func New(db *pgxpool.Pool, config config.Config) *Server {
 			controller.ConfigureOnboardingController(apiV1, onboardingService)
 			controller.ApiServiceController(apiV1)
 			event.ConfigureEventController(apiV1, eventService, eventParticipantService)
-			event.ConfigureTeamEventController(apiV1, eventService, eventTeamService)
+			event.ConfigureTeamEventController(apiV1, eventService, eventTeamService, userService)
 			event.ConfigureTestController(apiV1, eventService, eventTestService)
 			controller.ConfigureUserController(apiV1, userService)
 			apiV1.Use(middleware.AdminMiddleware())
