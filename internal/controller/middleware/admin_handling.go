@@ -10,8 +10,13 @@ import (
 func AdminMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		role, err := controller.GetCtxString(c, config.UserRoleContextKey)
-		if role != config.RoleAdmin {
+		if err != nil {
 			c.Error(err)
+			c.Abort()
+			return
+		}
+		if role != config.RoleAdmin {
+			c.Error(controller.ForbiddenError)
 			c.Abort()
 			return
 		}

@@ -111,15 +111,14 @@ func (uc *baseEventController) getEventsArchive(c *gin.Context) {
 //	@Router		/v1/events/event/{id} [patch]
 //	@Security	VkAuth
 func (uc *baseEventController) publishEvent(c *gin.Context) {
-	eventId, err := controller.ParseUUID(c, "id")
+	eventId, err := controller.ParseUUID(c, controller.ParamID)
 	if err != nil {
 		c.Error(err)
 		return
 	}
 
-	var updateEventDto event_dto.CreateUpdateEventDto
-	if err := c.ShouldBindJSON(&updateEventDto); err != nil {
-		c.Error(err)
+	_, ok := controller.BindJSON[event_dto.CreateUpdateEventDto](c)
+	if !ok {
 		return
 	}
 
@@ -136,9 +135,8 @@ func ConfigureBaseEventController(
 	eventService event.EventService,
 ) {
 	ec := &baseEventController{eventService: eventService}
-	// Общие запросы
-	r.GET("/events", ec.getAllEvents)
-	r.GET("/events/available", ec.getEventsAvailable)
-	r.GET("/events/archive", ec.getEventsArchive)
-	r.POST("/events/:id/publish", ec.publishEvent)
+	r.GET(routeEvents, ec.getAllEvents)
+	r.GET(routeEventsAvailable, ec.getEventsAvailable)
+	r.GET(routeEventsArchive, ec.getEventsArchive)
+	r.POST(routeEventPublish, ec.publishEvent)
 }

@@ -38,15 +38,14 @@ type teamController struct {
 //	@Router			/v1/events/team/{id} [post]
 //	@Security		VkAuth
 func (t *teamController) CreateTeam(c *gin.Context) {
-	eventID, err := controller.ParseUUID(c, "id")
+	eventID, err := controller.ParseUUID(c, controller.ParamID)
 	if err != nil {
 		c.Error(err)
 		return
 	}
 
-	var createTeamRequest team_dto.CreateTeamRequestDto
-	if err = c.ShouldBindJSON(&createTeamRequest); err != nil {
-		c.Error(err)
+	createTeamRequest, ok := controller.BindJSON[team_dto.CreateTeamRequestDto](c)
+	if !ok {
 		return
 	}
 
@@ -86,12 +85,12 @@ func (t *teamController) CreateTeam(c *gin.Context) {
 //	@Router			/v1/events/team/{id}/joinTo/{teamId} [post]
 //	@Security		VkAuth
 func (t *teamController) JoinTeam(c *gin.Context) {
-	if _, err := controller.ParseUUID(c, "id"); err != nil {
+	if _, err := controller.ParseUUID(c, controller.ParamID); err != nil {
 		c.Error(err)
 		return
 	}
 
-	teamID, err := controller.ParseUUID(c, "teamId")
+	teamID, err := controller.ParseUUID(c, controller.ParamTeamID)
 	if err != nil {
 		c.Error(err)
 		return
@@ -128,12 +127,12 @@ func (t *teamController) JoinTeam(c *gin.Context) {
 //	@Router			/v1/events/team/{id}/leaveFrom/{teamId} [post]
 //	@Security		VkAuth
 func (t *teamController) LeaveTeam(c *gin.Context) {
-	if _, err := controller.ParseUUID(c, "id"); err != nil {
+	if _, err := controller.ParseUUID(c, controller.ParamID); err != nil {
 		c.Error(err)
 		return
 	}
 
-	teamID, err := controller.ParseUUID(c, "teamId")
+	teamID, err := controller.ParseUUID(c, controller.ParamTeamID)
 	if err != nil {
 		c.Error(err)
 		return
@@ -169,7 +168,7 @@ func (t *teamController) LeaveTeam(c *gin.Context) {
 //	@Router			/v1/events/team/{id} [get]
 //	@Security		VkAuth
 func (t *teamController) GetTeamsByEvent(c *gin.Context) {
-	eventID, err := controller.ParseUUID(c, "id")
+	eventID, err := controller.ParseUUID(c, controller.ParamID)
 	if err != nil {
 		c.Error(err)
 		return
@@ -201,12 +200,12 @@ func (t *teamController) GetTeamsByEvent(c *gin.Context) {
 //	@Router			/v1/events/team/{id}/{teamId} [get]
 //	@Security		VkAuth
 func (t *teamController) GetTeam(c *gin.Context) {
-	if _, err := controller.ParseUUID(c, "id"); err != nil {
+	if _, err := controller.ParseUUID(c, controller.ParamID); err != nil {
 		c.Error(err)
 		return
 	}
 
-	teamID, err := controller.ParseUUID(c, "teamId")
+	teamID, err := controller.ParseUUID(c, controller.ParamTeamID)
 	if err != nil {
 		c.Error(err)
 		return
@@ -239,20 +238,19 @@ func (t *teamController) GetTeam(c *gin.Context) {
 //	@Router			/v1/events/team/{id}/{teamId}/notification [post]
 //	@Security		VkAuth
 func (t *teamController) SendNotificationToTeam(c *gin.Context) {
-	if _, err := controller.ParseUUID(c, "id"); err != nil {
+	if _, err := controller.ParseUUID(c, controller.ParamID); err != nil {
 		c.Error(err)
 		return
 	}
 
-	teamID, err := controller.ParseUUID(c, "teamId")
+	teamID, err := controller.ParseUUID(c, controller.ParamTeamID)
 	if err != nil {
 		c.Error(err)
 		return
 	}
 
-	var notificationDto team_dto.SendTeamNotificationDto
-	if err = c.ShouldBindJSON(&notificationDto); err != nil {
-		c.Error(err)
+	notificationDto, ok := controller.BindJSON[team_dto.SendTeamNotificationDto](c)
+	if !ok {
 		return
 	}
 
@@ -293,10 +291,10 @@ func ConfigureTeamEventController(
 		userService:  userService,
 	}
 
-	r.POST("/events/team/:id", controller.CreateTeam)
-	r.POST("/events/team/:id/joinTo/:teamId", controller.JoinTeam)
-	r.POST("/events/team/:id/leaveFrom/:teamId", controller.LeaveTeam)
-	r.GET("/events/team/:id", controller.GetTeamsByEvent)
-	r.GET("/events/team/:id/:teamId", controller.GetTeam)
-	r.POST("/events/team/:id/:teamId/notification", controller.SendNotificationToTeam)
+	r.POST(routeTeam, controller.CreateTeam)
+	r.POST(routeTeamJoin, controller.JoinTeam)
+	r.POST(routeTeamLeave, controller.LeaveTeam)
+	r.GET(routeTeam, controller.GetTeamsByEvent)
+	r.GET(routeTeamByID, controller.GetTeam)
+	r.POST(routeTeamNotification, controller.SendNotificationToTeam)
 }

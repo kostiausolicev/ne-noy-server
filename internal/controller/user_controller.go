@@ -2,18 +2,24 @@ package controller
 
 import (
 	"net/http"
-	"strconv"
 
 	"ne_noy/internal/dto"
 	"ne_noy/internal/service"
 
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 )
 
 type userController struct {
 	service service.UserService
 }
+
+const (
+	routeUsers          = "/users"
+	routeUsersByLinks   = "/users/byLinks"
+	routeUserByVkID     = "/users/vk/:id"
+	routeUserPermission = "/users/vk/:id/:permission"
+	routeUserRole       = "/users/vk/:id/role/:roleId"
+)
 
 // createUser godoc
 //
@@ -32,9 +38,8 @@ type userController struct {
 //	@Router			/v1/users [post]
 //	@Security		VkAuth
 func (uc *userController) createUser(c *gin.Context) {
-	var user dto.CreateUserDto
-	if err := c.ShouldBindJSON(&user); err != nil {
-		c.Error(err)
+	user, ok := BindJSON[dto.CreateUserDto](c)
+	if !ok {
 		return
 	}
 	createUser, err := uc.service.CreateUser(c.Request.Context(), user)
@@ -60,9 +65,8 @@ func (uc *userController) createUser(c *gin.Context) {
 //	@Router			/v1/users/byLinks [post]
 //	@Security		VkAuth
 func (uc *userController) createUserByLinks(c *gin.Context) {
-	var users dto.CreateUserByLinksDto
-	if err := c.ShouldBindJSON(&users); err != nil {
-		c.Error(err)
+	users, ok := BindJSON[dto.CreateUserByLinksDto](c)
+	if !ok {
 		return
 	}
 	createUsers, err := uc.service.CreateUserByLinks(c.Request.Context(), users.Links)
@@ -88,7 +92,7 @@ func (uc *userController) createUserByLinks(c *gin.Context) {
 //	@Router			/v1/users [get]
 //	@Security		VkAuth
 func (uc *userController) getAll(c *gin.Context) {
-	fio := c.Query("fio")
+	fio := c.Query(QueryFIO)
 	users, err := uc.service.GetAllUsers(c.Request.Context(), fio)
 	if err != nil {
 		c.Error(err)
@@ -114,8 +118,7 @@ func (uc *userController) getAll(c *gin.Context) {
 //	@Router			/v1/users/vk/{id} [get]
 //	@Security		VkAuth
 func (uc *userController) getByVkId(c *gin.Context) {
-	vkIdStr := c.Param("id")
-	vkId, err := strconv.ParseInt(vkIdStr, 10, 64)
+	vkId, err := ParseInt64Param(c, ParamID)
 	if err != nil {
 		c.Error(err)
 		return
@@ -148,15 +151,13 @@ func (uc *userController) getByVkId(c *gin.Context) {
 //	@Router			/v1/users/vk/{id}/{permission} [patch]
 //	@Security		VkAuth
 func (uc *userController) updateUser(c *gin.Context) {
-	vkIdStr := c.Param("id")
-	vkId, err := strconv.ParseInt(vkIdStr, 10, 64)
+	vkId, err := ParseInt64Param(c, ParamID)
 	if err != nil {
 		c.Error(err)
 		return
 	}
-	permission := c.Param("permission")
-	valueStr := c.Query("value")
-	value, err := strconv.ParseBool(valueStr)
+	permission := c.Param(ParamPermission)
+	value, err := ParseBoolQuery(c, QueryValue)
 	if err != nil {
 		c.Error(err)
 		return
@@ -188,14 +189,12 @@ func (uc *userController) updateUser(c *gin.Context) {
 //	@Router			/v1/users/vk/{id}/role/{roleId} [patch]
 //	@Security		VkAuth
 func (uc *userController) updateUserRole(c *gin.Context) {
-	vkIdStr := c.Param("id")
-	vkId, err := strconv.ParseInt(vkIdStr, 10, 64)
+	vkId, err := ParseInt64Param(c, ParamID)
 	if err != nil {
 		c.Error(err)
 		return
 	}
-	roleIdStr := c.Param("roleId")
-	roleId, err := uuid.Parse(roleIdStr)
+	roleId, err := ParseUUID(c, ParamRoleID)
 	if err != nil {
 		c.Error(err)
 		return
@@ -210,14 +209,14 @@ func (uc *userController) updateUserRole(c *gin.Context) {
 
 func ConfigureUserController(router *gin.RouterGroup, service service.UserService) {
 	uc := &userController{service: service}
-	router.POST("/users", uc.createUser)
-	router.POST("/users/byLinks", uc.createUserByLinks)
-	router.GET("/users", uc.getAll)
-	router.GET("/users/vk/:id", uc.getByVkId)
-	router.PATCH("/users/vk/:id/:permission", uc.updateUser)
+	router.POST(routeUsers, uc.createUser)
+	router.POST(routeUsersByLinks, uc.createUserByLinks)
+	router.GET(routeUsers, uc.getAll)
+	router.GET(routeUserByVkID, uc.getByVkId)
+	router.PATCH(routeUserPermission, uc.updateUser)
 }
 
 func ConfigureAdminUserController(router *gin.RouterGroup, service service.UserService) {
 	uc := &userController{service: service}
-	router.PATCH("/users/vk/:id/role/:roleId", uc.updateUserRole)
+	router.PATCH(routeUserRole, uc.updateUserRole)
 }

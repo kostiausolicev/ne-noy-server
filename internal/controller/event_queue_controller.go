@@ -11,6 +11,8 @@ type eventQueueController struct {
 	service service.EventQueueService
 }
 
+const routeEventQueue = "/events/queue"
+
 // getAllPosts godoc
 //
 //	@Summary	Получение всех постов в очереди событий
@@ -66,7 +68,7 @@ func (ec *eventQueueController) deletePostFromQueue(c *gin.Context) {
 
 func ConfigureEventQueueController(router *gin.RouterGroup, service service.EventQueueService) {
 	ec := &eventQueueController{service: service}
-	router.GET("/events/queue", ec.getAllPosts)
-	router.POST("/events/queue", ec.createEventFromPost)
-	router.DELETE("/events/queue", ec.deletePostFromQueue)
+	router.GET(routeEventQueue, ec.getAllPosts)
+	router.POST(routeEventQueue, ec.createEventFromPost)
+	router.DELETE(routeEventQueue, ec.deletePostFromQueue)
 }

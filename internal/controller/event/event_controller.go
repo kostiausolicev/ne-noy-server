@@ -1,6 +1,9 @@
 package event
 
 import (
+	"errors"
+	"net/http"
+
 	"ne_noy/internal/config"
 	"ne_noy/internal/controller"
 	"ne_noy/internal/dto"
@@ -10,6 +13,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 )
+
+var errEventServiceNotConfigured = errors.New("event service is not configured")
 
 type eventController struct {
 	eventBaseService        event.EventService
@@ -32,17 +37,23 @@ type eventController struct {
 //	@Router		/v1/events/event/{id} [get]
 //	@Security	VkAuth
 func (uc *eventController) getEvent(c *gin.Context) {
-	eventId, err := controller.ParseUUID(c, "id")
-	if err != nil {
-		return
-	}
-
-	event, err := uc.eventService.GetEventById(c.Request.Context(), eventId)
+	eventId, err := controller.ParseUUID(c, controller.ParamID)
 	if err != nil {
 		c.Error(err)
 		return
 	}
-	c.JSON(200, event)
+
+	eventService, ok := uc.eventAsEventService(c)
+	if !ok {
+		return
+	}
+
+	event, err := eventService.GetEventById(c.Request.Context(), eventId)
+	if err != nil {
+		c.Error(err)
+		return
+	}
+	c.JSON(http.StatusOK, event)
 }
 
 // publishEvent godoc
@@ -62,24 +73,28 @@ func (uc *eventController) getEvent(c *gin.Context) {
 //	@Router		/v1/events/event/{id} [patch]
 //	@Security	VkAuth
 func (uc *eventController) updateEvent(c *gin.Context) {
-	eventId, err := controller.ParseUUID(c, "id")
+	eventId, err := controller.ParseUUID(c, controller.ParamID)
 	if err != nil {
 		c.Error(err)
 		return
 	}
 
-	var updateEventDto event_dto.CreateUpdateEventDto
-	if err := c.ShouldBindJSON(&updateEventDto); err != nil {
-		c.Error(err)
+	updateEventDto, ok := controller.BindJSON[event_dto.CreateUpdateEventDto](c)
+	if !ok {
 		return
 	}
 
-	updateEvent, err := uc.eventService.UpdateEvent(c.Request.Context(), eventId, updateEventDto)
+	eventService, ok := uc.eventAsEventService(c)
+	if !ok {
+		return
+	}
+
+	updateEvent, err := eventService.UpdateEvent(c.Request.Context(), eventId, updateEventDto)
 	if err != nil {
 		c.Error(err)
 		return
 	}
-	c.JSON(200, updateEvent)
+	c.JSON(http.StatusOK, updateEvent)
 }
 
 // createEvent godoc
@@ -96,18 +111,22 @@ func (uc *eventController) updateEvent(c *gin.Context) {
 //	@Router		/v1/events/event [post]
 //	@Security	VkAuth
 func (uc *eventController) createEvent(c *gin.Context) {
-	var updateEventDto event_dto.CreateUpdateEventDto
-	if err := c.ShouldBindJSON(&updateEventDto); err != nil {
-		c.Error(err)
+	updateEventDto, ok := controller.BindJSON[event_dto.CreateUpdateEventDto](c)
+	if !ok {
 		return
 	}
 
-	createEvent, err := uc.eventService.CreateEvent(c.Request.Context(), updateEventDto)
+	eventService, ok := uc.eventAsEventService(c)
+	if !ok {
+		return
+	}
+
+	createEvent, err := eventService.CreateEvent(c.Request.Context(), updateEventDto)
 	if err != nil {
 		c.Error(err)
 		return
 	}
-	c.JSON(200, createEvent)
+	c.JSON(http.StatusOK, createEvent)
 }
 
 // publishEvent godoc
@@ -126,14 +145,8 @@ func (uc *eventController) createEvent(c *gin.Context) {
 //	@Router		/v1/events/{id}/publish [post]
 //	@Security	VkAuth
 func (uc *eventController) publishEvent(c *gin.Context) {
-	eventId, err := controller.ParseUUID(c, "id")
+	eventId, err := controller.ParseUUID(c, controller.ParamID)
 	if err != nil {
-		c.Error(err)
-		return
-	}
-
-	var updateEventDto event_dto.CreateUpdateEventDto
-	if err := c.ShouldBindJSON(&updateEventDto); err != nil {
 		c.Error(err)
 		return
 	}
@@ -143,7 +156,7 @@ func (uc *eventController) publishEvent(c *gin.Context) {
 		c.Error(err)
 		return
 	}
-	c.Status(200)
+	c.Status(http.StatusOK)
 }
 
 // getEventParticipants godoc
@@ -161,18 +174,23 @@ func (uc *eventController) publishEvent(c *gin.Context) {
 //	@Router		/v1/events/event/{id}/participants [get]
 //	@Security	VkAuth
 func (uc *eventController) getEventParticipants(c *gin.Context) {
-	eventId, err := controller.ParseUUID(c, "id")
+	eventId, err := controller.ParseUUID(c, controller.ParamID)
 	if err != nil {
 		c.Error(err)
 		return
 	}
 
-	participants, err := uc.eventService.GetEventParticipants(c.Request.Context(), eventId)
+	eventService, ok := uc.eventAsEventService(c)
+	if !ok {
+		return
+	}
+
+	participants, err := eventService.GetEventParticipants(c.Request.Context(), eventId)
 	if err != nil {
 		c.Error(err)
 		return
 	}
-	c.JSON(200, participants)
+	c.JSON(http.StatusOK, participants)
 }
 
 // participateToEvent godoc
@@ -191,7 +209,7 @@ func (uc *eventController) getEventParticipants(c *gin.Context) {
 //	@Router		/v1/events/event/{id}/participate [post]
 //	@Security	VkAuth
 func (uc *eventController) participateToEvent(c *gin.Context) {
-	eventId, err := controller.ParseUUID(c, "id")
+	eventId, err := controller.ParseUUID(c, controller.ParamID)
 	if err != nil {
 		c.Error(err)
 		return
@@ -203,12 +221,12 @@ func (uc *eventController) participateToEvent(c *gin.Context) {
 		return
 	}
 
-	_, err = uc.eventParticipantService.ParticipantToEvent(c.Request.Context(), eventId, vkId, "app")
+	_, err = uc.eventParticipantService.ParticipantToEvent(c.Request.Context(), eventId, vkId, participantSourceApp)
 	if err != nil {
 		c.Error(err)
 		return
 	}
-	c.Status(200)
+	c.Status(http.StatusOK)
 }
 
 // unParticipateToEvent godoc
@@ -226,7 +244,7 @@ func (uc *eventController) participateToEvent(c *gin.Context) {
 //	@Router		/v1/events/event/{id}/unparticipate [post]
 //	@Security	VkAuth
 func (uc *eventController) unParticipateToEvent(c *gin.Context) {
-	eventId, err := controller.ParseUUID(c, "id")
+	eventId, err := controller.ParseUUID(c, controller.ParamID)
 	if err != nil {
 		c.Error(err)
 		return
@@ -243,7 +261,7 @@ func (uc *eventController) unParticipateToEvent(c *gin.Context) {
 		c.Error(err)
 		return
 	}
-	c.Status(200)
+	c.Status(http.StatusOK)
 }
 
 // checkParticipate godoc
@@ -262,16 +280,24 @@ func (uc *eventController) unParticipateToEvent(c *gin.Context) {
 //	@Router		/v1/events/event/{id}/participate/check [patch]
 //	@Security	VkAuth
 func (uc *eventController) checkParticipate(c *gin.Context) {
-	var checkEventDto dto.CheckEventParticipant
-	if err := c.ShouldBindJSON(&checkEventDto); err != nil {
-		c.Error(err)
+	checkEventDto, ok := controller.BindJSON[dto.CheckEventParticipant](c)
+	if !ok {
 		return
 	}
 	err := uc.eventParticipantService.CheckParticipant(c.Request.Context(), checkEventDto)
 	if err != nil {
 		c.Error(err)
+		return
 	}
-	c.Status(200)
+	c.Status(http.StatusOK)
+}
+
+func (uc *eventController) eventAsEventService(c *gin.Context) (event_as_event.EventAsEventService, bool) {
+	if uc.eventService == nil {
+		c.Error(errEventServiceNotConfigured)
+		return nil, false
+	}
+	return uc.eventService, true
 }
 
 func ConfigureEventController(
@@ -284,14 +310,11 @@ func ConfigureEventController(
 		eventParticipantService: eventParticipantService,
 	}
 
-	// Запросы к типу "мероприятие"
-	r.POST("/events/event", ec.createEvent)
-	r.GET("/events/event/:id", ec.getEvent)
-	r.PATCH("/events/event/:id", ec.updateEvent)
-	r.GET("/events/event/:id/participants", ec.getEventParticipants)
-	r.POST("/events/event/:id/participate", ec.participateToEvent)
-	r.POST("/events/event/:id/unparticipate", ec.unParticipateToEvent)
-	r.PATCH("/events/event/:id/participate/check", ec.checkParticipate)
-
-	// Запросы к типу "команда"
+	r.POST(routeEvent, ec.createEvent)
+	r.GET(routeEventByID, ec.getEvent)
+	r.PATCH(routeEventByID, ec.updateEvent)
+	r.GET(routeEventParticipants, ec.getEventParticipants)
+	r.POST(routeEventParticipate, ec.participateToEvent)
+	r.POST(routeEventUnparticipate, ec.unParticipateToEvent)
+	r.PATCH(routeEventCheckParticipate, ec.checkParticipate)
 }

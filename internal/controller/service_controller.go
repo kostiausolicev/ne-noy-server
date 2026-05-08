@@ -17,6 +17,14 @@ import (
 const (
 	nGo  = "/sched/goroutines:goroutines"
 	nMem = "/memory/classes/heap/alloc:bytes"
+
+	routeHealth   = "/health"
+	routeMetrics  = "/metrics"
+	routeSwagger  = "/swagger/*any"
+	routeValidate = "/validate"
+
+	healthStatusKey = "status"
+	healthStatusOK  = "ok"
 )
 
 type serviceController struct {
@@ -77,7 +85,7 @@ func init() {
 func _() {}
 
 func (sc *serviceController) healthCheck(c *gin.Context) {
-	c.JSON(200, gin.H{"status": "ok"})
+	c.JSON(200, gin.H{healthStatusKey: healthStatusOK})
 }
 
 // validateSign godoc
@@ -95,11 +103,11 @@ func validateSign(c *gin.Context) {
 
 func ConfigureServiceController(router *gin.RouterGroup, userRepository repository.UserRepository) {
 	sc := &serviceController{userRepository: userRepository}
-	router.GET("/health", sc.healthCheck)
-	router.GET("/metrics", gin.WrapH(promhttp.Handler()))
-	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	router.GET(routeHealth, sc.healthCheck)
+	router.GET(routeMetrics, gin.WrapH(promhttp.Handler()))
+	router.GET(routeSwagger, ginSwagger.WrapHandler(swaggerFiles.Handler))
 }
 
 func ApiServiceController(router *gin.RouterGroup) {
-	router.GET("/validate", validateSign)
+	router.GET(routeValidate, validateSign)
 }

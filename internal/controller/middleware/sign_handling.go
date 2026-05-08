@@ -14,9 +14,20 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+const (
+	tokenPartSeparator       = "."
+	payloadPartSeparator     = ";"
+	payloadKeyValueSeparator = "="
+
+	signParamAppID     = "app_id"
+	signParamRequestID = "request_id"
+	signParamTimestamp = "ts"
+	signParamUserID    = "user_id"
+)
+
 func AuthMiddleware(secret string, appId int64) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		header := c.GetHeader("authorization")
+		header := c.GetHeader(controller.HeaderAuthorization)
 		params, err := validateToken(header, secret, appId)
 		if err != nil {
 			c.Error(err)
@@ -49,7 +60,7 @@ func validateToken(token, secret string, appId int64) (map[string]interface{}, e
 }
 
 func separateToken(token string) (payload string, ts int64, sign string, err error) {
-	arr := strings.Split(token, ".")
+	arr := strings.Split(token, tokenPartSeparator)
 	if len(arr) != 3 {
 		err = controller.InvalidAuthTokenError
 		return
@@ -68,10 +79,10 @@ func generateSign(payload, secret string, ts, appId int64) string {
 	var userId int64
 	userId, _ = strconv.ParseInt(findKeyInPayload(payload, config.UserVkIdContextKey), 10, 64)
 	hashParams := map[string]interface{}{
-		"app_id":     appId,
-		"request_id": payload,
-		"ts":         ts,
-		"user_id":    userId,
+		signParamAppID:     appId,
+		signParamRequestID: payload,
+		signParamTimestamp: ts,
+		signParamUserID:    userId,
 	}
 
 	// Сортируем параметры по ключам
@@ -106,10 +117,11 @@ func generateSign(payload, secret string, ts, appId int64) string {
 
 func findKeyInPayload(payload, key string) string {
 	var value string
-	parts := strings.Split(payload, ";")
+	parts := strings.Split(payload, payloadPartSeparator)
 	for _, part := range parts {
-		if strings.HasPrefix(part, key+"=") {
-			value = strings.TrimPrefix(part, key+"=")
+		prefix := key + payloadKeyValueSeparator
+		if strings.HasPrefix(part, prefix) {
+			value = strings.TrimPrefix(part, prefix)
 			break
 		}
 	}

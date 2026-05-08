@@ -17,7 +17,7 @@ func ErrorHandler() gin.HandlerFunc {
 		c.Next()
 		if len(c.Errors) > 0 {
 			err := c.Errors.Last().Err
-			requestId := c.GetHeader("X-Request-Id")
+			requestId := c.GetHeader(controller.HeaderRequestID)
 			if errors.Is(err, controller.ParseError) {
 				c.JSON(http.StatusBadRequest, dto.ErrorResponse{Error: err.Error(), Timestamp: time.Now(), RequestId: requestId})
 			} else if errors.Is(err, controller.ForbiddenError) {

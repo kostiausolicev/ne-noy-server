@@ -1,18 +1,14 @@
 package event
 
 import (
-	"fmt"
+	"net/http"
+
 	"ne_noy/internal/controller"
 	"ne_noy/internal/dto/test_dto"
 	"ne_noy/internal/service/event"
 	"ne_noy/internal/service/event/event_as_test"
 
 	"github.com/gin-gonic/gin"
-)
-
-const (
-	idConst         = "id"
-	questionIdConst = "qId"
 )
 
 type testController struct {
@@ -35,9 +31,8 @@ type testController struct {
 //	@Router		/v1/events/test [post]
 //	@Security	VkAuth
 func (c *testController) CreateTest(ctx *gin.Context) {
-	var createTestDto test_dto.CreateTestDto
-	if err := ctx.ShouldBindJSON(&createTestDto); err != nil {
-		ctx.Error(err)
+	createTestDto, ok := controller.BindJSON[test_dto.CreateTestDto](ctx)
+	if !ok {
 		return
 	}
 
@@ -47,7 +42,7 @@ func (c *testController) CreateTest(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(200, test)
+	ctx.JSON(http.StatusOK, test)
 }
 
 // GetTest godoc
@@ -66,7 +61,7 @@ func (c *testController) CreateTest(ctx *gin.Context) {
 //	@Router		/v1/events/test/{id} [get]
 //	@Security	VkAuth
 func (c *testController) GetTest(ctx *gin.Context) {
-	testID, err := controller.ParseUUID(ctx, idConst)
+	testID, err := controller.ParseUUID(ctx, controller.ParamID)
 	if err != nil {
 		ctx.Error(err)
 		return
@@ -78,7 +73,7 @@ func (c *testController) GetTest(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(200, test)
+	ctx.JSON(http.StatusOK, test)
 }
 
 // GetQuestion godoc
@@ -98,12 +93,12 @@ func (c *testController) GetTest(ctx *gin.Context) {
 //	@Router		/v1/events/test/{id}/q/{qId} [get]
 //	@Security	VkAuth
 func (c *testController) GetQuestion(ctx *gin.Context) {
-	testID, err := controller.ParseUUID(ctx, idConst)
+	testID, err := controller.ParseUUID(ctx, controller.ParamID)
 	if err != nil {
 		ctx.Error(err)
 		return
 	}
-	questionID, err := controller.ParseUUID(ctx, questionIdConst)
+	questionID, err := controller.ParseUUID(ctx, controller.ParamQuestionID)
 	if err != nil {
 		ctx.Error(err)
 		return
@@ -115,7 +110,7 @@ func (c *testController) GetQuestion(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(200, question)
+	ctx.JSON(http.StatusOK, question)
 }
 
 // SetAnswer godoc
@@ -136,20 +131,19 @@ func (c *testController) GetQuestion(ctx *gin.Context) {
 //	@Router		/v1/events/test/{id}/q/{qId} [post]
 //	@Security	VkAuth
 func (c *testController) SetAnswer(ctx *gin.Context) {
-	testID, err := controller.ParseUUID(ctx, idConst)
+	testID, err := controller.ParseUUID(ctx, controller.ParamID)
 	if err != nil {
 		ctx.Error(err)
 		return
 	}
-	questionID, err := controller.ParseUUID(ctx, questionIdConst)
+	questionID, err := controller.ParseUUID(ctx, controller.ParamQuestionID)
 	if err != nil {
 		ctx.Error(err)
 		return
 	}
 
-	var setAnswerDto test_dto.SetAnswerDto
-	if err = ctx.ShouldBindJSON(&setAnswerDto); err != nil {
-		ctx.Error(err)
+	setAnswerDto, ok := controller.BindJSON[test_dto.SetAnswerDto](ctx)
+	if !ok {
 		return
 	}
 
@@ -165,7 +159,7 @@ func (c *testController) SetAnswer(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(200, answer)
+	ctx.JSON(http.StatusOK, answer)
 }
 
 // AddQuestion godoc
@@ -185,15 +179,14 @@ func (c *testController) SetAnswer(ctx *gin.Context) {
 //	@Router		/v1/events/test/{id}/q [post]
 //	@Security	VkAuth
 func (c *testController) AddQuestion(ctx *gin.Context) {
-	testID, err := controller.ParseUUID(ctx, idConst)
+	testID, err := controller.ParseUUID(ctx, controller.ParamID)
 	if err != nil {
 		ctx.Error(err)
 		return
 	}
 
-	var addQuestionDto test_dto.AddQuestionDto
-	if err = ctx.ShouldBindJSON(&addQuestionDto); err != nil {
-		ctx.Error(err)
+	addQuestionDto, ok := controller.BindJSON[test_dto.AddQuestionDto](ctx)
+	if !ok {
 		return
 	}
 
@@ -203,7 +196,7 @@ func (c *testController) AddQuestion(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(200, question)
+	ctx.JSON(http.StatusOK, question)
 }
 
 // AddAnswer godoc
@@ -224,20 +217,19 @@ func (c *testController) AddQuestion(ctx *gin.Context) {
 //	@Router		/v1/events/test/{id}/q/{qId}/answers [post]
 //	@Security	VkAuth
 func (c *testController) AddAnswer(ctx *gin.Context) {
-	testID, err := controller.ParseUUID(ctx, idConst)
+	testID, err := controller.ParseUUID(ctx, controller.ParamID)
 	if err != nil {
 		ctx.Error(err)
 		return
 	}
-	questionID, err := controller.ParseUUID(ctx, questionIdConst)
+	questionID, err := controller.ParseUUID(ctx, controller.ParamQuestionID)
 	if err != nil {
 		ctx.Error(err)
 		return
 	}
 
-	var addAnswerDto test_dto.AddAnswerDto
-	if err = ctx.ShouldBindJSON(&addAnswerDto); err != nil {
-		ctx.Error(err)
+	addAnswerDto, ok := controller.BindJSON[test_dto.AddAnswerDto](ctx)
+	if !ok {
 		return
 	}
 
@@ -253,7 +245,7 @@ func (c *testController) AddAnswer(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(200, answer)
+	ctx.JSON(http.StatusOK, answer)
 }
 
 // UpdateTest godoc
@@ -273,15 +265,14 @@ func (c *testController) AddAnswer(ctx *gin.Context) {
 //	@Router		/v1/events/test/{id} [patch]
 //	@Security	VkAuth
 func (c *testController) UpdateTest(ctx *gin.Context) {
-	testID, err := controller.ParseUUID(ctx, idConst)
+	testID, err := controller.ParseUUID(ctx, controller.ParamID)
 	if err != nil {
 		ctx.Error(err)
 		return
 	}
 
-	var updateTestDto test_dto.UpdateTestDto
-	if err = ctx.ShouldBindJSON(&updateTestDto); err != nil {
-		ctx.Error(err)
+	updateTestDto, ok := controller.BindJSON[test_dto.UpdateTestDto](ctx)
+	if !ok {
 		return
 	}
 
@@ -291,7 +282,7 @@ func (c *testController) UpdateTest(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(200, test)
+	ctx.JSON(http.StatusOK, test)
 }
 
 func ConfigureTestController(
@@ -304,11 +295,11 @@ func ConfigureTestController(
 		testService:  testService,
 	}
 
-	router.POST("/events/test", c.CreateTest)
-	router.GET(fmt.Sprintf("/events/test/:%s", idConst), c.GetTest)
-	router.PATCH(fmt.Sprintf("/events/test/:%s", idConst), c.UpdateTest)
-	router.POST(fmt.Sprintf("/events/test/:%s/q", idConst), c.AddQuestion)
-	router.GET(fmt.Sprintf("/events/test/:%s/q/:%s", idConst, questionIdConst), c.GetQuestion)
-	router.POST(fmt.Sprintf("/events/test/:%s/q/:%s", idConst, questionIdConst), c.SetAnswer)
-	router.POST(fmt.Sprintf("/events/test/:%s/q/:%s/answers", idConst, questionIdConst), c.AddAnswer)
+	router.POST(routeTest, c.CreateTest)
+	router.GET(routeTestByID, c.GetTest)
+	router.PATCH(routeTestByID, c.UpdateTest)
+	router.POST(routeTestQuestion, c.AddQuestion)
+	router.GET(routeTestQuestionByID, c.GetQuestion)
+	router.POST(routeTestQuestionByID, c.SetAnswer)
+	router.POST(routeTestQuestionAnswers, c.AddAnswer)
 }

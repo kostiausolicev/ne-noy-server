@@ -11,6 +11,12 @@ type onboardingController struct {
 	service service.OnboardingService
 }
 
+const (
+	routeOnboardings    = "/onboardings"
+	routeAllOnboardings = "/onboardings/all"
+	routeOnboardingByID = "/onboardings/:id"
+)
+
 // getOnboardings godoc
 //
 //	@Summary		Получить список онбордингов для пользователя
@@ -26,7 +32,7 @@ type onboardingController struct {
 //	@Router			/v1/onboardings/all [get]
 //	@Security		VkAuth
 func (oc *onboardingController) getOnboardings(c *gin.Context) {
-	platform := c.Query("platform")
+	platform := c.Query(QueryPlatform)
 
 	onboardings, err := oc.service.GetAllOnboardingCodesByPlatform(c.Request.Context(), platform)
 	if err != nil {
@@ -56,7 +62,7 @@ func (oc *onboardingController) getOnboardingsForUser(c *gin.Context) {
 		c.Error(err)
 		return
 	}
-	platform := c.Query("platform")
+	platform := c.Query(QueryPlatform)
 
 	onboardings, err := oc.service.GetOnboardingsForUser(c.Request.Context(), vkId, platform)
 	if err != nil {
@@ -86,7 +92,7 @@ func (oc *onboardingController) setUserOnboarding(c *gin.Context) {
 		c.Error(err)
 		return
 	}
-	onboardingID := c.Param("id")
+	onboardingID := c.Param(ParamID)
 	err = oc.service.SetUserOnboarding(c.Request.Context(), vkId, onboardingID)
 	if err != nil {
 		c.Error(err)
@@ -96,7 +102,7 @@ func (oc *onboardingController) setUserOnboarding(c *gin.Context) {
 
 func ConfigureOnboardingController(router *gin.RouterGroup, service service.OnboardingService) {
 	oc := &onboardingController{service: service}
-	router.GET("/onboardings", oc.getOnboardingsForUser)
-	router.GET("/onboardings/all", oc.getOnboardings)
-	router.POST("/onboardings/:id", oc.setUserOnboarding)
+	router.GET(routeOnboardings, oc.getOnboardingsForUser)
+	router.GET(routeAllOnboardings, oc.getOnboardings)
+	router.POST(routeOnboardingByID, oc.setUserOnboarding)
 }
