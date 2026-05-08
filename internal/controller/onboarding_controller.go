@@ -19,8 +19,8 @@ const (
 
 // getOnboardings godoc
 //
-//	@Summary		Получить список онбордингов для пользователя
-//	@Description	Получить список онбордингов для пользователя. Онбординги - это этапы, которые пользователь должен пройти для полного использования функционала приложения. Например, онбординг может включать в себя заполнение профиля, добавление друзей, участие в мероприятиях и т.д.
+//	@Summary		Получить все онбординги платформы
+//	@Description	Возвращает все онбординги для указанной платформы без учёта прогресса пользователя.
 //	@Tags			onboarding
 //	@Accept			json
 //	@Produce		json
@@ -80,11 +80,11 @@ func (oc *onboardingController) getOnboardingsForUser(c *gin.Context) {
 //	@Accept			json
 //	@Produce		json
 //	@Param			X-Request-Id	header	string	true	"Уникальный идентификатор запроса для трассировки"
-//	@Param			X-Request-Id	path	string	true	"Уникальный идентификатор онбординга."
-//	@Success		201
+//	@Param			id				path	string	true	"Уникальный идентификатор онбординга"
+//	@Success		200
 //	@Failure		401	{object}	dto.ErrorResponse	"Не авторизован"
 //	@Failure		500	{object}	dto.ErrorResponse
-//	@Router			/v1/onboardings/:id [post]
+//	@Router			/v1/onboardings/{id} [post]
 //	@Security		VkAuth
 func (oc *onboardingController) setUserOnboarding(c *gin.Context) {
 	vkId, err := GetCtxInt64(c, config.UserVkIdContextKey)

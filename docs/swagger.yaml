@@ -52,47 +52,6 @@ definitions:
       userId:
         type: string
     type: object
-  dto.CreateUpdateEventDto:
-    properties:
-      adAddress:
-        type: string
-      address:
-        type: string
-      attachments:
-        items:
-          type: string
-        type: array
-      availableRoles:
-        items:
-          type: string
-        type: array
-      description:
-        type: string
-      endsAt:
-        type: string
-      lat:
-        type: number
-      long:
-        type: number
-      orgs:
-        items:
-          $ref: '#/definitions/dto.UserMiniDto'
-        type: array
-      photoUrl:
-        type: string
-      startsAt:
-        type: string
-      status:
-        type: string
-      title:
-        type: string
-      vk_poll_answer_id:
-        type: integer
-      vk_vote_id:
-        type: integer
-      vkPostId:
-        type: integer
-    type: object
   dto.CreateUserByLinksDto:
     properties:
       links:
@@ -120,53 +79,6 @@ definitions:
       timestamp:
         type: string
     type: object
-  dto.EventDto:
-    properties:
-      adAddress:
-        type: string
-      address:
-        type: string
-      attachments:
-        items:
-          $ref: '#/definitions/dto.AttachmentDto'
-        type: array
-      currentUserIsParticipant:
-        type: boolean
-      description:
-        type: string
-      endsAt:
-        type: string
-      id:
-        type: string
-      lat:
-        type: number
-      long:
-        type: number
-      orgs:
-        items:
-          $ref: '#/definitions/dto.UserMiniDto'
-        type: array
-      participants:
-        items:
-          $ref: '#/definitions/dto.UserMiniDto'
-        type: array
-      participantsCount:
-        type: integer
-      photoUrl:
-        type: string
-      startAt:
-        type: string
-      status:
-        type: string
-      title:
-        type: string
-      vk_poll_answer_id:
-        type: integer
-      vk_vote_id:
-        type: integer
-      vkPostId:
-        type: integer
-    type: object
   dto.EventMiniDto:
     properties:
       id:
@@ -187,17 +99,6 @@ definitions:
         type: string
       title:
         type: string
-    type: object
-  dto.EventParticipantDto:
-    properties:
-      checkAuthor:
-        $ref: '#/definitions/dto.UserMiniDto'
-      checkTimestamp:
-        type: string
-      isChecked:
-        type: boolean
-      user:
-        $ref: '#/definitions/dto.UserMiniDto'
     type: object
   dto.EventQueueDto:
     properties:
@@ -336,6 +237,261 @@ definitions:
       vk_id:
         type: integer
     type: object
+  event_dto.CreateUpdateEventDto:
+    properties:
+      adAddress:
+        type: string
+      address:
+        type: string
+      attachments:
+        items:
+          type: string
+        type: array
+      availableRoles:
+        items:
+          type: string
+        type: array
+      description:
+        type: string
+      endsAt:
+        type: string
+      lat:
+        type: number
+      long:
+        type: number
+      orgs:
+        items:
+          $ref: '#/definitions/dto.UserMiniDto'
+        type: array
+      photoUrl:
+        type: string
+      startsAt:
+        type: string
+      status:
+        type: string
+      title:
+        type: string
+      vk_poll_answer_id:
+        type: integer
+      vk_vote_id:
+        type: integer
+      vkPostId:
+        type: integer
+    type: object
+  event_dto.EventDto:
+    properties:
+      adAddress:
+        type: string
+      address:
+        type: string
+      attachments:
+        items:
+          $ref: '#/definitions/dto.AttachmentDto'
+        type: array
+      currentUserIsParticipant:
+        type: boolean
+      description:
+        type: string
+      endsAt:
+        type: string
+      id:
+        type: string
+      lat:
+        type: number
+      long:
+        type: number
+      orgs:
+        items:
+          $ref: '#/definitions/dto.UserMiniDto'
+        type: array
+      participants:
+        items:
+          $ref: '#/definitions/dto.UserMiniDto'
+        type: array
+      participantsCount:
+        type: integer
+      photoUrl:
+        type: string
+      startAt:
+        type: string
+      status:
+        type: string
+      title:
+        type: string
+      vk_poll_answer_id:
+        type: integer
+      vk_vote_id:
+        type: integer
+      vkPostId:
+        type: integer
+    type: object
+  team_dto.CreateTeamRequestDto:
+    properties:
+      name:
+        type: string
+    type: object
+  team_dto.SendTeamNotificationDto:
+    properties:
+      message:
+        type: string
+    type: object
+  team_dto.TeamDto:
+    properties:
+      captain:
+        $ref: '#/definitions/dto.UserMiniDto'
+      id:
+        type: string
+      members:
+        description: 3 участника команды без учета капитана
+        items:
+          $ref: '#/definitions/dto.UserMiniDto'
+        type: array
+      name:
+        type: string
+      total_members:
+        type: integer
+    type: object
+  test_dto.AddAnswerDto:
+    properties:
+      is_correct:
+        type: boolean
+      points:
+        type: integer
+      text:
+        type: string
+    type: object
+  test_dto.AddQuestionDto:
+    properties:
+      order:
+        type: integer
+      text:
+        type: string
+      type:
+        type: string
+    type: object
+  test_dto.AnswerDto:
+    properties:
+      id:
+        type: string
+      is_correct:
+        type: boolean
+      points:
+        type: integer
+      question_id:
+        type: string
+      text:
+        type: string
+    type: object
+  test_dto.CreateTestDto:
+    properties:
+      attempts:
+        type: integer
+      cover:
+        type: string
+      description:
+        type: string
+      ends_at:
+        type: string
+      ext_link_id:
+        type: string
+      name:
+        type: string
+      starts_at:
+        type: string
+      status:
+        type: string
+      vk_post_id:
+        type: integer
+    type: object
+  test_dto.QuestionDto:
+    properties:
+      answers:
+        items:
+          $ref: '#/definitions/test_dto.AnswerDto'
+        type: array
+      event_id:
+        type: string
+      id:
+        type: string
+      order:
+        type: integer
+      text:
+        type: string
+      type:
+        type: string
+    type: object
+  test_dto.SetAnswerDto:
+    properties:
+      answer_id:
+        type: string
+      text:
+        type: string
+      user_id:
+        type: string
+    type: object
+  test_dto.TestDto:
+    properties:
+      attempts:
+        type: integer
+      cover:
+        type: string
+      description:
+        type: string
+      ends_at:
+        type: string
+      ext_link_id:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      questions:
+        items:
+          $ref: '#/definitions/test_dto.QuestionDto'
+        type: array
+      starts_at:
+        type: string
+      status:
+        type: string
+      vk_post_id:
+        type: integer
+    type: object
+  test_dto.UpdateTestDto:
+    properties:
+      attempts:
+        type: integer
+      cover:
+        type: string
+      description:
+        type: string
+      ends_at:
+        type: string
+      ext_link_id:
+        type: string
+      name:
+        type: string
+      starts_at:
+        type: string
+      status:
+        type: string
+      vk_post_id:
+        type: integer
+    type: object
+  test_dto.UserAnswerDto:
+    properties:
+      answer_id:
+        type: string
+      id:
+        type: string
+      points:
+        type: integer
+      question_id:
+        type: string
+      text:
+        type: string
+      user_id:
+        type: string
+    type: object
 host: https://simply-funny-spearfish.cloudpub.ru
 info:
   contact: {}
@@ -373,128 +529,6 @@ paths:
       security:
       - VkAuth: []
       summary: Получить список всех мероприятий
-      tags:
-      - events
-    post:
-      consumes:
-      - application/json
-      parameters:
-      - description: X-Request-Id
-        in: header
-        name: X-Request-Id
-        required: true
-        type: string
-      - description: дто для создания мероприятия
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/dto.CreateUpdateEventDto'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/dto.EventDto'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/dto.ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/dto.ErrorResponse'
-      security:
-      - VkAuth: []
-      summary: Создать мероприятие
-      tags:
-      - events
-  /v1/events/{id}:
-    get:
-      consumes:
-      - application/json
-      parameters:
-      - description: Уникальный идентификатор запроса для трассировки
-        in: header
-        name: X-Request-Id
-        required: true
-        type: string
-      - description: 'UUID мероприятия (формат: 550e8400-e29b-41d4-a716-446655440000)'
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/dto.EventDto'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/dto.ErrorResponse'
-        "404":
-          description: Мероприятие не найдено
-          schema:
-            $ref: '#/definitions/dto.ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/dto.ErrorResponse'
-      security:
-      - VkAuth: []
-      summary: Получить одно мероприятие по ID
-      tags:
-      - events
-    patch:
-      consumes:
-      - application/json
-      parameters:
-      - description: Уникальный идентификатор запроса
-        in: header
-        name: X-Request-Id
-        required: true
-        type: string
-      - description: UUID мероприятия для обновления
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: Данные для обновления мероприятия
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/dto.CreateUpdateEventDto'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/dto.EventDto'
-        "400":
-          description: Некорректные данные
-          schema:
-            $ref: '#/definitions/dto.ErrorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/dto.ErrorResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/dto.ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/dto.ErrorResponse'
-      security:
-      - VkAuth: []
-      summary: Обновить мероприятие
       tags:
       - events
   /v1/events/{id}/health-import:
@@ -584,131 +618,6 @@ paths:
       summary: Сохранить данные тренировки пользователя для события
       tags:
       - health-import events
-  /v1/events/{id}/participants:
-    get:
-      consumes:
-      - application/json
-      parameters:
-      - description: X-Request-Id для логирования
-        in: header
-        name: X-Request-Id
-        required: true
-        type: string
-      - description: UUID мероприятия
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/dto.EventParticipantDto'
-            type: array
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/dto.ErrorResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/dto.ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/dto.ErrorResponse'
-      security:
-      - VkAuth: []
-      summary: Получить список участников мероприятия
-      tags:
-      - events users
-  /v1/events/{id}/participate:
-    post:
-      consumes:
-      - application/json
-      parameters:
-      - description: X-Request-Id
-        in: header
-        name: X-Request-Id
-        required: true
-        type: string
-      - description: UUID мероприятия, в котором участвовать
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/dto.ErrorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/dto.ErrorResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/dto.ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/dto.ErrorResponse'
-      security:
-      - VkAuth: []
-      summary: Участвовать в мероприятии
-      tags:
-      - events
-  /v1/events/{id}/participate/check:
-    patch:
-      consumes:
-      - application/json
-      parameters:
-      - description: X-Request-Id
-        in: header
-        name: X-Request-Id
-        required: true
-        type: string
-      - description: UUID мероприятия
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: Данные для проверки/отметки участия
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/dto.CheckEventParticipant'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/dto.ErrorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/dto.ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/dto.ErrorResponse'
-      security:
-      - VkAuth: []
-      summary: Подтвердить/проверить участие (отметка)
-      tags:
-      - events
   /v1/events/{id}/publish:
     post:
       consumes:
@@ -719,18 +628,22 @@ paths:
         name: X-Request-Id
         required: true
         type: string
-      - description: UUID мероприятия для запроса
+      - description: UUID мероприятия
         in: path
         name: id
         required: true
         type: string
+      - description: Данные публикации мероприятия
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/event_dto.CreateUpdateEventDto'
       produces:
       - application/json
       responses:
         "200":
           description: OK
-          schema:
-            $ref: '#/definitions/dto.EventDto'
         "400":
           description: Некорректные данные
           schema:
@@ -750,43 +663,6 @@ paths:
       security:
       - VkAuth: []
       summary: Опубликовать мероприятие
-      tags:
-      - events
-  /v1/events/{id}/unparticipate:
-    post:
-      consumes:
-      - application/json
-      parameters:
-      - description: X-Request-Id
-        in: header
-        name: X-Request-Id
-        required: true
-        type: string
-      - description: UUID мероприятия
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/dto.ErrorResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/dto.ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/dto.ErrorResponse'
-      security:
-      - VkAuth: []
-      summary: Отказаться от участия в мероприятии
       tags:
       - events
   /v1/events/archive:
@@ -851,6 +727,295 @@ paths:
       security:
       - VkAuth: []
       summary: Получить список всех доступных мероприятий
+      tags:
+      - events
+  /v1/events/event:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: X-Request-Id
+        in: header
+        name: X-Request-Id
+        required: true
+        type: string
+      - description: Данные для создания мероприятия
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/event_dto.CreateUpdateEventDto'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/event_dto.EventDto'
+        "400":
+          description: Некорректные данные
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - VkAuth: []
+      summary: Создать мероприятие
+      tags:
+      - events
+  /v1/events/event/{id}:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Уникальный идентификатор запроса для трассировки
+        in: header
+        name: X-Request-Id
+        required: true
+        type: string
+      - description: 'UUID мероприятия (формат: 550e8400-e29b-41d4-a716-446655440000)'
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/event_dto.EventDto'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Мероприятие не найдено
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - VkAuth: []
+      summary: Получить одно мероприятие по ID
+      tags:
+      - events
+    patch:
+      consumes:
+      - application/json
+      parameters:
+      - description: Уникальный идентификатор запроса
+        in: header
+        name: X-Request-Id
+        required: true
+        type: string
+      - description: UUID мероприятия для обновления
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Данные для обновления мероприятия
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/event_dto.CreateUpdateEventDto'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/event_dto.EventDto'
+        "400":
+          description: Некорректные данные
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - VkAuth: []
+      summary: Обновить мероприятие
+      tags:
+      - events
+  /v1/events/event/{id}/participants:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: X-Request-Id для логирования
+        in: header
+        name: X-Request-Id
+        required: true
+        type: string
+      - description: UUID мероприятия
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.UserMiniDto'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - VkAuth: []
+      summary: Получить список участников мероприятия
+      tags:
+      - events users
+  /v1/events/event/{id}/participate:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: X-Request-Id
+        in: header
+        name: X-Request-Id
+        required: true
+        type: string
+      - description: UUID мероприятия, в котором участвовать
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - VkAuth: []
+      summary: Участвовать в мероприятии
+      tags:
+      - events
+  /v1/events/event/{id}/participate/check:
+    patch:
+      consumes:
+      - application/json
+      parameters:
+      - description: X-Request-Id
+        in: header
+        name: X-Request-Id
+        required: true
+        type: string
+      - description: UUID мероприятия
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Данные для проверки/отметки участия
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CheckEventParticipant'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - VkAuth: []
+      summary: Подтвердить/проверить участие (отметка)
+      tags:
+      - events
+  /v1/events/event/{id}/unparticipate:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: X-Request-Id
+        in: header
+        name: X-Request-Id
+        required: true
+        type: string
+      - description: UUID мероприятия
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - VkAuth: []
+      summary: Отказаться от участия в мероприятии
       tags:
       - events
   /v1/events/queue:
@@ -941,6 +1106,637 @@ paths:
       summary: Создание события из поста в очереди
       tags:
       - EventQueue
+  /v1/events/team/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Возвращает список команд командного мероприятия с капитаном, первыми
+        участниками и общим количеством участников.
+      parameters:
+      - description: Уникальный идентификатор запроса
+        in: header
+        name: X-Request-Id
+        required: true
+        type: string
+      - description: UUID командного мероприятия
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/team_dto.TeamDto'
+            type: array
+        "400":
+          description: Некорректный UUID
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Не авторизован
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Мероприятие не найдено
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - VkAuth: []
+      summary: Получить команды мероприятия
+      tags:
+      - teams
+    post:
+      consumes:
+      - application/json
+      description: Создает новую команду в мероприятии типа "команды"; капитаном назначается
+        текущий авторизованный пользователь.
+      parameters:
+      - description: Уникальный идентификатор запроса
+        in: header
+        name: X-Request-Id
+        required: true
+        type: string
+      - description: UUID командного мероприятия
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Данные команды
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/team_dto.CreateTeamRequestDto'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/team_dto.TeamDto'
+        "400":
+          description: Некорректные данные
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Не авторизован
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Мероприятие или пользователь не найдены
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - VkAuth: []
+      summary: Создать команду в командном мероприятии
+      tags:
+      - teams
+  /v1/events/team/{id}/{teamId}:
+    get:
+      consumes:
+      - application/json
+      description: Возвращает одну команду с капитаном, первыми участниками и общим
+        количеством участников.
+      parameters:
+      - description: Уникальный идентификатор запроса
+        in: header
+        name: X-Request-Id
+        required: true
+        type: string
+      - description: UUID командного мероприятия
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: UUID команды
+        in: path
+        name: teamId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/team_dto.TeamDto'
+        "400":
+          description: Некорректный UUID
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Не авторизован
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Команда не найдена
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - VkAuth: []
+      summary: Получить команду
+      tags:
+      - teams
+  /v1/events/team/{id}/{teamId}/notification:
+    post:
+      consumes:
+      - application/json
+      description: Отправляет текстовое VK-уведомление капитану и участникам выбранной
+        команды.
+      parameters:
+      - description: Уникальный идентификатор запроса
+        in: header
+        name: X-Request-Id
+        required: true
+        type: string
+      - description: UUID командного мероприятия
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: UUID команды
+        in: path
+        name: teamId
+        required: true
+        type: string
+      - description: Текст уведомления
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/team_dto.SendTeamNotificationDto'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Некорректные данные
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Не авторизован
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Команда не найдена
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - VkAuth: []
+      summary: Отправить уведомление команде
+      tags:
+      - teams
+  /v1/events/team/{id}/joinTo/{teamId}:
+    post:
+      consumes:
+      - application/json
+      description: Добавляет текущего авторизованного пользователя в выбранную команду
+        командного мероприятия.
+      parameters:
+      - description: Уникальный идентификатор запроса
+        in: header
+        name: X-Request-Id
+        required: true
+        type: string
+      - description: UUID командного мероприятия
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: UUID команды
+        in: path
+        name: teamId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Некорректный UUID или команда заполнена
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Не авторизован
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Команда или пользователь не найдены
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - VkAuth: []
+      summary: Вступить в команду
+      tags:
+      - teams
+  /v1/events/team/{id}/leaveFrom/{teamId}:
+    post:
+      consumes:
+      - application/json
+      description: Удаляет текущего авторизованного пользователя из выбранной команды.
+      parameters:
+      - description: Уникальный идентификатор запроса
+        in: header
+        name: X-Request-Id
+        required: true
+        type: string
+      - description: UUID командного мероприятия
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: UUID команды
+        in: path
+        name: teamId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Некорректный UUID или капитан пытается выйти из команды
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Не авторизован
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Команда или пользователь не найдены
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - VkAuth: []
+      summary: Выйти из команды
+      tags:
+      - teams
+  /v1/events/test:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Уникальный идентификатор запроса
+        in: header
+        name: X-Request-Id
+        required: true
+        type: string
+      - description: Данные для создания теста
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/test_dto.CreateTestDto'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/test_dto.TestDto'
+        "400":
+          description: Некорректные данные
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - VkAuth: []
+      summary: Создать тест
+      tags:
+      - tests
+  /v1/events/test/{id}:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Уникальный идентификатор запроса
+        in: header
+        name: X-Request-Id
+        required: true
+        type: string
+      - description: UUID теста
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/test_dto.TestDto'
+        "400":
+          description: Некорректный UUID
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Тест не найден
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - VkAuth: []
+      summary: Получить тест по ID
+      tags:
+      - tests
+    patch:
+      consumes:
+      - application/json
+      parameters:
+      - description: Уникальный идентификатор запроса
+        in: header
+        name: X-Request-Id
+        required: true
+        type: string
+      - description: UUID теста
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Данные для обновления теста
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/test_dto.UpdateTestDto'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/test_dto.TestDto'
+        "400":
+          description: Некорректные данные
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Тест не найден
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - VkAuth: []
+      summary: Обновить тест
+      tags:
+      - tests
+  /v1/events/test/{id}/q:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Уникальный идентификатор запроса
+        in: header
+        name: X-Request-Id
+        required: true
+        type: string
+      - description: UUID теста
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Данные вопроса
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/test_dto.AddQuestionDto'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/test_dto.QuestionDto'
+        "400":
+          description: Некорректные данные
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Тест не найден
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - VkAuth: []
+      summary: Добавить вопрос в тест
+      tags:
+      - tests
+  /v1/events/test/{id}/q/{qId}:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Уникальный идентификатор запроса
+        in: header
+        name: X-Request-Id
+        required: true
+        type: string
+      - description: UUID теста
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: UUID вопроса
+        in: path
+        name: qId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/test_dto.QuestionDto'
+        "400":
+          description: Некорректный UUID
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Вопрос не найден
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - VkAuth: []
+      summary: Получить вопрос теста
+      tags:
+      - tests
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Уникальный идентификатор запроса
+        in: header
+        name: X-Request-Id
+        required: true
+        type: string
+      - description: UUID теста
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: UUID вопроса
+        in: path
+        name: qId
+        required: true
+        type: string
+      - description: Ответ пользователя
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/test_dto.SetAnswerDto'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/test_dto.UserAnswerDto'
+        "400":
+          description: Некорректные данные
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Вопрос или вариант ответа не найден
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - VkAuth: []
+      summary: Сохранить ответ пользователя на вопрос
+      tags:
+      - tests
+  /v1/events/test/{id}/q/{qId}/answers:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Уникальный идентификатор запроса
+        in: header
+        name: X-Request-Id
+        required: true
+        type: string
+      - description: UUID теста
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: UUID вопроса
+        in: path
+        name: qId
+        required: true
+        type: string
+      - description: Данные варианта ответа
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/test_dto.AddAnswerDto'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/test_dto.AnswerDto'
+        "400":
+          description: Некорректные данные
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Вопрос не найден
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - VkAuth: []
+      summary: Добавить вариант ответа к вопросу
+      tags:
+      - tests
   /v1/health-import/apple/parse:
     post:
       consumes:
@@ -1028,7 +1824,7 @@ paths:
       summary: Получить список онбордингов для пользователя
       tags:
       - onboarding
-  /v1/onboardings/:id:
+  /v1/onboardings/{id}:
     post:
       consumes:
       - application/json
@@ -1042,16 +1838,16 @@ paths:
         name: X-Request-Id
         required: true
         type: string
-      - description: Уникальный идентификатор онбординга.
+      - description: Уникальный идентификатор онбординга
         in: path
-        name: X-Request-Id
+        name: id
         required: true
         type: string
       produces:
       - application/json
       responses:
-        "201":
-          description: Created
+        "200":
+          description: OK
         "401":
           description: Не авторизован
           schema:
@@ -1069,10 +1865,8 @@ paths:
     get:
       consumes:
       - application/json
-      description: Получить список онбордингов для пользователя. Онбординги - это
-        этапы, которые пользователь должен пройти для полного использования функционала
-        приложения. Например, онбординг может включать в себя заполнение профиля,
-        добавление друзей, участие в мероприятиях и т.д.
+      description: Возвращает все онбординги для указанной платформы без учёта прогресса
+        пользователя.
       parameters:
       - description: Уникальный идентификатор запроса для трассировки
         in: header
@@ -1103,7 +1897,7 @@ paths:
             $ref: '#/definitions/dto.ErrorResponse'
       security:
       - VkAuth: []
-      summary: Получить список онбордингов для пользователя
+      summary: Получить все онбординги платформы
       tags:
       - onboarding
   /v1/users:
@@ -1128,7 +1922,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/dto.UserDto'
+              $ref: '#/definitions/dto.UserMiniDto'
             type: array
         "401":
           description: Unauthorized
@@ -1191,7 +1985,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: Создаёт пользоватей из списка ссылок
+      description: Создаёт пользователей из списка ссылок
       parameters:
       - description: Уникальный идентификатор запроса для трассировки
         in: header
@@ -1286,7 +2080,7 @@ paths:
         name: id
         required: true
         type: string
-      - description: 'Название разрешения (например: is_admin, can_moderate и т.д.)'
+      - description: 'Название разрешения: geo или notification'
         in: path
         name: permission
         required: true

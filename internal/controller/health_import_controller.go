@@ -13,7 +13,7 @@ type healthImportController struct {
 //	@Summary		Распарсить метаданные тренировок из zip-файла
 //	@Description	Принимает zip-архив c экспортом данных здоровья и возвращает распарсенные метаданные тренировок.
 //	@Tags			health-import
-//	@Accept			mpfd
+//	@Accept			multipart/form-data
 //	@Produce		json
 //	@Param			X-Request-Id	header		string	true	"Уникальный идентификатор запроса"
 //	@Param			platform		formData	string	true	"Платформа источника данных"

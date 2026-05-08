@@ -96,19 +96,19 @@ func (uc *baseEventController) getEventsArchive(c *gin.Context) {
 
 // publishEvent godoc
 //
-//	@Summary	Обновить мероприятие
+//	@Summary	Опубликовать мероприятие
 //	@Tags		events
 //	@Accept		json
 //	@Produce	json
 //	@Param		X-Request-Id	header		string						true	"Уникальный идентификатор запроса"
-//	@Param		id				path		string						true	"UUID мероприятия для обновления"
-//	@Param		request			body		dto.CreateUpdateEventDto	true	"Данные для обновления мероприятия"
-//	@Success	200				{object}	dto.EventDto
+//	@Param		id				path		string						true	"UUID мероприятия"
+//	@Param		request			body		event_dto.CreateUpdateEventDto	true	"Данные публикации мероприятия"
+//	@Success	200
 //	@Failure	400				{object}	dto.ErrorResponse	"Некорректные данные"
 //	@Failure	401				{object}	dto.ErrorResponse
 //	@Failure	404				{object}	dto.ErrorResponse
 //	@Failure	500				{object}	dto.ErrorResponse
-//	@Router		/v1/events/event/{id} [patch]
+//	@Router		/v1/events/{id}/publish [post]
 //	@Security	VkAuth
 func (uc *baseEventController) publishEvent(c *gin.Context) {
 	eventId, err := controller.ParseUUID(c, controller.ParamID)

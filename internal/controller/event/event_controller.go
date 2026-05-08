@@ -30,7 +30,7 @@ type eventController struct {
 //	@Produce	json
 //	@Param		X-Request-Id	header		string	true	"Уникальный идентификатор запроса для трассировки"
 //	@Param		id				path		string	true	"UUID мероприятия (формат: 550e8400-e29b-41d4-a716-446655440000)"
-//	@Success	200				{object}	dto.EventDto
+//	@Success	200				{object}	event_dto.EventDto
 //	@Failure	401				{object}	dto.ErrorResponse
 //	@Failure	404				{object}	dto.ErrorResponse	"Мероприятие не найдено"
 //	@Failure	500				{object}	dto.ErrorResponse
@@ -56,7 +56,7 @@ func (uc *eventController) getEvent(c *gin.Context) {
 	c.JSON(http.StatusOK, event)
 }
 
-// publishEvent godoc
+// updateEvent godoc
 //
 //	@Summary	Обновить мероприятие
 //	@Tags		events
@@ -64,8 +64,8 @@ func (uc *eventController) getEvent(c *gin.Context) {
 //	@Produce	json
 //	@Param		X-Request-Id	header		string						true	"Уникальный идентификатор запроса"
 //	@Param		id				path		string						true	"UUID мероприятия для обновления"
-//	@Param		request			body		dto.CreateUpdateEventDto	true	"Данные для обновления мероприятия"
-//	@Success	200				{object}	dto.EventDto
+//	@Param		request			body		event_dto.CreateUpdateEventDto	true	"Данные для обновления мероприятия"
+//	@Success	200				{object}	event_dto.EventDto
 //	@Failure	400				{object}	dto.ErrorResponse	"Некорректные данные"
 //	@Failure	401				{object}	dto.ErrorResponse
 //	@Failure	404				{object}	dto.ErrorResponse
@@ -104,8 +104,9 @@ func (uc *eventController) updateEvent(c *gin.Context) {
 //	@Accept		json
 //	@Produce	json
 //	@Param		X-Request-Id	header		string						true	"X-Request-Id"
-//	@Param		request			body		dto.CreateUpdateEventDto	true	"дто для создания мероприятия"
-//	@Success	200				{object}	dto.EventDto
+//	@Param		request			body		event_dto.CreateUpdateEventDto	true	"Данные для создания мероприятия"
+//	@Success	200				{object}	event_dto.EventDto
+//	@Failure	400				{object}	dto.ErrorResponse	"Некорректные данные"
 //	@Failure	401				{object}	dto.ErrorResponse
 //	@Failure	500				{object}	dto.ErrorResponse
 //	@Router		/v1/events/event [post]
@@ -129,21 +130,6 @@ func (uc *eventController) createEvent(c *gin.Context) {
 	c.JSON(http.StatusOK, createEvent)
 }
 
-// publishEvent godoc
-//
-//	@Summary	Опубликовать мероприятие
-//	@Tags		events
-//	@Accept		json
-//	@Produce	json
-//	@Param		X-Request-Id	header		string	true	"Уникальный идентификатор запроса"
-//	@Param		id				path		string	true	"UUID мероприятия для запроса"
-//	@Success	200
-//	@Failure	400				{object}	dto.ErrorResponse	"Некорректные данные"
-//	@Failure	401				{object}	dto.ErrorResponse
-//	@Failure	404				{object}	dto.ErrorResponse
-//	@Failure	500				{object}	dto.ErrorResponse
-//	@Router		/v1/events/{id}/publish [post]
-//	@Security	VkAuth
 func (uc *eventController) publishEvent(c *gin.Context) {
 	eventId, err := controller.ParseUUID(c, controller.ParamID)
 	if err != nil {
@@ -167,7 +153,7 @@ func (uc *eventController) publishEvent(c *gin.Context) {
 //	@Produce	json
 //	@Param		X-Request-Id	header		string	true	"X-Request-Id для логирования"
 //	@Param		id				path		string	true	"UUID мероприятия"
-//	@Success	200				{array}		dto.EventParticipantDto
+//	@Success	200				{array}		dto.UserMiniDto
 //	@Failure	401				{object}	dto.ErrorResponse
 //	@Failure	404				{object}	dto.ErrorResponse
 //	@Failure	500				{object}	dto.ErrorResponse
@@ -303,10 +289,12 @@ func (uc *eventController) eventAsEventService(c *gin.Context) (event_as_event.E
 func ConfigureEventController(
 	r *gin.RouterGroup,
 	eventService event.EventService,
+	eventAsEventService event_as_event.EventAsEventService,
 	eventParticipantService event_as_event.EventParticipantService,
 ) {
 	ec := &eventController{
 		eventBaseService:        eventService,
+		eventService:            eventAsEventService,
 		eventParticipantService: eventParticipantService,
 	}
 

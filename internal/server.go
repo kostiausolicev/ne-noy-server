@@ -37,6 +37,7 @@ func New(db *pgxpool.Pool, config config.Config) *Server {
 
 	userService := service.NewUserService(userRepo, roleRepo, vkCl)
 	eventService := event2.NewEventService(eventRepo, userService, roleRepo)
+	eventAsEventService := event_as_event.NewEventAsEventService(eventAsEventRepo)
 	eventParticipantService := event_as_event.NewEventParticipantService(eventParticipantRepository, eventAsEventRepo, config.Distance)
 	eventTeamService := event_as_team.NewEventTeamService(eventTeamRepo, vkCl)
 	eventTestService := event_as_test.NewEventTestService(eventTestRepo)
@@ -72,7 +73,7 @@ func New(db *pgxpool.Pool, config config.Config) *Server {
 		{
 			controller.ConfigureOnboardingController(apiV1, onboardingService)
 			controller.ApiServiceController(apiV1)
-			event.ConfigureEventController(apiV1, eventService, eventParticipantService)
+			event.ConfigureEventController(apiV1, eventService, eventAsEventService, eventParticipantService)
 			event.ConfigureTeamEventController(apiV1, eventService, eventTeamService, userService)
 			event.ConfigureTestController(apiV1, eventService, eventTestService)
 			controller.ConfigureUserController(apiV1, userService)

@@ -53,7 +53,7 @@ func (uc *userController) createUser(c *gin.Context) {
 // createUserByLinks godoc
 //
 //	@Summary		Создать пользователей из списка ссылок
-//	@Description	Создаёт пользоватей из списка ссылок
+//	@Description	Создаёт пользователей из списка ссылок
 //	@Tags			users
 //	@Accept			json
 //	@Produce		json
@@ -86,7 +86,7 @@ func (uc *userController) createUserByLinks(c *gin.Context) {
 //	@Produce		json
 //	@Param			X-Request-Id	header		string	true	"Уникальный идентификатор запроса"
 //	@Param			fio				query		string	false	"Фильтр по ФИО (частичное совпадение)"
-//	@Success		200				{array}		dto.UserDto
+//	@Success		200				{array}		dto.UserMiniDto
 //	@Failure		401				{object}	dto.ErrorResponse
 //	@Failure		500				{object}	dto.ErrorResponse
 //	@Router			/v1/users [get]
@@ -140,7 +140,7 @@ func (uc *userController) getByVkId(c *gin.Context) {
 //	@Produce		json
 //	@Param			X-Request-Id	header	string	true	"Уникальный идентификатор запроса"
 //	@Param			id				path	string	true	"VK ID пользователя"
-//	@Param			permission		path	string	true	"Название разрешения (например: is_admin, can_moderate и т.д.)"
+//	@Param			permission		path	string	true	"Название разрешения: geo или notification"
 //	@Param			value			query	boolean	true	"Новое значение разрешения (true/false)"
 //	@Success		200
 //	@Failure		400	{object}	dto.ErrorResponse	"Некорректные параметры"
