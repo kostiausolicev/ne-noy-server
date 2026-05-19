@@ -43,6 +43,98 @@ func (e *eventTeamRepositoryPgx) GetEventByID(ctx context.Context, eventID uuid.
 	return &event, nil
 }
 
+func (e *eventTeamRepositoryPgx) CreateEvent(ctx context.Context, event *as_team.AsTeam) (*as_team.AsTeam, error) {
+	eventID := uuid.New()
+
+	// Профиль командного мероприятия хранится отдельно от команд; команды будут ссылаться на этот ID.
+	_, err := e.pool.Exec(ctx, `
+		INSERT INTO event_as_teams (
+			id, name, description, cover, status, starts_at, ends_at,
+			teams_constraint, teams_cap_min, teams_cap_max,
+			lat, lon, address, additional_address, vk_post_id
+		)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+	`, eventID, event.Name, event.Description, event.Cover, event.Status, event.StartsAt, event.EndsAt,
+		event.TeamsConstraint, event.TeamsCapMin, event.TeamsCapMax, event.Lat, event.Lon, event.Address,
+		event.AdditionalAddress, event.VkPostID)
+	if err != nil {
+		return nil, err
+	}
+
+	return e.GetEventByID(ctx, eventID)
+}
+
+func (e *eventTeamRepositoryPgx) UpdateEvent(ctx context.Context, eventID uuid.UUID, update as_team.AsTeam) (*as_team.AsTeam, error) {
+	// COALESCE оставляет текущее значение, если сервис не передал поле в DTO обновления.
+	commandTag, err := e.pool.Exec(ctx, `
+		UPDATE event_as_teams
+		SET
+			name = COALESCE($2, name),
+			description = COALESCE($3, description),
+			cover = COALESCE($4, cover),
+			status = COALESCE($5, status),
+			starts_at = COALESCE($6, starts_at),
+			ends_at = COALESCE($7, ends_at),
+			teams_constraint = COALESCE($8, teams_constraint),
+			teams_cap_min = COALESCE($9, teams_cap_min),
+			teams_cap_max = COALESCE($10, teams_cap_max),
+			lat = COALESCE($11, lat),
+			lon = COALESCE($12, lon),
+			address = COALESCE($13, address),
+			additional_address = COALESCE($14, additional_address),
+			vk_post_id = COALESCE($15, vk_post_id),
+			updated_at = now()
+		WHERE id = $1
+	`, eventID, nullableString(update.Name), update.Description, update.Cover, nullableString(update.Status),
+		nullableTime(update.StartsAt), update.EndsAt, nullableInt(update.TeamsConstraint), update.TeamsCapMin,
+		update.TeamsCapMax, update.Lat, update.Lon, update.Address, update.AdditionalAddress, update.VkPostID)
+	if err != nil {
+		return nil, err
+	}
+	if commandTag.RowsAffected() == 0 {
+		return nil, pgx.ErrNoRows
+	}
+
+	return e.GetEventByID(ctx, eventID)
+}
+
+func (e *eventTeamRepositoryPgx) DeleteEvent(ctx context.Context, eventID uuid.UUID) error {
+	tx, err := e.pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+
+	// Сначала удаляем участников команд, потому что они ссылаются на teams.id.
+	if _, err = tx.Exec(ctx, `
+		DELETE FROM team_members
+		WHERE team_id IN (SELECT id FROM teams WHERE event_id = $1)
+	`, eventID); err != nil {
+		return err
+	}
+
+	// Затем удаляем сами команды, связанные с командным мероприятием.
+	if _, err = tx.Exec(ctx, `
+		DELETE FROM teams
+		WHERE event_id = $1
+	`, eventID); err != nil {
+		return err
+	}
+
+	commandTag, err := tx.Exec(ctx, `
+		DELETE FROM event_as_teams
+		WHERE id = $1
+	`, eventID)
+	if err != nil {
+		return err
+	}
+	if commandTag.RowsAffected() == 0 {
+		return pgx.ErrNoRows
+	}
+
+	return tx.Commit(ctx)
+}
+
 func (e *eventTeamRepositoryPgx) GetTeamsByEvent(ctx context.Context, eventID uuid.UUID) ([]as_team.Team, error) {
 	rows, err := e.pool.Query(ctx, `
 		SELECT

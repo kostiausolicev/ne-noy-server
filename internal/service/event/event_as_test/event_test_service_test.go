@@ -119,6 +119,24 @@ func TestEventTestServiceGetTestMapsNestedQuestions(t *testing.T) {
 	require.Equal(t, "Answer", test.Questions[0].Answers[0].Text)
 }
 
+func TestEventTestServiceDeleteTestValidatesAndCallsRepository(t *testing.T) {
+	ctx := context.Background()
+	testID := uuid.New()
+	repo := newFakeEventTestRepo()
+	repo.tests[testID] = &as_test.AsTest{
+		EventProfile: events.EventProfile{BaseModel: model.BaseModel{ID: testID}},
+	}
+	service := NewEventTestService(repo)
+
+	err := service.DeleteTest(ctx, test_dto.DeleteTestDto{})
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "test id is required")
+
+	require.NoError(t, service.DeleteTest(ctx, test_dto.DeleteTestDto{ID: testID}))
+	_, err = repo.GetTest(ctx, testID)
+	require.Error(t, err)
+}
+
 type fakeEventTestRepo struct {
 	tests       map[uuid.UUID]*as_test.AsTest
 	questions   map[uuid.UUID]*as_test.Question
@@ -173,6 +191,19 @@ func (f *fakeEventTestRepo) UpdateTest(_ context.Context, testID uuid.UUID, upda
 		test.Attempts = update.Attempts
 	}
 	return test, nil
+}
+
+func (f *fakeEventTestRepo) DeleteTest(_ context.Context, testID uuid.UUID) error {
+	if _, ok := f.tests[testID]; !ok {
+		return errors.New("test not found")
+	}
+	delete(f.tests, testID)
+	for questionID, question := range f.questions {
+		if question.EventID == testID {
+			delete(f.questions, questionID)
+		}
+	}
+	return nil
 }
 
 func (f *fakeEventTestRepo) AddQuestion(_ context.Context, testID uuid.UUID, question as_test.Question) (*as_test.Question, error) {

@@ -8,6 +8,7 @@ import (
 	"ne_noy/internal/dto"
 	"ne_noy/internal/dto/team_dto"
 	"ne_noy/internal/model"
+	"ne_noy/internal/model/events"
 	"ne_noy/internal/model/events/as_team"
 	"ne_noy/internal/repository"
 	"strconv"
@@ -21,6 +22,14 @@ type eventTeamService struct {
 }
 
 type EventTeamService interface {
+	// GetTeamEvent возвращает запись командного мероприятия
+	GetTeamEvent(ctx context.Context, eventId uuid.UUID) (team_dto.TeamEventDto, error)
+	// CreateTeamEvent создает запись командного мероприятия
+	CreateTeamEvent(ctx context.Context, event team_dto.CreateTeamEventDto) (team_dto.TeamEventDto, error)
+	// UpdateTeamEvent обновляет запись командного мероприятия
+	UpdateTeamEvent(ctx context.Context, eventId uuid.UUID, event team_dto.UpdateTeamEventDto) (team_dto.TeamEventDto, error)
+	// DeleteTeamEvent удаляет запись командного мероприятия
+	DeleteTeamEvent(ctx context.Context, event team_dto.DeleteTeamEventDto) error
 	// GetTeamsOnEvent возвращает все команды в мероприятии
 	GetTeamsOnEvent(ctx context.Context, eventId uuid.UUID) ([]team_dto.TeamDto, error)
 	// GetTeam возвращает одну команду по ID
@@ -37,6 +46,98 @@ type EventTeamService interface {
 
 func NewEventTeamService(repo repository.EventTeamRepository, cl vkClient.VkApiClient) EventTeamService {
 	return &eventTeamService{repo: repo, cl: cl}
+}
+
+func (e *eventTeamService) GetTeamEvent(ctx context.Context, eventId uuid.UUID) (team_dto.TeamEventDto, error) {
+	event, err := e.repo.GetEventByID(ctx, eventId)
+	if err != nil {
+		return team_dto.TeamEventDto{}, err
+	}
+
+	return teamEventToDto(*event), nil
+}
+
+func (e *eventTeamService) CreateTeamEvent(ctx context.Context, event team_dto.CreateTeamEventDto) (team_dto.TeamEventDto, error) {
+	if event.Name == "" {
+		return team_dto.TeamEventDto{}, errors.New("team event name is required")
+	}
+	if event.Status == "" {
+		return team_dto.TeamEventDto{}, errors.New("team event status is required")
+	}
+	if event.StartsAt.IsZero() {
+		return team_dto.TeamEventDto{}, errors.New("team event starts_at is required")
+	}
+	if event.TeamsConstraint <= 0 {
+		return team_dto.TeamEventDto{}, errors.New("teams constraint must be positive")
+	}
+
+	created, err := e.repo.CreateEvent(ctx, &as_team.AsTeam{
+		EventProfile: events.EventProfile{
+			Name:        event.Name,
+			Description: event.Description,
+			Cover:       event.Cover,
+			Status:      event.Status,
+			StartsAt:    event.StartsAt,
+			EndsAt:      event.EndsAt,
+		},
+		TeamsConstraint:   event.TeamsConstraint,
+		TeamsCapMin:       event.TeamsCapMin,
+		TeamsCapMax:       event.TeamsCapMax,
+		Lat:               event.Lat,
+		Lon:               event.Lon,
+		Address:           event.Address,
+		AdditionalAddress: event.AdditionalAddress,
+		VkPostID:          event.VkPostID,
+	})
+	if err != nil {
+		return team_dto.TeamEventDto{}, err
+	}
+
+	return teamEventToDto(*created), nil
+}
+
+func (e *eventTeamService) UpdateTeamEvent(ctx context.Context, eventId uuid.UUID, event team_dto.UpdateTeamEventDto) (team_dto.TeamEventDto, error) {
+	update := as_team.AsTeam{}
+	if event.Name != nil {
+		update.Name = *event.Name
+	}
+	update.Description = event.Description
+	update.Cover = event.Cover
+	if event.Status != nil {
+		update.Status = *event.Status
+	}
+	if event.StartsAt != nil {
+		update.StartsAt = *event.StartsAt
+	}
+	update.EndsAt = event.EndsAt
+	if event.TeamsConstraint != nil {
+		if *event.TeamsConstraint <= 0 {
+			return team_dto.TeamEventDto{}, errors.New("teams constraint must be positive")
+		}
+		update.TeamsConstraint = *event.TeamsConstraint
+	}
+	update.TeamsCapMin = event.TeamsCapMin
+	update.TeamsCapMax = event.TeamsCapMax
+	update.Lat = event.Lat
+	update.Lon = event.Lon
+	update.Address = event.Address
+	update.AdditionalAddress = event.AdditionalAddress
+	update.VkPostID = event.VkPostID
+
+	updated, err := e.repo.UpdateEvent(ctx, eventId, update)
+	if err != nil {
+		return team_dto.TeamEventDto{}, err
+	}
+
+	return teamEventToDto(*updated), nil
+}
+
+func (e *eventTeamService) DeleteTeamEvent(ctx context.Context, event team_dto.DeleteTeamEventDto) error {
+	if event.ID == uuid.Nil {
+		return errors.New("team event id is required")
+	}
+
+	return e.repo.DeleteEvent(ctx, event.ID)
 }
 
 func (e *eventTeamService) GetTeamsOnEvent(ctx context.Context, eventId uuid.UUID) ([]team_dto.TeamDto, error) {
@@ -167,6 +268,26 @@ func (e *eventTeamService) teamToDto(team as_team.Team) team_dto.TeamDto {
 func (e *eventTeamService) totalMembers(team as_team.Team) int {
 	// Капитан хранится отдельно от team_members, но в API считается полноправным участником команды.
 	return len(team.Members) + 1
+}
+
+func teamEventToDto(event as_team.AsTeam) team_dto.TeamEventDto {
+	return team_dto.TeamEventDto{
+		ID:                event.ID,
+		Name:              event.Name,
+		Description:       event.Description,
+		Cover:             event.Cover,
+		Status:            event.Status,
+		StartsAt:          event.StartsAt,
+		EndsAt:            event.EndsAt,
+		TeamsConstraint:   event.TeamsConstraint,
+		TeamsCapMin:       event.TeamsCapMin,
+		TeamsCapMax:       event.TeamsCapMax,
+		Lat:               event.Lat,
+		Lon:               event.Lon,
+		Address:           event.Address,
+		AdditionalAddress: event.AdditionalAddress,
+		VkPostID:          event.VkPostID,
+	}
 }
 
 func userToMiniDto(user model.User) dto.UserMiniDto {

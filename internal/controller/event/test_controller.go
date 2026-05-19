@@ -119,8 +119,8 @@ func (c *testController) GetQuestion(ctx *gin.Context) {
 //	@Tags		tests
 //	@Accept		json
 //	@Produce	json
-//	@Param		X-Request-Id	header		string					true	"Уникальный идентификатор запроса"
-//	@Param		id				path		string					true	"UUID теста"
+//	@Param		X-Request-Id	header		string						true	"Уникальный идентификатор запроса"
+//	@Param		id				path		string						true	"UUID теста"
 //	@Param		qId				path		string					true	"UUID вопроса"
 //	@Param		request			body		test_dto.SetAnswerDto	true	"Ответ пользователя"
 //	@Success	200				{object}	test_dto.UserAnswerDto
@@ -168,8 +168,8 @@ func (c *testController) SetAnswer(ctx *gin.Context) {
 //	@Tags		tests
 //	@Accept		json
 //	@Produce	json
-//	@Param		X-Request-Id	header		string						true	"Уникальный идентификатор запроса"
-//	@Param		id				path		string						true	"UUID теста"
+//	@Param		X-Request-Id	header		string					true	"Уникальный идентификатор запроса"
+//	@Param		id				path		string					true	"UUID теста"
 //	@Param		request			body		test_dto.AddQuestionDto	true	"Данные вопроса"
 //	@Success	200				{object}	test_dto.QuestionDto
 //	@Failure	400				{object}	dto.ErrorResponse	"Некорректные данные"
@@ -285,6 +285,36 @@ func (c *testController) UpdateTest(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, test)
 }
 
+// DeleteTest godoc
+//
+//	@Summary	Удалить тест
+//	@Tags		tests
+//	@Accept		json
+//	@Produce	json
+//	@Param		X-Request-Id	header	string	true	"Уникальный идентификатор запроса"
+//	@Param		id				path	string	true	"UUID теста"
+//	@Success	200
+//	@Failure	400	{object}	dto.ErrorResponse	"Некорректный UUID"
+//	@Failure	401	{object}	dto.ErrorResponse
+//	@Failure	404	{object}	dto.ErrorResponse	"Тест не найден"
+//	@Failure	500	{object}	dto.ErrorResponse
+//	@Router		/v1/events/test/{id} [delete]
+//	@Security	VkAuth
+func (c *testController) DeleteTest(ctx *gin.Context) {
+	testID, err := controller.ParseUUID(ctx, controller.ParamID)
+	if err != nil {
+		ctx.Error(err)
+		return
+	}
+
+	if err = c.testService.DeleteTest(ctx.Request.Context(), test_dto.DeleteTestDto{ID: testID}); err != nil {
+		ctx.Error(err)
+		return
+	}
+
+	ctx.Status(http.StatusOK)
+}
+
 func ConfigureTestController(
 	router *gin.RouterGroup,
 	eventService event.EventService,
@@ -298,6 +328,7 @@ func ConfigureTestController(
 	router.POST(routeTest, c.CreateTest)
 	router.GET(routeTestByID, c.GetTest)
 	router.PATCH(routeTestByID, c.UpdateTest)
+	router.DELETE(routeTestByID, c.DeleteTest)
 	router.POST(routeTestQuestion, c.AddQuestion)
 	router.GET(routeTestQuestionByID, c.GetQuestion)
 	router.POST(routeTestQuestionByID, c.SetAnswer)

@@ -30,6 +30,8 @@ type EventTestService interface {
 	CreateTest(ctx context.Context, test test_dto.CreateTestDto) (test_dto.TestDto, error)
 	// UpdateTest Обновление теста
 	UpdateTest(ctx context.Context, testID uuid.UUID, test test_dto.UpdateTestDto) (test_dto.TestDto, error)
+	// DeleteTest удаляет тест
+	DeleteTest(ctx context.Context, test test_dto.DeleteTestDto) error
 }
 
 func NewEventTestService(repo repository.EventTestRepository) EventTestService {
@@ -175,6 +177,15 @@ func (e *eventTestService) UpdateTest(ctx context.Context, testID uuid.UUID, tes
 	}
 
 	return testToDto(*updatedTest), nil
+}
+
+func (e *eventTestService) DeleteTest(ctx context.Context, test test_dto.DeleteTestDto) error {
+	if test.ID == uuid.Nil {
+		return errors.New("test id is required")
+	}
+
+	// Сервис принимает DTO удаления, чтобы контроллер не зависел от модели репозитория.
+	return e.repo.DeleteTest(ctx, test.ID)
 }
 
 func testToDto(test as_test.AsTest) test_dto.TestDto {

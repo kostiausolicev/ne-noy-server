@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"ne_noy/internal/model/events"
+	"ne_noy/internal/model/events/as_team"
 	"os"
 	"path/filepath"
 	"testing"
@@ -74,6 +76,78 @@ func TestEventTeamRepositoryGetEventByID(t *testing.T) {
 	require.Equal(t, 3, event.TeamsConstraint)
 	require.NotNil(t, event.TeamsCapMax)
 	require.Equal(t, 4, *event.TeamsCapMax)
+}
+
+func TestEventTeamRepositoryCreateUpdateDeleteEvent(t *testing.T) {
+	ctx := context.Background()
+	pool := setupTeamRepositoryPostgres(t)
+	repo := NewEventTeamRepository(pool)
+
+	startsAt := time.Date(2026, 5, 9, 10, 0, 0, 0, time.UTC)
+	endsAt := startsAt.Add(2 * time.Hour)
+	description := "Team event description"
+	cover := "https://example.com/team-cover.jpg"
+	address := "Moscow"
+	additionalAddress := "Building 1"
+	lat := 55.7558
+	lon := 37.6173
+	capMin := 2
+	capMax := 5
+	vkPostID := int64(12345)
+
+	created, err := repo.CreateEvent(ctx, &as_team.AsTeam{
+		EventProfile: events.EventProfile{
+			Name:        "Hackathon",
+			Description: &description,
+			Cover:       &cover,
+			Status:      "draft",
+			StartsAt:    startsAt,
+			EndsAt:      &endsAt,
+		},
+		TeamsConstraint:   8,
+		TeamsCapMin:       &capMin,
+		TeamsCapMax:       &capMax,
+		Lat:               &lat,
+		Lon:               &lon,
+		Address:           &address,
+		AdditionalAddress: &additionalAddress,
+		VkPostID:          &vkPostID,
+	})
+	require.NoError(t, err)
+	require.Equal(t, "Hackathon", created.Name)
+	require.Equal(t, 8, created.TeamsConstraint)
+	require.NotEqual(t, uuid.Nil, created.ID)
+
+	updatedName := "Updated Hackathon"
+	updatedStatus := "active"
+	updatedCapMax := 6
+	updated, err := repo.UpdateEvent(ctx, created.ID, as_team.AsTeam{
+		EventProfile: events.EventProfile{
+			Name:   updatedName,
+			Status: updatedStatus,
+		},
+		TeamsCapMax: &updatedCapMax,
+	})
+	require.NoError(t, err)
+	require.Equal(t, updatedName, updated.Name)
+	require.Equal(t, updatedStatus, updated.Status)
+	require.Equal(t, 8, updated.TeamsConstraint)
+	require.NotNil(t, updated.TeamsCapMax)
+	require.Equal(t, updatedCapMax, *updated.TeamsCapMax)
+
+	captainID := seedTeamRepoUser(t, ctx, pool, 1003, "Team", "Captain")
+	team, err := repo.CreateTeam(ctx, created.ID, captainID, "Backend")
+	require.NoError(t, err)
+
+	require.NoError(t, repo.DeleteEvent(ctx, created.ID))
+
+	_, err = repo.GetEventByID(ctx, created.ID)
+	require.Error(t, err)
+	require.True(t, errors.Is(err, pgx.ErrNoRows))
+
+	_, err = repo.GetTeamByID(ctx, team.ID)
+	require.Error(t, err)
+	require.True(t, errors.Is(err, pgx.ErrNoRows))
 }
 
 func setupTeamRepositoryPostgres(t *testing.T) *pgxpool.Pool {

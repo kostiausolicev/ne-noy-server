@@ -11,6 +11,15 @@ type EventTeamRepository interface {
 	// GetEventByID возвращает командное мероприятие вместе с настройками вместимости команд.
 	GetEventByID(ctx context.Context, eventID uuid.UUID) (*as_team.AsTeam, error)
 
+	// CreateEvent создает запись командного мероприятия в профильной таблице event_as_teams.
+	CreateEvent(ctx context.Context, event *as_team.AsTeam) (*as_team.AsTeam, error)
+
+	// UpdateEvent обновляет поля записи командного мероприятия, которые передал сервис.
+	UpdateEvent(ctx context.Context, eventID uuid.UUID, update as_team.AsTeam) (*as_team.AsTeam, error)
+
+	// DeleteEvent удаляет запись командного мероприятия вместе с созданными командами и участниками команд.
+	DeleteEvent(ctx context.Context, eventID uuid.UUID) error
+
 	// GetTeamsByEvent возвращает команды мероприятия с капитаном и участниками.
 	GetTeamsByEvent(ctx context.Context, eventID uuid.UUID) ([]as_team.Team, error)
 

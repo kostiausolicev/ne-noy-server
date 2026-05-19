@@ -13,5 +13,6 @@ type EventMiniDto struct {
 	Participants      []UserMiniDto `json:"participants"`
 	ParticipantsCount int           `json:"participantsCount"`
 	Status            string        `json:"status"`
+	Type              string        `json:"type"`
 	StartsAt          time.Time     `json:"startAt"`
 }

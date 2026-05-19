@@ -15,6 +15,7 @@ const (
 	routeEventUnparticipate    = "/events/event/:id/unparticipate"
 	routeEventCheckParticipate = "/events/event/:id/participate/check"
 
+	routeTeamBase         = "/events/team"
 	routeTeam             = "/events/team/:id"
 	routeTeamJoin         = "/events/team/:id/joinTo/:teamId"
 	routeTeamLeave        = "/events/team/:id/leaveFrom/:teamId"

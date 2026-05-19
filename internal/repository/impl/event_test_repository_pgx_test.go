@@ -103,6 +103,54 @@ func TestEventTestRepositoryUpdateTest(t *testing.T) {
 	require.Equal(t, description, *updated.Description)
 }
 
+func TestEventTestRepositoryDeleteTestCascadesNestedRows(t *testing.T) {
+	ctx := context.Background()
+	pool := setupTestRepositoryPostgres(t)
+	repo := NewEventTestRepository(pool)
+
+	userID := seedTestRepoUser(t, ctx, pool, 3002, "Petr", "Tester")
+	test, err := repo.CreateTest(ctx, &as_test.AsTest{
+		EventProfile: events.EventProfile{
+			Name:     "Delete me",
+			Status:   "draft",
+			StartsAt: time.Now().UTC(),
+		},
+		Attempts: 1,
+	})
+	require.NoError(t, err)
+
+	question, err := repo.AddQuestion(ctx, test.ID, as_test.Question{
+		Text:   "Temporary question",
+		Type:   "single_choice",
+		QOrder: 1,
+	})
+	require.NoError(t, err)
+	answer, err := repo.AddAnswer(ctx, question.ID, as_test.Answer{
+		Text:      "Temporary answer",
+		IsCorrect: true,
+		Points:    1,
+	})
+	require.NoError(t, err)
+	_, err = repo.SetUserAnswer(ctx, as_test.UserAnswer{
+		UserID:     userID,
+		QuestionID: question.ID,
+		AnswerID:   &answer.ID,
+	})
+	require.NoError(t, err)
+
+	require.NoError(t, repo.DeleteTest(ctx, test.ID))
+
+	_, err = repo.GetTest(ctx, test.ID)
+	require.Error(t, err)
+
+	var questionsCount int
+	err = pool.QueryRow(ctx, `SELECT COUNT(*) FROM questions WHERE event_id = $1`, test.ID).Scan(&questionsCount)
+	require.NoError(t, err)
+	require.Zero(t, questionsCount)
+
+	require.Error(t, repo.DeleteTest(ctx, test.ID))
+}
+
 func setupTestRepositoryPostgres(t *testing.T) *pgxpool.Pool {
 	t.Helper()
 

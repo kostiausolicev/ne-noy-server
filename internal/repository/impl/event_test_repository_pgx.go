@@ -71,7 +71,7 @@ func (e *eventTestRepositoryPgx) CreateTest(ctx context.Context, test *as_test.A
 
 func (e *eventTestRepositoryPgx) UpdateTest(ctx context.Context, testID uuid.UUID, update as_test.AsTest) (*as_test.AsTest, error) {
 	// COALESCE оставляет старое значение, если сервис не передал новое поле в модели обновления.
-	_, err := e.pool.Exec(ctx, `
+	commandTag, err := e.pool.Exec(ctx, `
 		UPDATE event_as_tests
 		SET
 			name = COALESCE($2, name),
@@ -89,8 +89,27 @@ func (e *eventTestRepositoryPgx) UpdateTest(ctx context.Context, testID uuid.UUI
 	if err != nil {
 		return nil, err
 	}
+	if commandTag.RowsAffected() == 0 {
+		return nil, pgx.ErrNoRows
+	}
 
 	return e.GetTest(ctx, testID)
+}
+
+func (e *eventTestRepositoryPgx) DeleteTest(ctx context.Context, testID uuid.UUID) error {
+	commandTag, err := e.pool.Exec(ctx, `
+		DELETE FROM event_as_tests
+		WHERE id = $1
+	`, testID)
+	if err != nil {
+		return err
+	}
+	if commandTag.RowsAffected() == 0 {
+		return pgx.ErrNoRows
+	}
+
+	// Вопросы, варианты ответов и пользовательские ответы удаляются каскадно через внешние ключи.
+	return nil
 }
 
 func (e *eventTestRepositoryPgx) AddQuestion(ctx context.Context, testID uuid.UUID, question as_test.Question) (*as_test.Question, error) {

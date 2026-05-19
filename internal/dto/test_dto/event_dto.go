@@ -44,6 +44,10 @@ type UpdateTestDto struct {
 	VkPostID    *int64     `json:"vk_post_id"`
 }
 
+type DeleteTestDto struct {
+	ID uuid.UUID `json:"id"`
+}
+
 type QuestionDto struct {
 	ID      uuid.UUID   `json:"id"`
 	Text    string      `json:"text"`

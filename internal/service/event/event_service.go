@@ -4,6 +4,7 @@ import (
 	"context"
 	"ne_noy/internal/config"
 	"ne_noy/internal/dto"
+	"ne_noy/internal/model"
 	"ne_noy/internal/model/events"
 	"ne_noy/internal/repository"
 	"ne_noy/internal/service"
@@ -81,44 +82,43 @@ func (e eventService) GetArchiveEvents(ctx context.Context, role string) ([]dto.
 	return e.parseModelsToDtos(ctx, events)
 }
 
-func (e eventService) parseModelsToDtos(ctx context.Context, events []*events.EventView) ([]dto.EventMiniDto, error) {
+func (e eventService) parseModelsToDtos(_ context.Context, events []*events.EventView) ([]dto.EventMiniDto, error) {
 	eventsDto := make([]dto.EventMiniDto, len(events))
 
-	for _, event := range events {
+	for i, event := range events {
 		// преобразуем организаторов
 		orgs := make([]dto.UserMiniDto, len(event.Orgs))
 		for j, org := range event.Orgs {
-			orgs[j] = dto.UserMiniDto{
-				ID:        org.ID,
-				FirstName: org.FirstName,
-				LastName:  org.LastName,
-				VkId:      org.VkID,
-				PhotoURL:  org.PhotoURL,
-			}
+			orgs[j] = userToMiniDto(org)
 		}
 
 		// преобразуем участников
-		//participants := make([]dto.UserMiniDto, len(model.EventParticipants))
-		//for j, ep := range event.EventParticipants {
-		//	participants[j] = dto.UserMiniDto{
-		//		ID:        ep.User.ID,
-		//		FirstName: ep.User.FirstName,
-		//		LastName:  ep.User.LastName,
-		//		VkId:      ep.User.VkID,
-		//		PhotoURL:  ep.User.PhotoURL,
-		//	}
-		//}
+		participants := make([]dto.UserMiniDto, len(event.Participants))
+		for j, participant := range event.Participants {
+			participants[j] = userToMiniDto(participant)
+		}
 
-		//eventsDto[i] = dto.EventMiniDto{
-		//	ID:                event.ID,
-		//	Title:             event.Name,
-		//	StartsAt:          *event.StartsAt,
-		//	ParticipantsCount: event.ParticipantsCount,
-		//	Orgs:              orgs,
-		//	Participants:      participants,
-		//	Status:            *event.Status,
-		//}
+		eventsDto[i] = dto.EventMiniDto{
+			ID:                event.ID,
+			Title:             event.Name,
+			StartsAt:          event.StartsAt,
+			ParticipantsCount: len(event.Participants),
+			Orgs:              orgs,
+			Participants:      participants,
+			Status:            event.Status,
+			Type:              event.Type,
+		}
 	}
 
 	return eventsDto, nil
+}
+
+func userToMiniDto(user model.User) dto.UserMiniDto {
+	return dto.UserMiniDto{
+		ID:        user.ID,
+		FirstName: user.FirstName,
+		LastName:  user.LastName,
+		VkId:      user.VkID,
+		PhotoURL:  user.PhotoURL,
+	}
 }

@@ -99,6 +99,8 @@ definitions:
         type: string
       title:
         type: string
+      type:
+        type: string
     type: object
   dto.EventQueueDto:
     properties:
@@ -325,6 +327,37 @@ definitions:
       vkPostId:
         type: integer
     type: object
+  team_dto.CreateTeamEventDto:
+    properties:
+      additional_address:
+        type: string
+      address:
+        type: string
+      cover:
+        type: string
+      description:
+        type: string
+      ends_at:
+        type: string
+      lat:
+        type: number
+      lon:
+        type: number
+      name:
+        type: string
+      starts_at:
+        type: string
+      status:
+        type: string
+      teams_cap_max:
+        type: integer
+      teams_cap_min:
+        type: integer
+      teams_constraint:
+        type: integer
+      vk_post_id:
+        type: integer
+    type: object
   team_dto.CreateTeamRequestDto:
     properties:
       name:
@@ -349,6 +382,70 @@ definitions:
       name:
         type: string
       total_members:
+        type: integer
+    type: object
+  team_dto.TeamEventDto:
+    properties:
+      additional_address:
+        type: string
+      address:
+        type: string
+      cover:
+        type: string
+      description:
+        type: string
+      ends_at:
+        type: string
+      id:
+        type: string
+      lat:
+        type: number
+      lon:
+        type: number
+      name:
+        type: string
+      starts_at:
+        type: string
+      status:
+        type: string
+      teams_cap_max:
+        type: integer
+      teams_cap_min:
+        type: integer
+      teams_constraint:
+        type: integer
+      vk_post_id:
+        type: integer
+    type: object
+  team_dto.UpdateTeamEventDto:
+    properties:
+      additional_address:
+        type: string
+      address:
+        type: string
+      cover:
+        type: string
+      description:
+        type: string
+      ends_at:
+        type: string
+      lat:
+        type: number
+      lon:
+        type: number
+      name:
+        type: string
+      starts_at:
+        type: string
+      status:
+        type: string
+      teams_cap_max:
+        type: integer
+      teams_cap_min:
+        type: integer
+      teams_constraint:
+        type: integer
+      vk_post_id:
         type: integer
     type: object
   test_dto.AddAnswerDto:
@@ -1106,7 +1203,91 @@ paths:
       summary: Создание события из поста в очереди
       tags:
       - EventQueue
+  /v1/events/team:
+    post:
+      consumes:
+      - application/json
+      description: Создает запись мероприятия типа "команды" с настройками количества
+        команд и вместимости.
+      parameters:
+      - description: Уникальный идентификатор запроса
+        in: header
+        name: X-Request-Id
+        required: true
+        type: string
+      - description: Данные командного мероприятия
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/team_dto.CreateTeamEventDto'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/team_dto.TeamEventDto'
+        "400":
+          description: Некорректные данные
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Не авторизован
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - VkAuth: []
+      summary: Создать командное мероприятие
+      tags:
+      - teams
   /v1/events/team/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Удаляет запись мероприятия типа "команды" вместе с командами и
+        участниками команд.
+      parameters:
+      - description: Уникальный идентификатор запроса
+        in: header
+        name: X-Request-Id
+        required: true
+        type: string
+      - description: UUID командного мероприятия
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Некорректный UUID
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Не авторизован
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Командное мероприятие не найдено
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - VkAuth: []
+      summary: Удалить командное мероприятие
+      tags:
+      - teams
     get:
       consumes:
       - application/json
@@ -1151,6 +1332,55 @@ paths:
       security:
       - VkAuth: []
       summary: Получить команды мероприятия
+      tags:
+      - teams
+    patch:
+      consumes:
+      - application/json
+      description: Частично обновляет запись мероприятия типа "команды".
+      parameters:
+      - description: Уникальный идентификатор запроса
+        in: header
+        name: X-Request-Id
+        required: true
+        type: string
+      - description: UUID командного мероприятия
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Поля для обновления командного мероприятия
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/team_dto.UpdateTeamEventDto'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/team_dto.TeamEventDto'
+        "400":
+          description: Некорректные данные
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Не авторизован
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Командное мероприятие не найдено
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - VkAuth: []
+      summary: Обновить командное мероприятие
       tags:
       - teams
     post:
@@ -1443,6 +1673,46 @@ paths:
       tags:
       - tests
   /v1/events/test/{id}:
+    delete:
+      consumes:
+      - application/json
+      parameters:
+      - description: Уникальный идентификатор запроса
+        in: header
+        name: X-Request-Id
+        required: true
+        type: string
+      - description: UUID теста
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Некорректный UUID
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Тест не найден
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - VkAuth: []
+      summary: Удалить тест
+      tags:
+      - tests
     get:
       consumes:
       - application/json

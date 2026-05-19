@@ -20,6 +20,102 @@ type teamController struct {
 	userService  appservice.UserService
 }
 
+// CreateTeamEvent godoc
+//
+//	@Summary		Создать командное мероприятие
+//	@Description	Создает запись мероприятия типа "команды" с настройками количества команд и вместимости.
+//	@Tags			teams
+//	@Accept			json
+//	@Produce		json
+//	@Param			X-Request-Id	header		string						true	"Уникальный идентификатор запроса"
+//	@Param			request			body		team_dto.CreateTeamEventDto	true	"Данные командного мероприятия"
+//	@Success		200				{object}	team_dto.TeamEventDto
+//	@Failure		400				{object}	dto.ErrorResponse	"Некорректные данные"
+//	@Failure		401				{object}	dto.ErrorResponse	"Не авторизован"
+//	@Failure		500				{object}	dto.ErrorResponse
+//	@Router			/v1/events/team [post]
+//	@Security		VkAuth
+func (t *teamController) CreateTeamEvent(c *gin.Context) {
+	createEventDto, ok := controller.BindJSON[team_dto.CreateTeamEventDto](c)
+	if !ok {
+		return
+	}
+
+	event, err := t.teamService.CreateTeamEvent(c.Request.Context(), createEventDto)
+	if err != nil {
+		c.Error(err)
+		return
+	}
+	c.JSON(http.StatusOK, event)
+}
+
+// UpdateTeamEvent godoc
+//
+//	@Summary		Обновить командное мероприятие
+//	@Description	Частично обновляет запись мероприятия типа "команды".
+//	@Tags			teams
+//	@Accept			json
+//	@Produce		json
+//	@Param			X-Request-Id	header		string						true	"Уникальный идентификатор запроса"
+//	@Param			id				path		string						true	"UUID командного мероприятия"
+//	@Param			request			body		team_dto.UpdateTeamEventDto	true	"Поля для обновления командного мероприятия"
+//	@Success		200				{object}	team_dto.TeamEventDto
+//	@Failure		400				{object}	dto.ErrorResponse	"Некорректные данные"
+//	@Failure		401				{object}	dto.ErrorResponse	"Не авторизован"
+//	@Failure		404				{object}	dto.ErrorResponse	"Командное мероприятие не найдено"
+//	@Failure		500				{object}	dto.ErrorResponse
+//	@Router			/v1/events/team/{id} [patch]
+//	@Security		VkAuth
+func (t *teamController) UpdateTeamEvent(c *gin.Context) {
+	eventID, err := controller.ParseUUID(c, controller.ParamID)
+	if err != nil {
+		c.Error(err)
+		return
+	}
+
+	updateEventDto, ok := controller.BindJSON[team_dto.UpdateTeamEventDto](c)
+	if !ok {
+		return
+	}
+
+	event, err := t.teamService.UpdateTeamEvent(c.Request.Context(), eventID, updateEventDto)
+	if err != nil {
+		c.Error(err)
+		return
+	}
+	c.JSON(http.StatusOK, event)
+}
+
+// DeleteTeamEvent godoc
+//
+//	@Summary		Удалить командное мероприятие
+//	@Description	Удаляет запись мероприятия типа "команды" вместе с командами и участниками команд.
+//	@Tags			teams
+//	@Accept			json
+//	@Produce		json
+//	@Param			X-Request-Id	header	string	true	"Уникальный идентификатор запроса"
+//	@Param			id				path	string	true	"UUID командного мероприятия"
+//	@Success		200
+//	@Failure		400	{object}	dto.ErrorResponse	"Некорректный UUID"
+//	@Failure		401	{object}	dto.ErrorResponse	"Не авторизован"
+//	@Failure		404	{object}	dto.ErrorResponse	"Командное мероприятие не найдено"
+//	@Failure		500	{object}	dto.ErrorResponse
+//	@Router			/v1/events/team/{id} [delete]
+//	@Security		VkAuth
+func (t *teamController) DeleteTeamEvent(c *gin.Context) {
+	eventID, err := controller.ParseUUID(c, controller.ParamID)
+	if err != nil {
+		c.Error(err)
+		return
+	}
+
+	if err = t.teamService.DeleteTeamEvent(c.Request.Context(), team_dto.DeleteTeamEventDto{ID: eventID}); err != nil {
+		c.Error(err)
+		return
+	}
+	c.Status(http.StatusOK)
+}
+
 // CreateTeam godoc
 //
 //	@Summary		Создать команду в командном мероприятии
@@ -27,8 +123,8 @@ type teamController struct {
 //	@Tags			teams
 //	@Accept			json
 //	@Produce		json
-//	@Param			X-Request-Id	header		string					true	"Уникальный идентификатор запроса"
-//	@Param			id				path		string					true	"UUID командного мероприятия"
+//	@Param			X-Request-Id	header		string							true	"Уникальный идентификатор запроса"
+//	@Param			id				path		string							true	"UUID командного мероприятия"
 //	@Param			request			body		team_dto.CreateTeamRequestDto	true	"Данные команды"
 //	@Success		201				{object}	team_dto.TeamDto
 //	@Failure		400				{object}	dto.ErrorResponse	"Некорректные данные"
@@ -226,9 +322,9 @@ func (t *teamController) GetTeam(c *gin.Context) {
 //	@Tags			teams
 //	@Accept			json
 //	@Produce		json
-//	@Param			X-Request-Id	header	string							true	"Уникальный идентификатор запроса"
-//	@Param			id				path	string							true	"UUID командного мероприятия"
-//	@Param			teamId			path	string							true	"UUID команды"
+//	@Param			X-Request-Id	header	string								true	"Уникальный идентификатор запроса"
+//	@Param			id				path	string								true	"UUID командного мероприятия"
+//	@Param			teamId			path	string								true	"UUID команды"
 //	@Param			request			body	team_dto.SendTeamNotificationDto	true	"Текст уведомления"
 //	@Success		200
 //	@Failure		400	{object}	dto.ErrorResponse	"Некорректные данные"
@@ -291,6 +387,9 @@ func ConfigureTeamEventController(
 		userService:  userService,
 	}
 
+	r.POST(routeTeamBase, controller.CreateTeamEvent)
+	r.PATCH(routeTeam, controller.UpdateTeamEvent)
+	r.DELETE(routeTeam, controller.DeleteTeamEvent)
 	r.POST(routeTeam, controller.CreateTeam)
 	r.POST(routeTeamJoin, controller.JoinTeam)
 	r.POST(routeTeamLeave, controller.LeaveTeam)

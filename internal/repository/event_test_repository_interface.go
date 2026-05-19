@@ -20,6 +20,9 @@ type EventTestRepository interface {
 	// UpdateTest обновляет поля профиля мероприятия-теста.
 	UpdateTest(ctx context.Context, testID uuid.UUID, update as_test.AsTest) (*as_test.AsTest, error)
 
+	// DeleteTest удаляет профиль мероприятия-теста вместе с вопросами, ответами и ответами пользователей.
+	DeleteTest(ctx context.Context, testID uuid.UUID) error
+
 	// AddQuestion добавляет вопрос в тест.
 	AddQuestion(ctx context.Context, testID uuid.UUID, question as_test.Question) (*as_test.Question, error)
 

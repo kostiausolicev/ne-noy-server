@@ -6,6 +6,7 @@ import (
 	"ne_noy/internal/dto"
 	"ne_noy/internal/dto/team_dto"
 	"ne_noy/internal/model"
+	"ne_noy/internal/model/events"
 	"ne_noy/internal/model/events/as_team"
 	"testing"
 	"time"
@@ -32,6 +33,55 @@ func TestEventTeamServiceCreateTeamChecksTeamLimit(t *testing.T) {
 
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "teams limit reached")
+}
+
+func TestEventTeamServiceCreateUpdateDeleteTeamEvent(t *testing.T) {
+	ctx := context.Background()
+	repo := newFakeEventTeamRepo()
+	service := NewEventTeamService(repo, &fakeVkClient{})
+
+	startsAt := time.Date(2026, 5, 9, 10, 0, 0, 0, time.UTC)
+	capMin := 2
+	capMax := 5
+	created, err := service.CreateTeamEvent(ctx, team_dto.CreateTeamEventDto{
+		Name:            "Team Event",
+		Status:          "draft",
+		StartsAt:        startsAt,
+		TeamsConstraint: 4,
+		TeamsCapMin:     &capMin,
+		TeamsCapMax:     &capMax,
+	})
+	require.NoError(t, err)
+	require.Equal(t, "Team Event", created.Name)
+	require.Equal(t, 4, created.TeamsConstraint)
+	require.NotEqual(t, uuid.Nil, created.ID)
+
+	updatedName := "Updated Team Event"
+	updatedCapMax := 6
+	updated, err := service.UpdateTeamEvent(ctx, created.ID, team_dto.UpdateTeamEventDto{
+		Name:        &updatedName,
+		TeamsCapMax: &updatedCapMax,
+	})
+	require.NoError(t, err)
+	require.Equal(t, updatedName, updated.Name)
+	require.Equal(t, 4, updated.TeamsConstraint)
+	require.NotNil(t, updated.TeamsCapMax)
+	require.Equal(t, updatedCapMax, *updated.TeamsCapMax)
+
+	require.NoError(t, service.DeleteTeamEvent(ctx, team_dto.DeleteTeamEventDto{ID: created.ID}))
+	_, err = service.GetTeamEvent(ctx, created.ID)
+	require.Error(t, err)
+}
+
+func TestEventTeamServiceCreateTeamEventValidatesRequiredFields(t *testing.T) {
+	service := NewEventTeamService(newFakeEventTeamRepo(), &fakeVkClient{})
+
+	_, err := service.CreateTeamEvent(context.Background(), team_dto.CreateTeamEventDto{
+		Status:   "draft",
+		StartsAt: time.Date(2026, 5, 9, 10, 0, 0, 0, time.UTC),
+	})
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "team event name is required")
 }
 
 func TestEventTeamServiceJoinTeamChecksCapacityAndDuplicate(t *testing.T) {
@@ -140,6 +190,85 @@ func (f *fakeEventTeamRepo) GetEventByID(_ context.Context, eventID uuid.UUID) (
 		return nil, errors.New("event not found")
 	}
 	return event, nil
+}
+
+func (f *fakeEventTeamRepo) CreateEvent(_ context.Context, event *as_team.AsTeam) (*as_team.AsTeam, error) {
+	eventID := uuid.New()
+	created := *event
+	created.EventProfile = events.EventProfile{
+		BaseModel:   model.BaseModel{ID: eventID},
+		Name:        event.Name,
+		Description: event.Description,
+		Cover:       event.Cover,
+		Status:      event.Status,
+		StartsAt:    event.StartsAt,
+		EndsAt:      event.EndsAt,
+	}
+	f.events[eventID] = &created
+	return &created, nil
+}
+
+func (f *fakeEventTeamRepo) UpdateEvent(_ context.Context, eventID uuid.UUID, update as_team.AsTeam) (*as_team.AsTeam, error) {
+	event, ok := f.events[eventID]
+	if !ok {
+		return nil, errors.New("event not found")
+	}
+	if update.Name != "" {
+		event.Name = update.Name
+	}
+	if update.Description != nil {
+		event.Description = update.Description
+	}
+	if update.Cover != nil {
+		event.Cover = update.Cover
+	}
+	if update.Status != "" {
+		event.Status = update.Status
+	}
+	if !update.StartsAt.IsZero() {
+		event.StartsAt = update.StartsAt
+	}
+	if update.EndsAt != nil {
+		event.EndsAt = update.EndsAt
+	}
+	if update.TeamsConstraint != 0 {
+		event.TeamsConstraint = update.TeamsConstraint
+	}
+	if update.TeamsCapMin != nil {
+		event.TeamsCapMin = update.TeamsCapMin
+	}
+	if update.TeamsCapMax != nil {
+		event.TeamsCapMax = update.TeamsCapMax
+	}
+	if update.Lat != nil {
+		event.Lat = update.Lat
+	}
+	if update.Lon != nil {
+		event.Lon = update.Lon
+	}
+	if update.Address != nil {
+		event.Address = update.Address
+	}
+	if update.AdditionalAddress != nil {
+		event.AdditionalAddress = update.AdditionalAddress
+	}
+	if update.VkPostID != nil {
+		event.VkPostID = update.VkPostID
+	}
+	return event, nil
+}
+
+func (f *fakeEventTeamRepo) DeleteEvent(_ context.Context, eventID uuid.UUID) error {
+	if _, ok := f.events[eventID]; !ok {
+		return errors.New("event not found")
+	}
+	delete(f.events, eventID)
+	for teamID, team := range f.teams {
+		if team.EventID == eventID {
+			delete(f.teams, teamID)
+		}
+	}
+	return nil
 }
 
 func (f *fakeEventTeamRepo) GetTeamsByEvent(_ context.Context, eventID uuid.UUID) ([]as_team.Team, error) {
