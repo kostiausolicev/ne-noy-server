@@ -1,0 +1,72 @@
+version: "3"
+networks:
+  monitoring:
+    driver: bridge
+  postgres:
+    driver: bridge
+services:
+  ne-noy:
+    image: ne-noy
+    container_name: ne-noy
+    restart: always
+    ports:
+      - "8080:8080"
+    environment:
+      - APP_DATABASE_USER=admin
+      - APP_DATABASE_PASSWORD=admin
+      - APP_DATABASE_NAME=postgres
+      - APP_DATABASE_HOST=postgres
+      - APP_DATABASE_PORT=5432
+      - APP_DATABASE_SSLMODE=disable
+      - APP_DATABASE_TIMEZONE=UTC
+#    command: sh -c "go run github.com/pressly/goose/v3/cmd/goose@latest -dir ./migrations postgres "user=admin password=admin dbname=postgres host=postgres sslmode=disable" up"
+    depends_on:
+      - postgres
+    networks:
+      - monitoring
+      - postgres
+
+  postgres:
+    image: postgres
+    container_name: postgres-1
+    ports:
+      - "5433:5432"
+    environment:
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=admin
+      - POSTGRES_DB=postgres
+    networks:
+      - postgres
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus:/etc/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    networks:
+      - monitoring
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    user: "0"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=helloThere
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_PANELS_DISABLE_SANITIZE_HTML=true
+      - GF_SECURITY_ALLOW_EMBEDDING=true
+    networks:
+      - monitoring
+    volumes:
+      - ./grafana_data/:/var/lib/grafana/

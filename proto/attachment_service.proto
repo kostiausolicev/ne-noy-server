@@ -1,0 +1,148 @@
+syntax = "proto3";
+
+// Пакет attachment — gRPC-сервис управления вложениями
+package attachment;
+
+option go_package = "attachUploadService/proto/gen;gen";
+
+import "model.proto";
+
+// AttachmentService — gRPC-интерфейс сервиса вложений.
+// Зеркалирует HTTP API контроллера AttachmentController:
+//   POST   /attachments          → PutOne
+//   POST   /attachments/batch    → PutMany
+//   GET    /attachments/:id      → GetOne
+//   GET    /attachments          → GetMany
+//   DELETE /attachments/:id      → DeleteOne
+//   DELETE /attachments          → DeleteMany
+//   GET    /file                 → Download
+service AttachmentService {
+  // PutOne — загрузка одного файла, возвращает UUID созданной записи
+  rpc PutOne(PutOneRequest) returns (PutOneResponse);
+
+  // PutMany — загрузка нескольких файлов, возвращает список UUID в порядке запроса
+  rpc PutMany(PutManyRequest) returns (PutManyResponse);
+
+  // GetOne — получение временной ссылки на один файл
+  rpc GetOne(GetOneRequest) returns (GetOneResponse);
+
+  // GetMany — получение временных ссылок на несколько файлов
+  rpc GetMany(GetManyRequest) returns (GetManyResponse);
+
+  // DeleteOne — удаление одного файла
+  rpc DeleteOne(DeleteOneRequest) returns (DeleteResponse);
+
+  // DeleteMany — удаление нескольких файлов
+  rpc DeleteMany(DeleteManyRequest) returns (DeleteResponse);
+
+  // Download — скачивание содержимого файла по подписанной временной ссылке
+  rpc Download(DownloadRequest) returns (DownloadResponse);
+}
+
+// --- Сообщения для PutOne ---
+
+// PutOneRequest — запрос на загрузку одного файла
+message PutOneRequest {
+  // file — данные загружаемого файла
+  UploadFileDTO file = 1;
+  // async — если true, UUID резервируется немедленно, загрузка выполняется в фоне
+  bool async = 2;
+}
+
+// PutOneResponse — ответ с UUID созданного вложения
+message PutOneResponse {
+  // id — UUID загруженного файла
+  string id = 1;
+}
+
+// --- Сообщения для PutMany ---
+
+// PutManyRequest — запрос на загрузку нескольких файлов
+message PutManyRequest {
+  // files — список файлов для загрузки
+  repeated UploadFileDTO files = 1;
+  // async — если true, все UUID резервируются сразу, загрузка выполняется в фоне
+  bool async = 2;
+}
+
+// PutManyResponse — ответ со списком UUID созданных вложений
+message PutManyResponse {
+  // ids — UUID загруженных файлов в порядке, соответствующем запросу
+  repeated string ids = 1;
+}
+
+// --- Сообщения для GetOne ---
+
+// GetOneRequest — запрос временной ссылки на один файл
+message GetOneRequest {
+  // id — UUID файла
+  string id = 1;
+  // ttl — время жизни ссылки в секундах (по умолчанию 3600)
+  int32 ttl = 2;
+}
+
+// GetOneResponse — ответ с временной ссылкой
+message GetOneResponse {
+  // url — подписанная временная ссылка для скачивания файла
+  string url = 1;
+}
+
+// --- Сообщения для GetMany ---
+
+// GetManyRequest — запрос временных ссылок на несколько файлов
+message GetManyRequest {
+  // ids — список UUID файлов
+  repeated string ids = 1;
+  // ttl — время жизни ссылок в секундах
+  int32 ttl = 2;
+}
+
+// GetManyResponse — ответ со списком временных ссылок
+message GetManyResponse {
+  // urls — временные ссылки в порядке, соответствующем запросу
+  repeated string urls = 1;
+}
+
+// --- Сообщения для DeleteOne ---
+
+// DeleteOneRequest — запрос на удаление одного файла
+message DeleteOneRequest {
+  // id — UUID файла
+  string id = 1;
+  // force — если true, файл удаляется немедленно независимо от счётчика использования;
+  //          если false, счётчик уменьшается, физическое удаление выполняет планировщик
+  bool force = 2;
+}
+
+// --- Сообщения для DeleteMany ---
+
+// DeleteManyRequest — запрос на удаление нескольких файлов
+message DeleteManyRequest {
+  // ids — список UUID файлов
+  repeated string ids = 1;
+  // force — поведение аналогично DeleteOneRequest.force
+  bool force = 2;
+}
+
+// DeleteResponse — пустой ответ, подтверждающий выполнение удаления
+message DeleteResponse {}
+
+// --- Сообщения для Download ---
+
+// DownloadRequest — запрос на скачивание файла по подписанной ссылке
+message DownloadRequest {
+  // id — UUID временной ссылки (не UUID файла)
+  string id = 1;
+  // sign — строка подписи для верификации доступа
+  string sign = 2;
+}
+
+// DownloadResponse — ответ с содержимым файла
+message DownloadResponse {
+  // content — бинарное содержимое файла
+  bytes content = 1;
+  // content_type — MIME-тип файла (например, "image/png")
+  string content_type = 2;
+  // filename — имя файла с расширением
+  string filename = 3;
+}

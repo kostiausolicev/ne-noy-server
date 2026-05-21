@@ -18,3 +18,6 @@ database:
   name: 'ne-noy'
   sslmode: disable
   timezone: "UTC"
+
+grpc:
+  attachmentServiceAddr: "localhost:8082"

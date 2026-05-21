@@ -70,6 +70,16 @@ definitions:
       vkId:
         type: integer
     type: object
+  dto.DeleteManyRequest:
+    properties:
+      force:
+        example: false
+        type: boolean
+      ids:
+        items:
+          type: string
+        type: array
+    type: object
   dto.ErrorResponse:
     properties:
       error:
@@ -125,6 +135,29 @@ definitions:
       text:
         type: string
     type: object
+  dto.GetManyRequest:
+    properties:
+      ids:
+        items:
+          type: string
+        type: array
+      ttl:
+        example: 3600
+        type: integer
+    type: object
+  dto.GetManyResponse:
+    properties:
+      urls:
+        items:
+          type: string
+        type: array
+    type: object
+  dto.GetOneResponse:
+    properties:
+      url:
+        example: https://storage.example.com/file?sign=abc
+        type: string
+    type: object
   dto.OnboardingData:
     properties:
       slides:
@@ -177,6 +210,37 @@ definitions:
       id:
         type: integer
     type: object
+  dto.PutManyRequest:
+    properties:
+      async:
+        example: false
+        type: boolean
+      files:
+        items:
+          $ref: '#/definitions/dto.UploadFileDTO'
+        type: array
+    type: object
+  dto.PutManyResponse:
+    properties:
+      ids:
+        items:
+          type: string
+        type: array
+    type: object
+  dto.PutOneRequest:
+    properties:
+      async:
+        example: false
+        type: boolean
+      file:
+        $ref: '#/definitions/dto.UploadFileDTO'
+    type: object
+  dto.PutOneResponse:
+    properties:
+      id:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+    type: object
   dto.RoleDto:
     properties:
       displayName:
@@ -193,6 +257,29 @@ definitions:
         type: string
       type:
         type: string
+    type: object
+  dto.StorageType:
+    enum:
+    - 1
+    - 2
+    format: int32
+    type: integer
+    x-enum-varnames:
+    - StorageTypeDatabase
+    - StorageTypeObjectStorage
+  dto.UploadFileDTO:
+    properties:
+      file_content:
+        items:
+          type: integer
+        type: array
+      file_name:
+        example: photo.png
+        type: string
+      storage_type:
+        allOf:
+        - $ref: '#/definitions/dto.StorageType'
+        example: 2
     type: object
   dto.UserActivitiesInfo:
     properties:
@@ -596,6 +683,260 @@ info:
   title: Ne-Noy-Api
   version: "1.0"
 paths:
+  /v1/attachments:
+    delete:
+      consumes:
+      - application/json
+      description: Удаляет список файлов по UUID. При force=false физически удаляет
+        планировщик
+      parameters:
+      - description: Уникальный идентификатор запроса
+        in: header
+        name: X-Request-Id
+        required: true
+        type: string
+      - description: Список UUID и флаг force
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.DeleteManyRequest'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - VkAuth: []
+      summary: Удалить несколько файлов
+      tags:
+      - attachments
+    get:
+      consumes:
+      - application/json
+      description: Возвращает список подписанных временных ссылок для переданных UUID
+      parameters:
+      - description: Уникальный идентификатор запроса
+        in: header
+        name: X-Request-Id
+        required: true
+        type: string
+      - description: Список UUID и TTL
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.GetManyRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.GetManyResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - VkAuth: []
+      summary: Получить временные ссылки на несколько файлов
+      tags:
+      - attachments
+    post:
+      consumes:
+      - application/json
+      description: Передаёт файл в сервис вложений через gRPC и возвращает UUID созданной
+        записи
+      parameters:
+      - description: Уникальный идентификатор запроса
+        in: header
+        name: X-Request-Id
+        required: true
+        type: string
+      - description: Данные файла
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.PutOneRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.PutOneResponse'
+        "400":
+          description: Некорректные входные данные
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - VkAuth: []
+      summary: Загрузить один файл
+      tags:
+      - attachments
+  /v1/attachments/{id}:
+    delete:
+      description: Удаляет файл по UUID. При force=false счётчик уменьшается; физически
+        удаляет планировщик
+      parameters:
+      - description: Уникальный идентификатор запроса
+        in: header
+        name: X-Request-Id
+        required: true
+        type: string
+      - description: UUID файла
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Принудительное немедленное удаление (по умолчанию false)
+        in: query
+        name: force
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - VkAuth: []
+      summary: Удалить файл
+      tags:
+      - attachments
+    get:
+      description: Возвращает подписанную временную ссылку для скачивания файла по
+        его UUID
+      parameters:
+      - description: Уникальный идентификатор запроса
+        in: header
+        name: X-Request-Id
+        required: true
+        type: string
+      - description: UUID файла
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Время жизни ссылки в секундах (по умолчанию 3600)
+        in: query
+        name: ttl
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.GetOneResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - VkAuth: []
+      summary: Получить временную ссылку на файл
+      tags:
+      - attachments
+  /v1/attachments/batch:
+    post:
+      consumes:
+      - application/json
+      description: Передаёт список файлов в сервис вложений через gRPC и возвращает
+        список UUID
+      parameters:
+      - description: Уникальный идентификатор запроса
+        in: header
+        name: X-Request-Id
+        required: true
+        type: string
+      - description: Список файлов
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.PutManyRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.PutManyResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - VkAuth: []
+      summary: Загрузить несколько файлов
+      tags:
+      - attachments
   /v1/events:
     get:
       consumes:
@@ -2007,6 +2348,45 @@ paths:
       summary: Добавить вариант ответа к вопросу
       tags:
       - tests
+  /v1/file:
+    get:
+      description: Возвращает бинарное содержимое файла. Не требует авторизации —
+        доступ контролируется подписью
+      parameters:
+      - description: UUID временной ссылки
+        in: query
+        name: id
+        required: true
+        type: string
+      - description: Строка подписи
+        in: query
+        name: sign
+        required: true
+        type: string
+      produces:
+      - application/octet-stream
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "403":
+          description: Подпись недействительна
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Скачать файл по подписанной ссылке
+      tags:
+      - attachments
   /v1/health-import/apple/parse:
     post:
       consumes:

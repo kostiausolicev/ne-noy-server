@@ -12,6 +12,7 @@ type Config struct {
 	Server   ServerConfig   `mapstructure:"server"`
 	Database DBConfig       `mapstructure:"database"`
 	VK       VKClientConfig `mapstructure:"vk"`
+	GRPC     GRPCConfig     `mapstructure:"grpc"`
 	Secret   string         `mapstructure:"secret"`
 	AppId    int64          `mapstructure:"appId"`
 	Distance int64          `mapstructure:"distance"`

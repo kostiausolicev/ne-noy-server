@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+// Пакет attachment — описание доменных типов сервиса вложений
+package attachment;
+
+option go_package = "attachUploadService/proto/gen;gen";
+
+// StorageType — тип хранилища файла
+enum StorageType {
+  STORAGE_TYPE_UNSPECIFIED = 0;
+  // STORAGE_TYPE_DATABASE — файл хранится в PostgreSQL
+  STORAGE_TYPE_DATABASE = 1;
+  // STORAGE_TYPE_OBJECT_STORAGE — файл хранится в объектном хранилище MinIO
+  STORAGE_TYPE_OBJECT_STORAGE = 2;
+}
+
+// UploadState — состояние загрузки файла
+enum UploadState {
+  // UPLOAD_STATE_ERROR — загрузка завершилась ошибкой
+  UPLOAD_STATE_ERROR = 0;
+  // UPLOAD_STATE_NEW — файл зарегистрирован, загрузка не начата
+  UPLOAD_STATE_NEW = 1;
+  // UPLOAD_STATE_UPLOADING — загрузка выполняется
+  UPLOAD_STATE_UPLOADING = 2;
+  // UPLOAD_STATE_UPLOADED — файл успешно загружен
+  UPLOAD_STATE_UPLOADED = 3;
+}
+
+// UploadFileDTO — данные файла, передаваемые при загрузке
+message UploadFileDTO {
+  // storage_type — куда сохранить файл
+  StorageType storage_type = 1;
+  // file_name — имя файла (с расширением)
+  string file_name = 2;
+  // file_content — бинарное содержимое файла
+  bytes file_content = 3;
+}

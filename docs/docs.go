@@ -15,8 +15,399 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/v1/attachments": {
+            "get": {
+                "security": [
+                    {
+                        "VkAuth": []
+                    }
+                ],
+                "description": "Возвращает список подписанных временных ссылок для переданных UUID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "attachments"
+                ],
+                "summary": "Получить временные ссылки на несколько файлов",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Уникальный идентификатор запроса",
+                        "name": "X-Request-Id",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Список UUID и TTL",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.GetManyRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.GetManyResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "VkAuth": []
+                    }
+                ],
+                "description": "Передаёт файл в сервис вложений через gRPC и возвращает UUID созданной записи",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "attachments"
+                ],
+                "summary": "Загрузить один файл",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Уникальный идентификатор запроса",
+                        "name": "X-Request-Id",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Данные файла",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.PutOneRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/dto.PutOneResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Некорректные входные данные",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "VkAuth": []
+                    }
+                ],
+                "description": "Удаляет список файлов по UUID. При force=false физически удаляет планировщик",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "attachments"
+                ],
+                "summary": "Удалить несколько файлов",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Уникальный идентификатор запроса",
+                        "name": "X-Request-Id",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Список UUID и флаг force",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.DeleteManyRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/attachments/batch": {
+            "post": {
+                "security": [
+                    {
+                        "VkAuth": []
+                    }
+                ],
+                "description": "Передаёт список файлов в сервис вложений через gRPC и возвращает список UUID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "attachments"
+                ],
+                "summary": "Загрузить несколько файлов",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Уникальный идентификатор запроса",
+                        "name": "X-Request-Id",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Список файлов",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.PutManyRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/dto.PutManyResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/attachments/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "VkAuth": []
+                    }
+                ],
+                "description": "Возвращает подписанную временную ссылку для скачивания файла по его UUID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "attachments"
+                ],
+                "summary": "Получить временную ссылку на файл",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Уникальный идентификатор запроса",
+                        "name": "X-Request-Id",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "UUID файла",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Время жизни ссылки в секундах (по умолчанию 3600)",
+                        "name": "ttl",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.GetOneResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "VkAuth": []
+                    }
+                ],
+                "description": "Удаляет файл по UUID. При force=false счётчик уменьшается; физически удаляет планировщик",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "attachments"
+                ],
+                "summary": "Удалить файл",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Уникальный идентификатор запроса",
+                        "name": "X-Request-Id",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "UUID файла",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Принудительное немедленное удаление (по умолчанию false)",
+                        "name": "force",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/events": {
             "get": {
+                "security": [
+                    {
+                        "VkAuth": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -58,16 +449,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
-                },
-                "security": [
-                    {
-                        "VkAuth": []
-                    }
-                ]
+                }
             }
         },
         "/v1/events/archive": {
             "get": {
+                "security": [
+                    {
+                        "VkAuth": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -109,16 +500,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
-                },
-                "security": [
-                    {
-                        "VkAuth": []
-                    }
-                ]
+                }
             }
         },
         "/v1/events/available": {
             "get": {
+                "security": [
+                    {
+                        "VkAuth": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -160,16 +551,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
-                },
-                "security": [
-                    {
-                        "VkAuth": []
-                    }
-                ]
+                }
             }
         },
         "/v1/events/event": {
             "post": {
+                "security": [
+                    {
+                        "VkAuth": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -223,16 +614,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
-                },
-                "security": [
-                    {
-                        "VkAuth": []
-                    }
-                ]
+                }
             }
         },
         "/v1/events/event/{id}": {
             "get": {
+                "security": [
+                    {
+                        "VkAuth": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -284,14 +675,14 @@ const docTemplate = `{
                             "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
-                },
+                }
+            },
+            "patch": {
                 "security": [
                     {
                         "VkAuth": []
                     }
-                ]
-            },
-            "patch": {
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -358,16 +749,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
-                },
-                "security": [
-                    {
-                        "VkAuth": []
-                    }
-                ]
+                }
             }
         },
         "/v1/events/event/{id}/participants": {
             "get": {
+                "security": [
+                    {
+                        "VkAuth": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -422,16 +813,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
-                },
-                "security": [
-                    {
-                        "VkAuth": []
-                    }
-                ]
+                }
             }
         },
         "/v1/events/event/{id}/participate": {
             "post": {
+                "security": [
+                    {
+                        "VkAuth": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -486,16 +877,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
-                },
-                "security": [
-                    {
-                        "VkAuth": []
-                    }
-                ]
+                }
             }
         },
         "/v1/events/event/{id}/participate/check": {
             "patch": {
+                "security": [
+                    {
+                        "VkAuth": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -553,16 +944,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
-                },
-                "security": [
-                    {
-                        "VkAuth": []
-                    }
-                ]
+                }
             }
         },
         "/v1/events/event/{id}/unparticipate": {
             "post": {
+                "security": [
+                    {
+                        "VkAuth": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -611,16 +1002,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
-                },
-                "security": [
-                    {
-                        "VkAuth": []
-                    }
-                ]
+                }
             }
         },
         "/v1/events/queue": {
             "get": {
+                "security": [
+                    {
+                        "VkAuth": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -662,14 +1053,14 @@ const docTemplate = `{
                             "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
-                },
+                }
+            },
+            "post": {
                 "security": [
                     {
                         "VkAuth": []
                     }
-                ]
-            },
-            "post": {
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -705,14 +1096,14 @@ const docTemplate = `{
                             "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
-                },
+                }
+            },
+            "delete": {
                 "security": [
                     {
                         "VkAuth": []
                     }
-                ]
-            },
-            "delete": {
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -751,16 +1142,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
-                },
-                "security": [
-                    {
-                        "VkAuth": []
-                    }
-                ]
+                }
             }
         },
         "/v1/events/team": {
             "post": {
+                "security": [
+                    {
+                        "VkAuth": []
+                    }
+                ],
                 "description": "Создает запись мероприятия типа \"команды\" с настройками количества команд и вместимости.",
                 "consumes": [
                     "application/json"
@@ -815,16 +1206,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
-                },
-                "security": [
-                    {
-                        "VkAuth": []
-                    }
-                ]
+                }
             }
         },
         "/v1/events/team/{id}": {
             "get": {
+                "security": [
+                    {
+                        "VkAuth": []
+                    }
+                ],
                 "description": "Возвращает список команд командного мероприятия с капитаном, первыми участниками и общим количеством участников.",
                 "consumes": [
                     "application/json"
@@ -886,14 +1277,14 @@ const docTemplate = `{
                             "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
-                },
+                }
+            },
+            "post": {
                 "security": [
                     {
                         "VkAuth": []
                     }
-                ]
-            },
-            "post": {
+                ],
                 "description": "Создает новую команду в мероприятии типа \"команды\"; капитаном назначается текущий авторизованный пользователь.",
                 "consumes": [
                     "application/json"
@@ -961,14 +1352,14 @@ const docTemplate = `{
                             "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
-                },
+                }
+            },
+            "delete": {
                 "security": [
                     {
                         "VkAuth": []
                     }
-                ]
-            },
-            "delete": {
+                ],
                 "description": "Удаляет запись мероприятия типа \"команды\" вместе с командами и участниками команд.",
                 "consumes": [
                     "application/json"
@@ -1024,14 +1415,14 @@ const docTemplate = `{
                             "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
-                },
+                }
+            },
+            "patch": {
                 "security": [
                     {
                         "VkAuth": []
                     }
-                ]
-            },
-            "patch": {
+                ],
                 "description": "Частично обновляет запись мероприятия типа \"команды\".",
                 "consumes": [
                     "application/json"
@@ -1099,16 +1490,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
-                },
-                "security": [
-                    {
-                        "VkAuth": []
-                    }
-                ]
+                }
             }
         },
         "/v1/events/team/{id}/joinTo/{teamId}": {
             "post": {
+                "security": [
+                    {
+                        "VkAuth": []
+                    }
+                ],
                 "description": "Добавляет текущего авторизованного пользователя в выбранную команду командного мероприятия.",
                 "consumes": [
                     "application/json"
@@ -1171,16 +1562,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
-                },
-                "security": [
-                    {
-                        "VkAuth": []
-                    }
-                ]
+                }
             }
         },
         "/v1/events/team/{id}/leaveFrom/{teamId}": {
             "post": {
+                "security": [
+                    {
+                        "VkAuth": []
+                    }
+                ],
                 "description": "Удаляет текущего авторизованного пользователя из выбранной команды.",
                 "consumes": [
                     "application/json"
@@ -1243,16 +1634,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
-                },
-                "security": [
-                    {
-                        "VkAuth": []
-                    }
-                ]
+                }
             }
         },
         "/v1/events/team/{id}/{teamId}": {
             "get": {
+                "security": [
+                    {
+                        "VkAuth": []
+                    }
+                ],
                 "description": "Возвращает одну команду с капитаном, первыми участниками и общим количеством участников.",
                 "consumes": [
                     "application/json"
@@ -1318,16 +1709,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
-                },
-                "security": [
-                    {
-                        "VkAuth": []
-                    }
-                ]
+                }
             }
         },
         "/v1/events/team/{id}/{teamId}/notification": {
             "post": {
+                "security": [
+                    {
+                        "VkAuth": []
+                    }
+                ],
                 "description": "Отправляет текстовое VK-уведомление капитану и участникам выбранной команды.",
                 "consumes": [
                     "application/json"
@@ -1399,16 +1790,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
-                },
-                "security": [
-                    {
-                        "VkAuth": []
-                    }
-                ]
+                }
             }
         },
         "/v1/events/test": {
             "post": {
+                "security": [
+                    {
+                        "VkAuth": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -1462,16 +1853,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
-                },
-                "security": [
-                    {
-                        "VkAuth": []
-                    }
-                ]
+                }
             }
         },
         "/v1/events/test/{id}": {
             "get": {
+                "security": [
+                    {
+                        "VkAuth": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -1529,14 +1920,14 @@ const docTemplate = `{
                             "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
-                },
+                }
+            },
+            "delete": {
                 "security": [
                     {
                         "VkAuth": []
                     }
-                ]
-            },
-            "delete": {
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -1591,14 +1982,14 @@ const docTemplate = `{
                             "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
-                },
+                }
+            },
+            "patch": {
                 "security": [
                     {
                         "VkAuth": []
                     }
-                ]
-            },
-            "patch": {
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -1665,16 +2056,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
-                },
-                "security": [
-                    {
-                        "VkAuth": []
-                    }
-                ]
+                }
             }
         },
         "/v1/events/test/{id}/q": {
             "post": {
+                "security": [
+                    {
+                        "VkAuth": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -1741,16 +2132,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
-                },
-                "security": [
-                    {
-                        "VkAuth": []
-                    }
-                ]
+                }
             }
         },
         "/v1/events/test/{id}/q/{qId}": {
             "get": {
+                "security": [
+                    {
+                        "VkAuth": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -1815,14 +2206,14 @@ const docTemplate = `{
                             "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
-                },
+                }
+            },
+            "post": {
                 "security": [
                     {
                         "VkAuth": []
                     }
-                ]
-            },
-            "post": {
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -1896,16 +2287,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
-                },
-                "security": [
-                    {
-                        "VkAuth": []
-                    }
-                ]
+                }
             }
         },
         "/v1/events/test/{id}/q/{qId}/answers": {
             "post": {
+                "security": [
+                    {
+                        "VkAuth": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -1979,16 +2370,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
-                },
-                "security": [
-                    {
-                        "VkAuth": []
-                    }
-                ]
+                }
             }
         },
         "/v1/events/{id}/health-import": {
             "get": {
+                "security": [
+                    {
+                        "VkAuth": []
+                    }
+                ],
                 "description": "Возвращает сохранённые данные текущего пользователя по тренировкам в рамках конкретного события.",
                 "consumes": [
                     "application/json"
@@ -2044,14 +2435,14 @@ const docTemplate = `{
                             "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
-                },
+                }
+            },
+            "post": {
                 "security": [
                     {
                         "VkAuth": []
                     }
-                ]
-            },
-            "post": {
+                ],
                 "description": "Сохраняет тренировки текущего пользователя в рамках конкретного события.",
                 "consumes": [
                     "application/json"
@@ -2110,16 +2501,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
-                },
-                "security": [
-                    {
-                        "VkAuth": []
-                    }
-                ]
+                }
             }
         },
         "/v1/events/{id}/publish": {
             "post": {
+                "security": [
+                    {
+                        "VkAuth": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -2183,16 +2574,73 @@ const docTemplate = `{
                             "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
-                },
-                "security": [
+                }
+            }
+        },
+        "/v1/file": {
+            "get": {
+                "description": "Возвращает бинарное содержимое файла. Не требует авторизации — доступ контролируется подписью",
+                "produces": [
+                    "application/octet-stream"
+                ],
+                "tags": [
+                    "attachments"
+                ],
+                "summary": "Скачать файл по подписанной ссылке",
+                "parameters": [
                     {
-                        "VkAuth": []
+                        "type": "string",
+                        "description": "UUID временной ссылки",
+                        "name": "id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Строка подписи",
+                        "name": "sign",
+                        "in": "query",
+                        "required": true
                     }
-                ]
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Подпись недействительна",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
             }
         },
         "/v1/health-import/apple/parse": {
             "post": {
+                "security": [
+                    {
+                        "VkAuth": []
+                    }
+                ],
                 "description": "Принимает zip-архив c экспортом данных здоровья и возвращает распарсенные метаданные тренировок.",
                 "consumes": [
                     "multipart/form-data"
@@ -2252,16 +2700,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
-                },
-                "security": [
-                    {
-                        "VkAuth": []
-                    }
-                ]
+                }
             }
         },
         "/v1/onboardings": {
             "get": {
+                "security": [
+                    {
+                        "VkAuth": []
+                    }
+                ],
                 "description": "Получить список онбордингов для пользователя. Онбординги - это этапы, которые пользователь должен пройти для полного использования функционала приложения. Например, онбординг может включать в себя заполнение профиля, добавление друзей, участие в мероприятиях и т.д.",
                 "consumes": [
                     "application/json"
@@ -2311,16 +2759,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
-                },
-                "security": [
-                    {
-                        "VkAuth": []
-                    }
-                ]
+                }
             }
         },
         "/v1/onboardings/all": {
             "get": {
+                "security": [
+                    {
+                        "VkAuth": []
+                    }
+                ],
                 "description": "Возвращает все онбординги для указанной платформы без учёта прогресса пользователя.",
                 "consumes": [
                     "application/json"
@@ -2370,16 +2818,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
-                },
-                "security": [
-                    {
-                        "VkAuth": []
-                    }
-                ]
+                }
             }
         },
         "/v1/onboardings/{id}": {
             "post": {
+                "security": [
+                    {
+                        "VkAuth": []
+                    }
+                ],
                 "description": "Пометить онбординг как пройденный для пользователя. Это означает, что пользователь прошел определенный этап онбординга и может перейти к следующему этапу или использовать функционал, который был заблокирован до прохождения этого этапа.",
                 "consumes": [
                     "application/json"
@@ -2423,16 +2871,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
-                },
-                "security": [
-                    {
-                        "VkAuth": []
-                    }
-                ]
+                }
             }
         },
         "/v1/users": {
             "get": {
+                "security": [
+                    {
+                        "VkAuth": []
+                    }
+                ],
                 "description": "Возвращает всех пользователей с возможной фильтрацией по ФИО",
                 "consumes": [
                     "application/json"
@@ -2481,14 +2929,14 @@ const docTemplate = `{
                             "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
-                },
+                }
+            },
+            "post": {
                 "security": [
                     {
                         "VkAuth": []
                     }
-                ]
-            },
-            "post": {
+                ],
                 "description": "Создаёт пользователя на основе переданных данных",
                 "consumes": [
                     "application/json"
@@ -2549,16 +2997,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
-                },
-                "security": [
-                    {
-                        "VkAuth": []
-                    }
-                ]
+                }
             }
         },
         "/v1/users/byLinks": {
             "post": {
+                "security": [
+                    {
+                        "VkAuth": []
+                    }
+                ],
                 "description": "Создаёт пользователей из списка ссылок",
                 "consumes": [
                     "application/json"
@@ -2610,16 +3058,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
-                },
-                "security": [
-                    {
-                        "VkAuth": []
-                    }
-                ]
+                }
             }
         },
         "/v1/users/vk/{id}": {
             "get": {
+                "security": [
+                    {
+                        "VkAuth": []
+                    }
+                ],
                 "description": "Находит пользователя по его VK ID",
                 "consumes": [
                     "application/json"
@@ -2678,16 +3126,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
-                },
-                "security": [
-                    {
-                        "VkAuth": []
-                    }
-                ]
+                }
             }
         },
         "/v1/users/vk/{id}/role/{roleId}": {
             "patch": {
+                "security": [
+                    {
+                        "VkAuth": []
+                    }
+                ],
                 "description": "Назначает пользователю новую роль по её UUID",
                 "consumes": [
                     "application/json"
@@ -2756,16 +3204,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
-                },
-                "security": [
-                    {
-                        "VkAuth": []
-                    }
-                ]
+                }
             }
         },
         "/v1/users/vk/{id}/{permission}": {
             "patch": {
+                "security": [
+                    {
+                        "VkAuth": []
+                    }
+                ],
                 "description": "Изменяет значение конкретного флага-разрешения (true/false)",
                 "consumes": [
                     "application/json"
@@ -2841,16 +3289,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
-                },
-                "security": [
-                    {
-                        "VkAuth": []
-                    }
-                ]
+                }
             }
         },
         "/v1/validate": {
             "get": {
+                "security": [
+                    {
+                        "VkAuth": []
+                    }
+                ],
                 "tags": [
                     "service"
                 ],
@@ -2874,12 +3322,7 @@ const docTemplate = `{
                             "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
-                },
-                "security": [
-                    {
-                        "VkAuth": []
-                    }
-                ]
+                }
             }
         }
     },
@@ -2992,6 +3435,21 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.DeleteManyRequest": {
+            "type": "object",
+            "properties": {
+                "force": {
+                    "type": "boolean",
+                    "example": false
+                },
+                "ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
         "dto.ErrorResponse": {
             "type": "object",
             "properties": {
@@ -3076,6 +3534,41 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.GetManyRequest": {
+            "type": "object",
+            "properties": {
+                "ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "ttl": {
+                    "type": "integer",
+                    "example": 3600
+                }
+            }
+        },
+        "dto.GetManyResponse": {
+            "type": "object",
+            "properties": {
+                "urls": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "dto.GetOneResponse": {
+            "type": "object",
+            "properties": {
+                "url": {
+                    "type": "string",
+                    "example": "https://storage.example.com/file?sign=abc"
+                }
+            }
+        },
         "dto.OnboardingData": {
             "type": "object",
             "properties": {
@@ -3157,6 +3650,53 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.PutManyRequest": {
+            "type": "object",
+            "properties": {
+                "async": {
+                    "type": "boolean",
+                    "example": false
+                },
+                "files": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.UploadFileDTO"
+                    }
+                }
+            }
+        },
+        "dto.PutManyResponse": {
+            "type": "object",
+            "properties": {
+                "ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "dto.PutOneRequest": {
+            "type": "object",
+            "properties": {
+                "async": {
+                    "type": "boolean",
+                    "example": false
+                },
+                "file": {
+                    "$ref": "#/definitions/dto.UploadFileDTO"
+                }
+            }
+        },
+        "dto.PutOneResponse": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "example": "550e8400-e29b-41d4-a716-446655440000"
+                }
+            }
+        },
         "dto.RoleDto": {
             "type": "object",
             "properties": {
@@ -3180,6 +3720,41 @@ const docTemplate = `{
                 },
                 "type": {
                     "type": "string"
+                }
+            }
+        },
+        "dto.StorageType": {
+            "type": "integer",
+            "format": "int32",
+            "enum": [
+                1,
+                2
+            ],
+            "x-enum-varnames": [
+                "StorageTypeDatabase",
+                "StorageTypeObjectStorage"
+            ]
+        },
+        "dto.UploadFileDTO": {
+            "type": "object",
+            "properties": {
+                "file_content": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "file_name": {
+                    "type": "string",
+                    "example": "photo.png"
+                },
+                "storage_type": {
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.StorageType"
+                        }
+                    ],
+                    "example": 2
                 }
             }
         },

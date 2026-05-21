@@ -2,6 +2,7 @@ package internal
 
 import (
 	"fmt"
+	"log"
 	vkClient "ne_noy/internal/client"
 	"ne_noy/internal/config"
 	"ne_noy/internal/controller"
@@ -20,7 +21,8 @@ import (
 )
 
 type Server struct {
-	Router *gin.Engine
+	Router         *gin.Engine
+	attachmentConn interface{ Close() error }
 }
 
 func New(db *pgxpool.Pool, config config.Config) *Server {
@@ -34,6 +36,11 @@ func New(db *pgxpool.Pool, config config.Config) *Server {
 	eventQueueRepository := impl.NewEventQueueRepository(db)
 
 	vkCl := vkClient.NewVkApiClient(config.VK.ServiceKey, config.VK.BaseURL)
+
+	attachmentClient, attachmentConn, err := vkClient.NewAttachmentGRPCClient(config.GRPC.AttachmentServiceAddr)
+	if err != nil {
+		log.Printf("attachment grpc client: %v", err)
+	}
 
 	userService := service.NewUserService(userRepo, roleRepo, vkCl)
 	eventService := event2.NewEventService(eventRepo, userService, roleRepo)
@@ -73,6 +80,9 @@ func New(db *pgxpool.Pool, config config.Config) *Server {
 		{
 			controller.ConfigureOnboardingController(apiV1, onboardingService)
 			controller.ApiServiceController(apiV1)
+			if attachmentClient != nil {
+				controller.ConfigureAttachmentController(apiV1, attachmentClient)
+			}
 			event.ConfigureEventController(apiV1, eventService, eventAsEventService, eventParticipantService)
 			event.ConfigureTeamEventController(apiV1, eventService, eventTeamService, userService)
 			event.ConfigureTestController(apiV1, eventService, eventTestService)
@@ -84,7 +94,13 @@ func New(db *pgxpool.Pool, config config.Config) *Server {
 			}
 		}
 	}
-	return &Server{Router: router}
+	return &Server{Router: router, attachmentConn: attachmentConn}
+}
+
+func (s *Server) Close() {
+	if s.attachmentConn != nil {
+		s.attachmentConn.Close()
+	}
 }
 
 func (s *Server) Run(host string, port int) error {

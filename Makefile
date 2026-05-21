@@ -3,8 +3,10 @@ CMD_DIR := ./cmd/$(APP_NAME)
 CONFIG_FILE := ./configs/config.yaml
 DOC_DESTINATION=docs
 DOCKER_VERSION=0.1.3
+PROTO_DIR := ./proto
+PROTO_GEN_DIR := ./proto/gen
 
-.PHONY: build run test clean fmt vet migrate-up migrate-down doc docker-build docker-save
+.PHONY: build run test clean fmt vet migrate-up migrate-down doc docker-build docker-save proto-gen
 
 migrate-up:
 	goose -dir ./migrations up
@@ -43,3 +45,13 @@ docker-build:
 
 docker-save: docker-build
 	docker save $(APP_NAME):$(DOCKER_VERSION) -o $(APP_NAME)-$(DOCKER_VERSION).tar
+
+proto-gen:
+	@mkdir -p $(PROTO_GEN_DIR)
+	protoc \
+		--proto_path=$(PROTO_DIR) \
+		--go_out=$(PROTO_GEN_DIR) \
+		--go_opt=paths=source_relative \
+		--go-grpc_out=$(PROTO_GEN_DIR) \
+		--go-grpc_opt=paths=source_relative \
+		$(PROTO_DIR)/model.proto $(PROTO_DIR)/attachment_service.proto

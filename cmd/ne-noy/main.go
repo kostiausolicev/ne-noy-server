@@ -33,6 +33,7 @@ func main() {
 		log.Fatalf("cannot connect to database: %v", err)
 	}
 	srv := server.New(db, *cfg)
+	defer srv.Close()
 	if err := srv.Run(cfg.Server.Host, cfg.Server.Port); err != nil {
 		log.Fatalf("server error: %v", err)
 	}
