@@ -16,7 +16,7 @@ type baseEventController struct {
 // getAllEvents godoc
 //
 //	@Summary	Получить список всех мероприятий
-//	@Tags		events
+//	@Tags		base-events
 //	@Accept		json
 //	@Produce	json
 //	@Param		X-Request-Id	header		string	true	"X-Request-Id"
@@ -43,7 +43,7 @@ func (uc *baseEventController) getAllEvents(c *gin.Context) {
 // getEventsAvailable godoc
 //
 //	@Summary	Получить список всех доступных мероприятий
-//	@Tags		events
+//	@Tags		base-events
 //	@Accept		json
 //	@Produce	json
 //	@Param		X-Request-Id	header		string	true	"X-Request-Id"
@@ -70,7 +70,7 @@ func (uc *baseEventController) getEventsAvailable(c *gin.Context) {
 // getEventsArchive godoc
 //
 //	@Summary	Получить список всех архивных мероприятий
-//	@Tags		events
+//	@Tags		base-events
 //	@Accept		json
 //	@Produce	json
 //	@Param		X-Request-Id	header		string	true	"X-Request-Id"
@@ -97,7 +97,7 @@ func (uc *baseEventController) getEventsArchive(c *gin.Context) {
 // publishEvent godoc
 //
 //	@Summary	Опубликовать мероприятие
-//	@Tags		events
+//	@Tags		base-events
 //	@Accept		json
 //	@Produce	json
 //	@Param		X-Request-Id	header		string						true	"Уникальный идентификатор запроса"

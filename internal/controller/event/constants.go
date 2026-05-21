@@ -17,8 +17,9 @@ const (
 
 	routeTeamBase         = "/events/team"
 	routeTeam             = "/events/team/:id"
-	routeTeamJoin         = "/events/team/:id/joinTo/:teamId"
-	routeTeamLeave        = "/events/team/:id/leaveFrom/:teamId"
+	routeGetTeams         = "/events/team/:id/teams"
+	routeTeamJoin         = "/events/team/:id/join/:teamId"
+	routeTeamLeave        = "/events/team/:id/leave/:teamId"
 	routeTeamByID         = "/events/team/:id/:teamId"
 	routeTeamNotification = "/events/team/:id/:teamId/notification"
 

@@ -261,7 +261,7 @@ func (t *teamController) LeaveTeam(c *gin.Context) {
 //	@Failure		401				{object}	dto.ErrorResponse	"Не авторизован"
 //	@Failure		404				{object}	dto.ErrorResponse	"Мероприятие не найдено"
 //	@Failure		500				{object}	dto.ErrorResponse
-//	@Router			/v1/events/team/{id} [get]
+//	@Router			/v1/events/team/{id}/teams [get]
 //	@Security		VkAuth
 func (t *teamController) GetTeamsByEvent(c *gin.Context) {
 	eventID, err := controller.ParseUUID(c, controller.ParamID)
@@ -276,6 +276,37 @@ func (t *teamController) GetTeamsByEvent(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, teams)
+}
+
+// GetTeamEvent godoc
+//
+//	@Summary		Получить командное мероприятие
+//	@Description	Возвращает командное мероприятие
+//	@Tags			teams
+//	@Accept			json
+//	@Produce		json
+//	@Param			X-Request-Id	header		string	true	"Уникальный идентификатор запроса"
+//	@Param			id				path		string	true	"UUID командного мероприятия"
+//	@Success		200				{array}		team_dto.TeamEventDto
+//	@Failure		400				{object}	dto.ErrorResponse	"Некорректный UUID"
+//	@Failure		401				{object}	dto.ErrorResponse	"Не авторизован"
+//	@Failure		404				{object}	dto.ErrorResponse	"Мероприятие не найдено"
+//	@Failure		500				{object}	dto.ErrorResponse
+//	@Router			/v1/events/team/{id}/teams [get]
+//	@Security		VkAuth
+func (t *teamController) GetTeamEvent(c *gin.Context) {
+	eventID, err := controller.ParseUUID(c, controller.ParamID)
+	if err != nil {
+		c.Error(err)
+		return
+	}
+
+	team, err := t.teamService.GetTeamEvent(c.Request.Context(), eventID)
+	if err != nil {
+		c.Error(err)
+		return
+	}
+	c.JSON(http.StatusOK, team)
 }
 
 // GetTeam godoc
@@ -394,6 +425,7 @@ func ConfigureTeamEventController(
 	r.POST(routeTeamJoin, controller.JoinTeam)
 	r.POST(routeTeamLeave, controller.LeaveTeam)
 	r.GET(routeTeam, controller.GetTeamsByEvent)
+	r.GET(routeGetTeams, controller.GetTeamsByEvent)
 	r.GET(routeTeamByID, controller.GetTeam)
 	r.POST(routeTeamNotification, controller.SendNotificationToTeam)
 }
