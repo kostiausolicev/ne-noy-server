@@ -54,6 +54,12 @@ func (e *eventTeamService) GetTeamEvent(ctx context.Context, eventId uuid.UUID) 
 		return team_dto.TeamEventDto{}, err
 	}
 
+	organizers, err := e.repo.GetEventOrganizers(ctx, eventId)
+	if err != nil {
+		return team_dto.TeamEventDto{}, err
+	}
+	event.Orgs = organizers
+
 	return teamEventToDto(*event), nil
 }
 
@@ -92,6 +98,18 @@ func (e *eventTeamService) CreateTeamEvent(ctx context.Context, event team_dto.C
 	if err != nil {
 		return team_dto.TeamEventDto{}, err
 	}
+
+	if len(event.Organizers) > 0 {
+		if err = e.repo.SetEventOrganizers(ctx, created.ID, event.Organizers); err != nil {
+			return team_dto.TeamEventDto{}, err
+		}
+	}
+
+	organizers, err := e.repo.GetEventOrganizers(ctx, created.ID)
+	if err != nil {
+		return team_dto.TeamEventDto{}, err
+	}
+	created.Orgs = organizers
 
 	return teamEventToDto(*created), nil
 }
@@ -271,6 +289,11 @@ func (e *eventTeamService) totalMembers(team as_team.Team) int {
 }
 
 func teamEventToDto(event as_team.AsTeam) team_dto.TeamEventDto {
+	orgs := make([]dto.UserMiniDto, 0, len(event.Orgs))
+	for _, org := range event.Orgs {
+		orgs = append(orgs, userToMiniDto(org))
+	}
+
 	return team_dto.TeamEventDto{
 		ID:                event.ID,
 		Name:              event.Name,
@@ -287,6 +310,7 @@ func teamEventToDto(event as_team.AsTeam) team_dto.TeamEventDto {
 		Address:           event.Address,
 		AdditionalAddress: event.AdditionalAddress,
 		VkPostID:          event.VkPostID,
+		Organizers:        orgs,
 	}
 }
 

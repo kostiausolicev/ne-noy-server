@@ -11,7 +11,10 @@ type eventQueueController struct {
 	service service.EventQueueService
 }
 
-const routeEventQueue = "/events/queue"
+const (
+	routeEventQueue    = "/events/queue"
+	routeQueueByPostID = "/queue/:postId"
+)
 
 // getAllPosts godoc
 //
@@ -52,17 +55,29 @@ func (ec *eventQueueController) createEventFromPost(c *gin.Context) {
 
 // deletePostFromQueue godoc
 //
-//	@Summary	Удаление поста из очереди событий
+//	@Summary	Удаление поста из очереди событий по ID поста
 //	@Tags		EventQueue
 //	@Accept		json
 //	@Produce	json
-//	@Param		X-Request-Id	header		string	true	"X-Request-Id"
-//	@Success	200				{string}	string	"OK"
-//	@Failure	401				{object}	dto.ErrorResponse
-//	@Failure	500				{object}	dto.ErrorResponse
-//	@Router		/v1/events/queue [delete]
+//	@Param		X-Request-Id	header	string	true	"X-Request-Id"
+//	@Param		postId			path	integer	true	"ID поста VK"
+//	@Success	200
+//	@Failure	400	{object}	dto.ErrorResponse	"Некорректный ID поста"
+//	@Failure	401	{object}	dto.ErrorResponse
+//	@Failure	500	{object}	dto.ErrorResponse
+//	@Router		/v1/queue/{postId} [delete]
 //	@Security	VkAuth
 func (ec *eventQueueController) deletePostFromQueue(c *gin.Context) {
+	postID, err := ParseInt64Param(c, ParamPostID)
+	if err != nil {
+		c.Error(err)
+		return
+	}
+
+	if err = ec.service.DeletePostFromQueue(c.Request.Context(), postID); err != nil {
+		c.Error(err)
+		return
+	}
 	c.Status(http.StatusOK)
 }
 
@@ -70,5 +85,5 @@ func ConfigureEventQueueController(router *gin.RouterGroup, service service.Even
 	ec := &eventQueueController{service: service}
 	router.GET(routeEventQueue, ec.getAllPosts)
 	router.POST(routeEventQueue, ec.createEventFromPost)
-	router.DELETE(routeEventQueue, ec.deletePostFromQueue)
+	router.DELETE(routeQueueByPostID, ec.deletePostFromQueue)
 }

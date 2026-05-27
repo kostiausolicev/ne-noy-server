@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"ne_noy/internal/model"
 	"ne_noy/internal/model/events/as_team"
 
 	"github.com/google/uuid"
@@ -34,4 +35,10 @@ type EventTeamRepository interface {
 
 	// RemoveMember удаляет пользователя из команды.
 	RemoveMember(ctx context.Context, teamID, userID uuid.UUID) error
+
+	// SetEventOrganizers заменяет список организаторов командного мероприятия.
+	SetEventOrganizers(ctx context.Context, eventID uuid.UUID, userIDs []uuid.UUID) error
+
+	// GetEventOrganizers возвращает список организаторов командного мероприятия.
+	GetEventOrganizers(ctx context.Context, eventID uuid.UUID) ([]model.User, error)
 }

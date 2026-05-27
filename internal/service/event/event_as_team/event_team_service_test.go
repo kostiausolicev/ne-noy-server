@@ -147,6 +147,43 @@ func TestEventTeamServiceGetTeamsMapsDtoAndLimitsPreviewMembers(t *testing.T) {
 	require.Equal(t, int64(2001), teams[0].Captain.VkId)
 }
 
+func TestEventTeamServiceCreateTeamEventWithOrganizers(t *testing.T) {
+	ctx := context.Background()
+	orgID1 := uuid.New()
+	orgID2 := uuid.New()
+	repo := newFakeEventTeamRepo()
+	repo.users[orgID1] = model.User{BaseModel: model.BaseModel{ID: orgID1}, FirstName: "Org1"}
+	repo.users[orgID2] = model.User{BaseModel: model.BaseModel{ID: orgID2}, FirstName: "Org2"}
+	service := NewEventTeamService(repo, &fakeVkClient{})
+
+	created, err := service.CreateTeamEvent(ctx, team_dto.CreateTeamEventDto{
+		Name:            "Orgs Event",
+		Status:          "draft",
+		StartsAt:        time.Date(2026, 6, 1, 10, 0, 0, 0, time.UTC),
+		TeamsConstraint: 2,
+		Organizers:      []uuid.UUID{orgID1, orgID2},
+	})
+	require.NoError(t, err)
+	require.Len(t, created.Organizers, 2)
+}
+
+func TestEventTeamServiceGetTeamEventIncludesOrganizers(t *testing.T) {
+	ctx := context.Background()
+	eventID := uuid.New()
+	orgID := uuid.New()
+	repo := newFakeEventTeamRepo()
+	repo.events[eventID] = &as_team.AsTeam{}
+	repo.organizers[eventID] = []model.User{
+		{BaseModel: model.BaseModel{ID: orgID}, FirstName: "Org", VkID: 3001},
+	}
+	service := NewEventTeamService(repo, &fakeVkClient{})
+
+	result, err := service.GetTeamEvent(ctx, eventID)
+	require.NoError(t, err)
+	require.Len(t, result.Organizers, 1)
+	require.Equal(t, int64(3001), result.Organizers[0].VkId)
+}
+
 func TestEventTeamServiceSendNotificationToTeam(t *testing.T) {
 	ctx := context.Background()
 	teamID := uuid.New()
@@ -171,16 +208,18 @@ func TestEventTeamServiceSendNotificationToTeam(t *testing.T) {
 }
 
 type fakeEventTeamRepo struct {
-	events map[uuid.UUID]*as_team.AsTeam
-	teams  map[uuid.UUID]as_team.Team
-	users  map[uuid.UUID]model.User
+	events     map[uuid.UUID]*as_team.AsTeam
+	teams      map[uuid.UUID]as_team.Team
+	users      map[uuid.UUID]model.User
+	organizers map[uuid.UUID][]model.User
 }
 
 func newFakeEventTeamRepo() *fakeEventTeamRepo {
 	return &fakeEventTeamRepo{
-		events: make(map[uuid.UUID]*as_team.AsTeam),
-		teams:  make(map[uuid.UUID]as_team.Team),
-		users:  make(map[uuid.UUID]model.User),
+		events:     make(map[uuid.UUID]*as_team.AsTeam),
+		teams:      make(map[uuid.UUID]as_team.Team),
+		users:      make(map[uuid.UUID]model.User),
+		organizers: make(map[uuid.UUID][]model.User),
 	}
 }
 
@@ -316,6 +355,23 @@ func (f *fakeEventTeamRepo) AddMember(_ context.Context, teamID, userID uuid.UUI
 	})
 	f.teams[teamID] = team
 	return nil
+}
+
+func (f *fakeEventTeamRepo) SetEventOrganizers(_ context.Context, eventID uuid.UUID, userIDs []uuid.UUID) error {
+	orgs := make([]model.User, 0, len(userIDs))
+	for _, id := range userIDs {
+		if u, ok := f.users[id]; ok {
+			orgs = append(orgs, u)
+		} else {
+			orgs = append(orgs, model.User{BaseModel: model.BaseModel{ID: id}})
+		}
+	}
+	f.organizers[eventID] = orgs
+	return nil
+}
+
+func (f *fakeEventTeamRepo) GetEventOrganizers(_ context.Context, eventID uuid.UUID) ([]model.User, error) {
+	return f.organizers[eventID], nil
 }
 
 func (f *fakeEventTeamRepo) RemoveMember(_ context.Context, teamID, userID uuid.UUID) error {

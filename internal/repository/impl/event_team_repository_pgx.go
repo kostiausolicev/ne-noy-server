@@ -2,6 +2,7 @@ package impl
 
 import (
 	"context"
+	"ne_noy/internal/model"
 	"ne_noy/internal/model/events/as_team"
 	"ne_noy/internal/repository"
 	"time"
@@ -282,6 +283,53 @@ func (e *eventTeamRepositoryPgx) getTeamMembers(ctx context.Context, teamID uuid
 	}
 
 	return members, rows.Err()
+}
+
+func (e *eventTeamRepositoryPgx) SetEventOrganizers(ctx context.Context, eventID uuid.UUID, userIDs []uuid.UUID) error {
+	tx, err := e.pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+
+	if _, err = tx.Exec(ctx, `DELETE FROM event_orgs WHERE event_id = $1 AND event_type = 'team'`, eventID); err != nil {
+		return err
+	}
+
+	for _, userID := range userIDs {
+		if _, err = tx.Exec(ctx, `
+			INSERT INTO event_orgs (event_id, event_type, user_id) VALUES ($1, 'team', $2)
+			ON CONFLICT DO NOTHING
+		`, eventID, userID); err != nil {
+			return err
+		}
+	}
+
+	return tx.Commit(ctx)
+}
+
+func (e *eventTeamRepositoryPgx) GetEventOrganizers(ctx context.Context, eventID uuid.UUID) ([]model.User, error) {
+	rows, err := e.pool.Query(ctx, `
+		SELECT u.id, u.vk_id, u.first_name, u.last_name, u.photo_url
+		FROM users u
+		JOIN event_orgs eo ON eo.user_id = u.id
+		WHERE eo.event_id = $1 AND eo.event_type = 'team'
+		ORDER BY u.first_name ASC
+	`, eventID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var users []model.User
+	for rows.Next() {
+		var u model.User
+		if err := rows.Scan(&u.ID, &u.VkID, &u.FirstName, &u.LastName, &u.PhotoURL); err != nil {
+			return nil, err
+		}
+		users = append(users, u)
+	}
+	return users, rows.Err()
 }
 
 func scanTeamWithCaptain(row pgx.Row) (*as_team.Team, int64, error) {

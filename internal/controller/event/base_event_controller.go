@@ -3,7 +3,6 @@ package event
 import (
 	"ne_noy/internal/config"
 	"ne_noy/internal/controller"
-	"ne_noy/internal/dto/event_dto"
 	"ne_noy/internal/service/event"
 
 	"github.com/gin-gonic/gin"
@@ -102,7 +101,6 @@ func (uc *baseEventController) getEventsArchive(c *gin.Context) {
 //	@Produce	json
 //	@Param		X-Request-Id	header		string						true	"Уникальный идентификатор запроса"
 //	@Param		id				path		string						true	"UUID мероприятия"
-//	@Param		request			body		event_dto.CreateUpdateEventDto	true	"Данные публикации мероприятия"
 //	@Success	200
 //	@Failure	400				{object}	dto.ErrorResponse	"Некорректные данные"
 //	@Failure	401				{object}	dto.ErrorResponse
@@ -114,11 +112,6 @@ func (uc *baseEventController) publishEvent(c *gin.Context) {
 	eventId, err := controller.ParseUUID(c, controller.ParamID)
 	if err != nil {
 		c.Error(err)
-		return
-	}
-
-	_, ok := controller.BindJSON[event_dto.CreateUpdateEventDto](c)
-	if !ok {
 		return
 	}
 

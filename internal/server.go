@@ -76,16 +76,16 @@ func New(db *pgxpool.Pool, config config.Config) *Server {
 	{
 		apiV1 := router.Group("/api/v1")
 		controller.ConfigureVkCallBackController(apiV1, config.Secret, vkCallbackService)
+		if attachmentClient != nil {
+			controller.ConfigureAttachmentController(apiV1, attachmentClient)
+		}
 		apiV1.Use(middleware.AuthMiddleware(config.Secret, config.AppId))
 		{
 			controller.ConfigureOnboardingController(apiV1, onboardingService)
 			controller.ApiServiceController(apiV1)
-			if attachmentClient != nil {
-				controller.ConfigureAttachmentController(apiV1, attachmentClient)
-			}
 			event.ConfigureEventController(apiV1, eventService, eventAsEventService, eventParticipantService)
 			event.ConfigureTeamEventController(apiV1, eventService, eventTeamService, userService)
-			event.ConfigureTestController(apiV1, eventService, eventTestService)
+			event.ConfigureTestController(apiV1, eventService, eventTestService, userService)
 			controller.ConfigureUserController(apiV1, userService)
 			apiV1.Use(middleware.AdminMiddleware())
 			{

@@ -14,6 +14,8 @@ const (
 	ParamQuestionID = "qId"
 	ParamPermission = "permission"
 	ParamRoleID     = "roleId"
+	ParamEventID    = "eventId"
+	ParamPostID     = "postId"
 
 	QueryFIO      = "fio"
 	QueryPlatform = "platform"

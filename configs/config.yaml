@@ -20,4 +20,4 @@ database:
   timezone: "UTC"
 
 grpc:
-  attachmentServiceAddr: "localhost:8082"
+  attachmentServiceAddr: "localhost:9090"

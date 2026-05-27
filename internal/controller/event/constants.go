@@ -28,4 +28,10 @@ const (
 	routeTestQuestion        = "/events/test/:id/q"
 	routeTestQuestionByID    = "/events/test/:id/q/:qId"
 	routeTestQuestionAnswers = "/events/test/:id/q/:qId/answers"
+
+	routeTeamEventFull        = "/team-events"
+	routeTeamEventsID         = "/team-events/:id"
+	routeEventTestMyResults   = "/events/:eventId/test/my-results"
+	routeEventTestUserResults = "/events/:eventId/test/user-results"
+	routeEventTestReport      = "/events/:eventId/test/report"
 )

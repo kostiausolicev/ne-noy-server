@@ -46,7 +46,7 @@ func (o *onboardingRepository) GetOnboardingsForUser(ctx context.Context, userVk
 		AND NOT EXISTS (
 			SELECT 1 FROM user_watches_onboardings uwo
 			LEFT JOIN users u ON uwo.user_id = u.id
-			WHERE uwo.onboarding_id = o.id AND u.vk_id = $1
+			WHERE uwo.internal_onboarding_id = o.internal_id AND u.vk_id = $1
 		)
 	`, userVkId, platform)
 	if err != nil {
@@ -73,6 +73,9 @@ func (o *onboardingRepository) SetUserOnboarding(ctx context.Context, userVkId i
 		return err
 	}
 
-	_, err := o.pool.Exec(ctx, `INSERT INTO user_watches_onboardings (user_id, onboarding_id) VALUES ($1, $2)`, userId, onboardingID)
+	_, err := o.pool.Exec(ctx, `
+		INSERT INTO user_watches_onboardings (user_id, internal_onboarding_id)
+		SELECT $1, o.internal_id FROM onboardings o WHERE o.id = $2
+	`, userId, onboardingID)
 	return err
 }

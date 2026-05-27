@@ -1,12 +1,18 @@
 package event_as_test
 
 import (
+	"bytes"
 	"context"
+	"encoding/base64"
+	"encoding/csv"
 	"errors"
+	"ne_noy/internal/dto"
 	"ne_noy/internal/dto/test_dto"
+	"ne_noy/internal/model"
 	"ne_noy/internal/model/events"
 	"ne_noy/internal/model/events/as_test"
 	"ne_noy/internal/repository"
+	"strconv"
 
 	"github.com/google/uuid"
 )
@@ -32,6 +38,12 @@ type EventTestService interface {
 	UpdateTest(ctx context.Context, testID uuid.UUID, test test_dto.UpdateTestDto) (test_dto.TestDto, error)
 	// DeleteTest удаляет тест
 	DeleteTest(ctx context.Context, test test_dto.DeleteTestDto) error
+	// GetMyTestResults возвращает ответы текущего пользователя на вопросы теста
+	GetMyTestResults(ctx context.Context, eventID, userID uuid.UUID) ([]test_dto.MyTestResultDto, error)
+	// GetUserTestResults возвращает результаты всех пользователей по тесту
+	GetUserTestResults(ctx context.Context, eventID uuid.UUID) ([]test_dto.UserTestResultDto, error)
+	// GenerateTestReport генерирует CSV-отчёт по результатам теста
+	GenerateTestReport(ctx context.Context, eventID uuid.UUID) (test_dto.TestReportDto, error)
 }
 
 func NewEventTestService(repo repository.EventTestRepository) EventTestService {
@@ -249,5 +261,154 @@ func userAnswerToDto(answer as_test.UserAnswer) test_dto.UserAnswerDto {
 		AnswerID:   answer.AnswerID,
 		Text:       answer.Text,
 		Points:     answer.Points,
+	}
+}
+
+func (e *eventTestService) GetMyTestResults(ctx context.Context, eventID, userID uuid.UUID) ([]test_dto.MyTestResultDto, error) {
+	test, err := e.repo.GetTest(ctx, eventID)
+	if err != nil {
+		return nil, err
+	}
+
+	userAnswers, err := e.repo.GetUserAnswersByEvent(ctx, eventID, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	answersByQuestion := make(map[uuid.UUID][]string)
+	for _, ua := range userAnswers {
+		if ua.AnswerID != nil {
+			answersByQuestion[ua.QuestionID] = append(answersByQuestion[ua.QuestionID], ua.AnswerID.String())
+		}
+	}
+
+	result := make([]test_dto.MyTestResultDto, 0, len(test.Questions))
+	for _, q := range test.Questions {
+		if q == nil {
+			continue
+		}
+		ids := answersByQuestion[q.ID]
+		if ids == nil {
+			ids = []string{}
+		}
+		result = append(result, test_dto.MyTestResultDto{
+			Question:          questionToDto(*q),
+			SelectedAnswerIds: ids,
+		})
+	}
+
+	return result, nil
+}
+
+func (e *eventTestService) GetUserTestResults(ctx context.Context, eventID uuid.UUID) ([]test_dto.UserTestResultDto, error) {
+	allAnswers, err := e.repo.GetAllUserAnswersByEvent(ctx, eventID)
+	if err != nil {
+		return nil, err
+	}
+
+	type userStats struct {
+		user         model.User
+		correctCount int
+		totalCount   int
+	}
+	statsMap := make(map[uuid.UUID]*userStats)
+
+	for _, ua := range allAnswers {
+		stats, exists := statsMap[ua.UserID]
+		if !exists {
+			stats = &userStats{user: ua.User}
+			statsMap[ua.UserID] = stats
+		}
+		stats.totalCount++
+		if ua.Answer != nil && ua.Answer.IsCorrect {
+			stats.correctCount++
+		}
+	}
+
+	result := make([]test_dto.UserTestResultDto, 0, len(statsMap))
+	for _, stats := range statsMap {
+		result = append(result, test_dto.UserTestResultDto{
+			User: testUserToMiniDto(stats.user),
+			Attempts: []test_dto.TestAttemptDto{
+				{
+					CorrectCount: stats.correctCount,
+					TotalCount:   stats.totalCount,
+				},
+			},
+		})
+	}
+
+	return result, nil
+}
+
+func (e *eventTestService) GenerateTestReport(ctx context.Context, eventID uuid.UUID) (test_dto.TestReportDto, error) {
+	test, err := e.repo.GetTest(ctx, eventID)
+	if err != nil {
+		return test_dto.TestReportDto{}, err
+	}
+
+	allAnswers, err := e.repo.GetAllUserAnswersByEvent(ctx, eventID)
+	if err != nil {
+		return test_dto.TestReportDto{}, err
+	}
+
+	questionMap := make(map[uuid.UUID]*as_test.Question)
+	answerMap := make(map[uuid.UUID]*as_test.Answer)
+	for _, q := range test.Questions {
+		if q == nil {
+			continue
+		}
+		questionMap[q.ID] = q
+		for _, a := range q.Answers {
+			if a != nil {
+				answerMap[a.ID] = a
+			}
+		}
+	}
+
+	var buf bytes.Buffer
+	writer := csv.NewWriter(&buf)
+	_ = writer.Write([]string{"user_id", "question", "selected_answer", "is_correct", "points"})
+
+	for _, ua := range allAnswers {
+		questionText := ""
+		if q, ok := questionMap[ua.QuestionID]; ok {
+			questionText = q.Text
+		}
+		answerText := ""
+		isCorrect := "false"
+		if ua.Text != nil {
+			answerText = *ua.Text
+		} else if ua.AnswerID != nil {
+			if a, ok := answerMap[*ua.AnswerID]; ok {
+				answerText = a.Text
+				if a.IsCorrect {
+					isCorrect = "true"
+				}
+			}
+		}
+		_ = writer.Write([]string{
+			ua.UserID.String(),
+			questionText,
+			answerText,
+			isCorrect,
+			strconv.Itoa(ua.Points),
+		})
+	}
+	writer.Flush()
+
+	encoded := base64.StdEncoding.EncodeToString(buf.Bytes())
+	return test_dto.TestReportDto{
+		DownloadURL: "data:text/csv;base64," + encoded,
+	}, nil
+}
+
+func testUserToMiniDto(user model.User) dto.UserMiniDto {
+	return dto.UserMiniDto{
+		ID:        user.ID,
+		VkId:      user.VkID,
+		FirstName: user.FirstName,
+		LastName:  user.LastName,
+		PhotoURL:  user.PhotoURL,
 	}
 }

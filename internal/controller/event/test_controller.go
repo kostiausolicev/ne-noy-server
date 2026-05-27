@@ -3,17 +3,21 @@ package event
 import (
 	"net/http"
 
+	"ne_noy/internal/config"
 	"ne_noy/internal/controller"
 	"ne_noy/internal/dto/test_dto"
+	appservice "ne_noy/internal/service"
 	"ne_noy/internal/service/event"
 	"ne_noy/internal/service/event/event_as_test"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 type testController struct {
 	eventService event.EventService
 	testService  event_as_test.EventTestService
+	userService  appservice.UserService
 }
 
 // CreateTest godoc
@@ -315,14 +319,132 @@ func (c *testController) DeleteTest(ctx *gin.Context) {
 	ctx.Status(http.StatusOK)
 }
 
+// GetMyTestResults godoc
+//
+//	@Summary	Получить свои результаты теста
+//	@Tags		tests
+//	@Accept		json
+//	@Produce	json
+//	@Param		X-Request-Id	header		string	true	"Уникальный идентификатор запроса"
+//	@Param		eventId			path		string	true	"UUID мероприятия-теста"
+//	@Success	200				{array}		test_dto.MyTestResultDto
+//	@Failure	400				{object}	dto.ErrorResponse	"Некорректный UUID"
+//	@Failure	401				{object}	dto.ErrorResponse
+//	@Failure	404				{object}	dto.ErrorResponse	"Тест не найден"
+//	@Failure	500				{object}	dto.ErrorResponse
+//	@Router		/v1/events/{eventId}/test/my-results [get]
+//	@Security	VkAuth
+func (c *testController) GetMyTestResults(ctx *gin.Context) {
+	eventID, err := controller.ParseUUID(ctx, controller.ParamEventID)
+	if err != nil {
+		ctx.Error(err)
+		return
+	}
+
+	userID, err := c.currentUserID(ctx)
+	if err != nil {
+		ctx.Error(err)
+		return
+	}
+
+	results, err := c.testService.GetMyTestResults(ctx.Request.Context(), eventID, userID)
+	if err != nil {
+		ctx.Error(err)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, results)
+}
+
+// GetUserTestResults godoc
+//
+//	@Summary	Получить результаты всех пользователей по тесту
+//	@Tags		tests
+//	@Accept		json
+//	@Produce	json
+//	@Param		X-Request-Id	header		string	true	"Уникальный идентификатор запроса"
+//	@Param		eventId			path		string	true	"UUID мероприятия-теста"
+//	@Success	200				{array}		test_dto.UserTestResultDto
+//	@Failure	400				{object}	dto.ErrorResponse	"Некорректный UUID"
+//	@Failure	401				{object}	dto.ErrorResponse
+//	@Failure	404				{object}	dto.ErrorResponse	"Тест не найден"
+//	@Failure	500				{object}	dto.ErrorResponse
+//	@Router		/v1/events/{eventId}/test/user-results [get]
+//	@Security	VkAuth
+func (c *testController) GetUserTestResults(ctx *gin.Context) {
+	eventID, err := controller.ParseUUID(ctx, controller.ParamEventID)
+	if err != nil {
+		ctx.Error(err)
+		return
+	}
+
+	results, err := c.testService.GetUserTestResults(ctx.Request.Context(), eventID)
+	if err != nil {
+		ctx.Error(err)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, results)
+}
+
+// GenerateTestReport godoc
+//
+//	@Summary	Сгенерировать CSV-отчёт по результатам теста
+//	@Tags		tests
+//	@Accept		json
+//	@Produce	json
+//	@Param		X-Request-Id	header		string	true	"Уникальный идентификатор запроса"
+//	@Param		eventId			path		string	true	"UUID мероприятия-теста"
+//	@Success	200				{object}	test_dto.TestReportDto
+//	@Failure	400				{object}	dto.ErrorResponse	"Некорректный UUID"
+//	@Failure	401				{object}	dto.ErrorResponse
+//	@Failure	404				{object}	dto.ErrorResponse	"Тест не найден"
+//	@Failure	500				{object}	dto.ErrorResponse
+//	@Router		/v1/events/{eventId}/test/report [get]
+//	@Security	VkAuth
+func (c *testController) GenerateTestReport(ctx *gin.Context) {
+	eventID, err := controller.ParseUUID(ctx, controller.ParamEventID)
+	if err != nil {
+		ctx.Error(err)
+		return
+	}
+
+	report, err := c.testService.GenerateTestReport(ctx.Request.Context(), eventID)
+	if err != nil {
+		ctx.Error(err)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, report)
+}
+
+func (c *testController) currentUserID(ctx *gin.Context) (uuid.UUID, error) {
+	vkID, err := controller.GetCtxInt64(ctx, config.UserVkIdContextKey)
+	if err != nil {
+		return uuid.Nil, err
+	}
+
+	user, err := c.userService.GetUserByVkId(ctx.Request.Context(), vkID)
+	if err != nil {
+		return uuid.Nil, err
+	}
+	if user == nil || user.ID == nil {
+		return uuid.Nil, controller.ParseError
+	}
+
+	return *user.ID, nil
+}
+
 func ConfigureTestController(
 	router *gin.RouterGroup,
 	eventService event.EventService,
 	testService event_as_test.EventTestService,
+	userService appservice.UserService,
 ) {
 	c := &testController{
 		eventService: eventService,
 		testService:  testService,
+		userService:  userService,
 	}
 
 	router.POST(routeTest, c.CreateTest)
@@ -333,4 +455,8 @@ func ConfigureTestController(
 	router.GET(routeTestQuestionByID, c.GetQuestion)
 	router.POST(routeTestQuestionByID, c.SetAnswer)
 	router.POST(routeTestQuestionAnswers, c.AddAnswer)
+
+	router.GET(routeEventTestMyResults, c.GetMyTestResults)
+	router.GET(routeEventTestUserResults, c.GetUserTestResults)
+	router.GET(routeEventTestReport, c.GenerateTestReport)
 }

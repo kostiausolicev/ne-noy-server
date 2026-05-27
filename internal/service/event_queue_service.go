@@ -11,6 +11,7 @@ import (
 // EventQueueService предоставляет операции для работы с очередью постов
 type EventQueueService interface {
 	GetAll(ctx context.Context) ([]dto.EventQueueDto, error)
+	DeletePostFromQueue(ctx context.Context, postID int64) error
 }
 
 type eventQueueService struct {
@@ -82,4 +83,8 @@ func (s *eventQueueService) GetAll(ctx context.Context) ([]dto.EventQueueDto, er
 		result = append(result, item)
 	}
 	return result, nil
+}
+
+func (s *eventQueueService) DeletePostFromQueue(ctx context.Context, postID int64) error {
+	return s.repo.RemovePostFromQueue(ctx, postID)
 }

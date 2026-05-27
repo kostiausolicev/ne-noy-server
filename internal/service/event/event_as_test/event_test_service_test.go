@@ -137,6 +137,159 @@ func TestEventTestServiceDeleteTestValidatesAndCallsRepository(t *testing.T) {
 	require.Error(t, err)
 }
 
+func TestEventTestServiceGetMyTestResultsGroupsAnswersByQuestion(t *testing.T) {
+	ctx := context.Background()
+	testID := uuid.New()
+	userID := uuid.New()
+	questionID := uuid.New()
+	answerID := uuid.New()
+
+	repo := newFakeEventTestRepo()
+	repo.tests[testID] = &as_test.AsTest{
+		EventProfile: events.EventProfile{BaseModel: model.BaseModel{ID: testID}},
+		Questions: []*as_test.Question{
+			{BaseModel: model.BaseModel{ID: questionID}, EventID: testID, Text: "Q1", Type: "single_choice"},
+		},
+	}
+	repo.questions[questionID] = repo.tests[testID].Questions[0]
+	repo.answers[answerID] = &as_test.Answer{BaseModel: model.BaseModel{ID: answerID}, QuestionID: questionID, IsCorrect: true}
+	repo.userAnswers[uuid.New()] = &as_test.UserAnswer{
+		UserID:     userID,
+		QuestionID: questionID,
+		AnswerID:   &answerID,
+	}
+	service := NewEventTestService(repo)
+
+	results, err := service.GetMyTestResults(ctx, testID, userID)
+	require.NoError(t, err)
+	require.Len(t, results, 1)
+	require.Equal(t, "Q1", results[0].Question.Text)
+	require.Equal(t, []string{answerID.String()}, results[0].SelectedAnswerIds)
+}
+
+func TestEventTestServiceGetMyTestResultsReturnsEmptyIdsForUnansweredQuestion(t *testing.T) {
+	ctx := context.Background()
+	testID := uuid.New()
+	userID := uuid.New()
+	questionID := uuid.New()
+
+	repo := newFakeEventTestRepo()
+	repo.tests[testID] = &as_test.AsTest{
+		EventProfile: events.EventProfile{BaseModel: model.BaseModel{ID: testID}},
+		Questions: []*as_test.Question{
+			{BaseModel: model.BaseModel{ID: questionID}, EventID: testID, Text: "Q1", Type: "single_choice"},
+		},
+	}
+	repo.questions[questionID] = repo.tests[testID].Questions[0]
+	service := NewEventTestService(repo)
+
+	results, err := service.GetMyTestResults(ctx, testID, userID)
+	require.NoError(t, err)
+	require.Len(t, results, 1)
+	require.Empty(t, results[0].SelectedAnswerIds)
+}
+
+func TestEventTestServiceGetUserTestResultsComputesCorrectCount(t *testing.T) {
+	ctx := context.Background()
+	testID := uuid.New()
+	user1ID := uuid.New()
+	user2ID := uuid.New()
+	q1ID := uuid.New()
+	q2ID := uuid.New()
+	correctAnswerID := uuid.New()
+	wrongAnswerID := uuid.New()
+
+	repo := newFakeEventTestRepo()
+	repo.tests[testID] = &as_test.AsTest{EventProfile: events.EventProfile{BaseModel: model.BaseModel{ID: testID}}}
+	repo.questions[q1ID] = &as_test.Question{BaseModel: model.BaseModel{ID: q1ID}, EventID: testID}
+	repo.questions[q2ID] = &as_test.Question{BaseModel: model.BaseModel{ID: q2ID}, EventID: testID}
+	repo.answers[correctAnswerID] = &as_test.Answer{BaseModel: model.BaseModel{ID: correctAnswerID}, QuestionID: q1ID, IsCorrect: true}
+	repo.answers[wrongAnswerID] = &as_test.Answer{BaseModel: model.BaseModel{ID: wrongAnswerID}, QuestionID: q2ID, IsCorrect: false}
+
+	// user1 answered both questions: correct + wrong
+	repo.userAnswers[uuid.New()] = &as_test.UserAnswer{
+		BaseModel:  model.BaseModel{ID: uuid.New()},
+		UserID:     user1ID,
+		User:       model.User{BaseModel: model.BaseModel{ID: user1ID}, FirstName: "Ivan"},
+		QuestionID: q1ID,
+		AnswerID:   &correctAnswerID,
+	}
+	repo.userAnswers[uuid.New()] = &as_test.UserAnswer{
+		BaseModel:  model.BaseModel{ID: uuid.New()},
+		UserID:     user1ID,
+		User:       model.User{BaseModel: model.BaseModel{ID: user1ID}, FirstName: "Ivan"},
+		QuestionID: q2ID,
+		AnswerID:   &wrongAnswerID,
+	}
+	// user2 answered only q1: correct
+	repo.userAnswers[uuid.New()] = &as_test.UserAnswer{
+		BaseModel:  model.BaseModel{ID: uuid.New()},
+		UserID:     user2ID,
+		User:       model.User{BaseModel: model.BaseModel{ID: user2ID}, FirstName: "Petr"},
+		QuestionID: q1ID,
+		AnswerID:   &correctAnswerID,
+	}
+	service := NewEventTestService(repo)
+
+	results, err := service.GetUserTestResults(ctx, testID)
+	require.NoError(t, err)
+	require.Len(t, results, 2)
+
+	byUserID := make(map[uuid.UUID]test_dto.UserTestResultDto)
+	for _, r := range results {
+		byUserID[r.User.ID] = r
+	}
+
+	u1 := byUserID[user1ID]
+	require.Len(t, u1.Attempts, 1)
+	require.Equal(t, 1, u1.Attempts[0].CorrectCount)
+	require.Equal(t, 2, u1.Attempts[0].TotalCount)
+
+	u2 := byUserID[user2ID]
+	require.Len(t, u2.Attempts, 1)
+	require.Equal(t, 1, u2.Attempts[0].CorrectCount)
+	require.Equal(t, 1, u2.Attempts[0].TotalCount)
+}
+
+func TestEventTestServiceGenerateTestReportReturnsDataURL(t *testing.T) {
+	ctx := context.Background()
+	testID := uuid.New()
+	userID := uuid.New()
+	questionID := uuid.New()
+	answerID := uuid.New()
+
+	repo := newFakeEventTestRepo()
+	repo.tests[testID] = &as_test.AsTest{
+		EventProfile: events.EventProfile{BaseModel: model.BaseModel{ID: testID}},
+		Questions: []*as_test.Question{
+			{
+				BaseModel: model.BaseModel{ID: questionID},
+				EventID:   testID,
+				Text:      "What is Go?",
+				Type:      "single_choice",
+				Answers: []*as_test.Answer{
+					{BaseModel: model.BaseModel{ID: answerID}, QuestionID: questionID, Text: "Language", IsCorrect: true},
+				},
+			},
+		},
+	}
+	repo.questions[questionID] = repo.tests[testID].Questions[0]
+	repo.answers[answerID] = repo.tests[testID].Questions[0].Answers[0]
+	repo.userAnswers[uuid.New()] = &as_test.UserAnswer{
+		BaseModel:  model.BaseModel{ID: uuid.New()},
+		UserID:     userID,
+		User:       model.User{BaseModel: model.BaseModel{ID: userID}},
+		QuestionID: questionID,
+		AnswerID:   &answerID,
+	}
+	service := NewEventTestService(repo)
+
+	report, err := service.GenerateTestReport(ctx, testID)
+	require.NoError(t, err)
+	require.True(t, len(report.DownloadURL) > 0)
+	require.Contains(t, report.DownloadURL, "data:text/csv;base64,")
+}
+
 type fakeEventTestRepo struct {
 	tests       map[uuid.UUID]*as_test.AsTest
 	questions   map[uuid.UUID]*as_test.Question
@@ -237,4 +390,33 @@ func (f *fakeEventTestRepo) SetUserAnswer(_ context.Context, userAnswer as_test.
 	}
 	f.userAnswers[userAnswer.ID] = &userAnswer
 	return &userAnswer, nil
+}
+
+func (f *fakeEventTestRepo) GetUserAnswersByEvent(_ context.Context, eventID, userID uuid.UUID) ([]as_test.UserAnswer, error) {
+	var result []as_test.UserAnswer
+	for _, ua := range f.userAnswers {
+		q, ok := f.questions[ua.QuestionID]
+		if ok && q.EventID == eventID && ua.UserID == userID {
+			result = append(result, *ua)
+		}
+	}
+	return result, nil
+}
+
+func (f *fakeEventTestRepo) GetAllUserAnswersByEvent(_ context.Context, eventID uuid.UUID) ([]as_test.UserAnswer, error) {
+	var result []as_test.UserAnswer
+	for _, ua := range f.userAnswers {
+		q, ok := f.questions[ua.QuestionID]
+		if !ok || q.EventID != eventID {
+			continue
+		}
+		uaCopy := *ua
+		if ua.AnswerID != nil {
+			if a, ok := f.answers[*ua.AnswerID]; ok {
+				uaCopy.Answer = a
+			}
+		}
+		result = append(result, uaCopy)
+	}
+	return result, nil
 }

@@ -9,38 +9,41 @@ import (
 )
 
 type TeamEventDto struct {
-	ID                uuid.UUID  `json:"id"`
-	Name              string     `json:"name"`
-	Description       *string    `json:"description"`
-	Cover             *string    `json:"cover"`
-	Status            string     `json:"status"`
-	StartsAt          time.Time  `json:"starts_at"`
-	EndsAt            *time.Time `json:"ends_at"`
-	TeamsConstraint   int        `json:"teams_constraint"`
-	TeamsCapMin       *int       `json:"teams_cap_min"`
-	TeamsCapMax       *int       `json:"teams_cap_max"`
-	Lat               *float64   `json:"lat"`
-	Lon               *float64   `json:"lon"`
-	Address           *string    `json:"address"`
-	AdditionalAddress *string    `json:"additional_address"`
-	VkPostID          *int64     `json:"vk_post_id"`
+	ID                uuid.UUID         `json:"id"`
+	Name              string            `json:"name"`
+	Description       *string           `json:"description"`
+	Cover             *string           `json:"cover"`
+	Status            string            `json:"status"`
+	StartsAt          time.Time         `json:"starts_at"`
+	EndsAt            *time.Time        `json:"ends_at"`
+	TeamsConstraint   int               `json:"teams_constraint"`
+	TeamsCapMin       *int              `json:"teams_cap_min"`
+	TeamsCapMax       *int              `json:"teams_cap_max"`
+	Lat               *float64          `json:"lat"`
+	Lon               *float64          `json:"lon"`
+	Address           *string           `json:"address"`
+	AdditionalAddress *string           `json:"additional_address"`
+	VkPostID          *int64            `json:"vk_post_id"`
+	Organizers        []dto.UserMiniDto `json:"organizers"`
 }
 
 type CreateTeamEventDto struct {
-	Name              string     `json:"name"`
-	Description       *string    `json:"description"`
-	Cover             *string    `json:"cover"`
-	Status            string     `json:"status"`
-	StartsAt          time.Time  `json:"starts_at"`
-	EndsAt            *time.Time `json:"ends_at"`
-	TeamsConstraint   int        `json:"teams_constraint"`
-	TeamsCapMin       *int       `json:"teams_cap_min"`
-	TeamsCapMax       *int       `json:"teams_cap_max"`
-	Lat               *float64   `json:"lat"`
-	Lon               *float64   `json:"lon"`
-	Address           *string    `json:"address"`
-	AdditionalAddress *string    `json:"additional_address"`
-	VkPostID          *int64     `json:"vk_post_id"`
+	Name              string      `json:"name"`
+	Description       *string     `json:"description"`
+	Cover             *string     `json:"cover"`
+	Status            string      `json:"status"`
+	StartsAt          time.Time   `json:"starts_at"`
+	EndsAt            *time.Time  `json:"ends_at"`
+	TeamsConstraint   int         `json:"teams_constraint"`
+	TeamsCapMin       *int        `json:"teams_cap_min"`
+	TeamsCapMax       *int        `json:"teams_cap_max"`
+	Lat               *float64    `json:"lat"`
+	Lon               *float64    `json:"lon"`
+	Address           *string     `json:"address"`
+	AdditionalAddress *string     `json:"additional_address"`
+	VkPostID          *int64      `json:"vk_post_id"`
+	Organizers        []uuid.UUID `json:"organizers"`
+	Attachments       []string    `json:"attachments"`
 }
 
 type UpdateTeamEventDto struct {

@@ -31,4 +31,10 @@ type EventTestRepository interface {
 
 	// SetUserAnswer сохраняет ответ пользователя и начисленные баллы.
 	SetUserAnswer(ctx context.Context, userAnswer as_test.UserAnswer) (*as_test.UserAnswer, error)
+
+	// GetUserAnswersByEvent возвращает ответы конкретного пользователя на вопросы теста.
+	GetUserAnswersByEvent(ctx context.Context, eventID, userID uuid.UUID) ([]as_test.UserAnswer, error)
+
+	// GetAllUserAnswersByEvent возвращает все ответы пользователей на вопросы теста с информацией о пользователе и корректности ответа.
+	GetAllUserAnswersByEvent(ctx context.Context, eventID uuid.UUID) ([]as_test.UserAnswer, error)
 }

@@ -415,7 +415,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "events"
+                    "base-events"
                 ],
                 "summary": "Получить список всех мероприятий",
                 "parameters": [
@@ -466,7 +466,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "events"
+                    "base-events"
                 ],
                 "summary": "Получить список всех архивных мероприятий",
                 "parameters": [
@@ -517,7 +517,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "events"
+                    "base-events"
                 ],
                 "summary": "Получить список всех доступных мероприятий",
                 "parameters": [
@@ -1097,52 +1097,6 @@ const docTemplate = `{
                         }
                     }
                 }
-            },
-            "delete": {
-                "security": [
-                    {
-                        "VkAuth": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "EventQueue"
-                ],
-                "summary": "Удаление поста из очереди событий",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "X-Request-Id",
-                        "name": "X-Request-Id",
-                        "in": "header",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/dto.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/dto.ErrorResponse"
-                        }
-                    }
-                }
             }
         },
         "/v1/events/team": {
@@ -1216,7 +1170,7 @@ const docTemplate = `{
                         "VkAuth": []
                     }
                 ],
-                "description": "Возвращает список команд командного мероприятия с капитаном, первыми участниками и общим количеством участников.",
+                "description": "Возвращает командное мероприятие",
                 "consumes": [
                     "application/json"
                 ],
@@ -1226,7 +1180,7 @@ const docTemplate = `{
                 "tags": [
                     "teams"
                 ],
-                "summary": "Получить команды мероприятия",
+                "summary": "Получить командное мероприятие (по маршруту /events/team)",
                 "parameters": [
                     {
                         "type": "string",
@@ -1247,10 +1201,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/team_dto.TeamDto"
-                            }
+                            "$ref": "#/definitions/team_dto.TeamEventDto"
                         }
                     },
                     "400": {
@@ -1624,6 +1575,77 @@ const docTemplate = `{
                     },
                     "404": {
                         "description": "Команда или пользователь не найдены",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/events/team/{id}/teams": {
+            "get": {
+                "security": [
+                    {
+                        "VkAuth": []
+                    }
+                ],
+                "description": "Возвращает список команд командного мероприятия с капитаном, первыми участниками и общим количеством участников.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "teams"
+                ],
+                "summary": "Получить команды мероприятия",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Уникальный идентификатор запроса",
+                        "name": "X-Request-Id",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "UUID командного мероприятия",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/team_dto.TeamDto"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Некорректный UUID",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Не авторизован",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Мероприятие не найдено",
                         "schema": {
                             "$ref": "#/definitions/dto.ErrorResponse"
                         }
@@ -2373,14 +2395,13 @@ const docTemplate = `{
                 }
             }
         },
-        "/v1/events/{id}/health-import": {
+        "/v1/events/{eventId}/test/my-results": {
             "get": {
                 "security": [
                     {
                         "VkAuth": []
                     }
                 ],
-                "description": "Возвращает сохранённые данные текущего пользователя по тренировкам в рамках конкретного события.",
                 "consumes": [
                     "application/json"
                 ],
@@ -2388,9 +2409,9 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "health-import events"
+                    "tests"
                 ],
-                "summary": "Получить данные пользователя по тренировкам в событии",
+                "summary": "Получить свои результаты теста",
                 "parameters": [
                     {
                         "type": "string",
@@ -2401,8 +2422,8 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "UUID события",
-                        "name": "id",
+                        "description": "UUID мероприятия-теста",
+                        "name": "eventId",
                         "in": "path",
                         "required": true
                     }
@@ -2413,18 +2434,24 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/dto.UserActivitiesInfo"
+                                "$ref": "#/definitions/test_dto.MyTestResultDto"
                             }
                         }
                     },
                     "400": {
-                        "description": "Bad Request",
+                        "description": "Некорректный UUID",
                         "schema": {
                             "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Тест не найден",
                         "schema": {
                             "$ref": "#/definitions/dto.ErrorResponse"
                         }
@@ -2436,14 +2463,15 @@ const docTemplate = `{
                         }
                     }
                 }
-            },
-            "post": {
+            }
+        },
+        "/v1/events/{eventId}/test/report": {
+            "get": {
                 "security": [
                     {
                         "VkAuth": []
                     }
                 ],
-                "description": "Сохраняет тренировки текущего пользователя в рамках конкретного события.",
                 "consumes": [
                     "application/json"
                 ],
@@ -2451,9 +2479,9 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "health-import events"
+                    "tests"
                 ],
-                "summary": "Сохранить данные тренировки пользователя для события",
+                "summary": "Сгенерировать CSV-отчёт по результатам теста",
                 "parameters": [
                     {
                         "type": "string",
@@ -2464,33 +2492,103 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "UUID события",
-                        "name": "id",
+                        "description": "UUID мероприятия-теста",
+                        "name": "eventId",
                         "in": "path",
                         "required": true
-                    },
-                    {
-                        "description": "Данные тренировки",
-                        "name": "payload",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/dto.UserActivitiesInfo"
-                        }
                     }
                 ],
                 "responses": {
-                    "201": {
-                        "description": "Created"
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/test_dto.TestReportDto"
+                        }
                     },
                     "400": {
-                        "description": "Bad Request",
+                        "description": "Некорректный UUID",
                         "schema": {
                             "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Тест не найден",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/events/{eventId}/test/user-results": {
+            "get": {
+                "security": [
+                    {
+                        "VkAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tests"
+                ],
+                "summary": "Получить результаты всех пользователей по тесту",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Уникальный идентификатор запроса",
+                        "name": "X-Request-Id",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "UUID мероприятия-теста",
+                        "name": "eventId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/test_dto.UserTestResultDto"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Некорректный UUID",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Тест не найден",
                         "schema": {
                             "$ref": "#/definitions/dto.ErrorResponse"
                         }
@@ -2518,7 +2616,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "events"
+                    "base-events"
                 ],
                 "summary": "Опубликовать мероприятие",
                 "parameters": [
@@ -2535,15 +2633,6 @@ const docTemplate = `{
                         "name": "id",
                         "in": "path",
                         "required": true
-                    },
-                    {
-                        "description": "Данные публикации мероприятия",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/event_dto.CreateUpdateEventDto"
-                        }
                     }
                 ],
                 "responses": {
@@ -2621,75 +2710,6 @@ const docTemplate = `{
                     },
                     "404": {
                         "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/dto.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/dto.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/health-import/apple/parse": {
-            "post": {
-                "security": [
-                    {
-                        "VkAuth": []
-                    }
-                ],
-                "description": "Принимает zip-архив c экспортом данных здоровья и возвращает распарсенные метаданные тренировок.",
-                "consumes": [
-                    "multipart/form-data"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "health-import"
-                ],
-                "summary": "Распарсить метаданные тренировок из zip-файла",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Уникальный идентификатор запроса",
-                        "name": "X-Request-Id",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Платформа источника данных",
-                        "name": "platform",
-                        "in": "formData",
-                        "required": true
-                    },
-                    {
-                        "type": "file",
-                        "description": "Zip-архив с метаданными",
-                        "name": "archive",
-                        "in": "formData",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/dto.UserActivitiesInfo"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/dto.ErrorResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
                         "schema": {
                             "$ref": "#/definitions/dto.ErrorResponse"
                         }
@@ -2861,6 +2881,196 @@ const docTemplate = `{
                     },
                     "401": {
                         "description": "Не авторизован",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/queue/{postId}": {
+            "delete": {
+                "security": [
+                    {
+                        "VkAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "EventQueue"
+                ],
+                "summary": "Удаление поста из очереди событий по ID поста",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "X-Request-Id",
+                        "name": "X-Request-Id",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "ID поста VK",
+                        "name": "postId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "400": {
+                        "description": "Некорректный ID поста",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/team-events": {
+            "post": {
+                "security": [
+                    {
+                        "VkAuth": []
+                    }
+                ],
+                "description": "Создает командное мероприятие с указанием организаторов и вложений.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "teams"
+                ],
+                "summary": "Создать командное мероприятие (расширенный)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Уникальный идентификатор запроса",
+                        "name": "X-Request-Id",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Данные командного мероприятия с организаторами и вложениями",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/team_dto.CreateTeamEventDto"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/team_dto.TeamEventDto"
+                        }
+                    },
+                    "400": {
+                        "description": "Некорректные данные",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Не авторизован",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/team-events/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "VkAuth": []
+                    }
+                ],
+                "description": "Возвращает командное мероприятие с ограничениями команды и организаторами.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "teams"
+                ],
+                "summary": "Получить командное мероприятие по ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Уникальный идентификатор запроса",
+                        "name": "X-Request-Id",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "UUID командного мероприятия",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/team_dto.TeamEventDto"
+                        }
+                    },
+                    "400": {
+                        "description": "Некорректный UUID",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Не авторизован",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Мероприятие не найдено",
                         "schema": {
                             "$ref": "#/definitions/dto.ErrorResponse"
                         }
@@ -3327,35 +3537,6 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "dto.ActivityInfo": {
-            "type": "object",
-            "properties": {
-                "activity": {
-                    "type": "string"
-                },
-                "ends": {
-                    "type": "string"
-                },
-                "params": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/dto.ActivityInfoParams"
-                    }
-                },
-                "starts": {
-                    "type": "string"
-                }
-            }
-        },
-        "dto.ActivityInfoParams": {
-            "type": "object",
-            "properties": {
-                "param": {
-                    "type": "string"
-                },
-                "value": {}
-            }
-        },
         "dto.AnswerDto": {
             "type": "object",
             "properties": {
@@ -3758,20 +3939,6 @@ const docTemplate = `{
                 }
             }
         },
-        "dto.UserActivitiesInfo": {
-            "type": "object",
-            "properties": {
-                "activities": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/dto.ActivityInfo"
-                    }
-                },
-                "user": {
-                    "$ref": "#/definitions/dto.UserMiniDto"
-                }
-            }
-        },
         "dto.UserDto": {
             "type": "object",
             "properties": {
@@ -3969,6 +4136,12 @@ const docTemplate = `{
                 "address": {
                     "type": "string"
                 },
+                "attachments": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "cover": {
                     "type": "string"
                 },
@@ -3986,6 +4159,12 @@ const docTemplate = `{
                 },
                 "name": {
                     "type": "string"
+                },
+                "organizers": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "starts_at": {
                     "type": "string"
@@ -4076,6 +4255,12 @@ const docTemplate = `{
                 },
                 "name": {
                     "type": "string"
+                },
+                "organizers": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.UserMiniDto"
+                    }
                 },
                 "starts_at": {
                     "type": "string"
@@ -4224,6 +4409,20 @@ const docTemplate = `{
                 }
             }
         },
+        "test_dto.MyTestResultDto": {
+            "type": "object",
+            "properties": {
+                "question": {
+                    "$ref": "#/definitions/test_dto.QuestionDto"
+                },
+                "selected_answer_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
         "test_dto.QuestionDto": {
             "type": "object",
             "properties": {
@@ -4231,6 +4430,12 @@ const docTemplate = `{
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/test_dto.AnswerDto"
+                    }
+                },
+                "attachments": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.AttachmentDto"
                     }
                 },
                 "event_id": {
@@ -4261,6 +4466,17 @@ const docTemplate = `{
                 },
                 "user_id": {
                     "type": "string"
+                }
+            }
+        },
+        "test_dto.TestAttemptDto": {
+            "type": "object",
+            "properties": {
+                "correct_count": {
+                    "type": "integer"
+                },
+                "total_count": {
+                    "type": "integer"
                 }
             }
         },
@@ -4302,6 +4518,14 @@ const docTemplate = `{
                 },
                 "vk_post_id": {
                     "type": "integer"
+                }
+            }
+        },
+        "test_dto.TestReportDto": {
+            "type": "object",
+            "properties": {
+                "download_url": {
+                    "type": "string"
                 }
             }
         },
@@ -4357,6 +4581,20 @@ const docTemplate = `{
                 },
                 "user_id": {
                     "type": "string"
+                }
+            }
+        },
+        "test_dto.UserTestResultDto": {
+            "type": "object",
+            "properties": {
+                "attempts": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/test_dto.TestAttemptDto"
+                    }
+                },
+                "user": {
+                    "$ref": "#/definitions/dto.UserMiniDto"
                 }
             }
         }

@@ -272,6 +272,71 @@ func (e *eventTestRepositoryPgx) resolveUserAnswerPoints(ctx context.Context, qu
 	return points, nil
 }
 
+func (e *eventTestRepositoryPgx) GetUserAnswersByEvent(ctx context.Context, eventID, userID uuid.UUID) ([]as_test.UserAnswer, error) {
+	rows, err := e.pool.Query(ctx, `
+		SELECT ua.id, ua.created_at, ua.updated_at, ua.user_id, ua.question_id, ua.answer_id, ua.text, ua.points
+		FROM user_answers ua
+		JOIN questions q ON ua.question_id = q.id
+		WHERE q.event_id = $1 AND ua.user_id = $2
+		ORDER BY q.q_order ASC
+	`, eventID, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var result []as_test.UserAnswer
+	for rows.Next() {
+		var ua as_test.UserAnswer
+		if err := rows.Scan(
+			&ua.ID, &ua.CreatedAt, &ua.UpdatedAt, &ua.UserID, &ua.QuestionID, &ua.AnswerID, &ua.Text, &ua.Points,
+		); err != nil {
+			return nil, err
+		}
+		result = append(result, ua)
+	}
+	return result, rows.Err()
+}
+
+func (e *eventTestRepositoryPgx) GetAllUserAnswersByEvent(ctx context.Context, eventID uuid.UUID) ([]as_test.UserAnswer, error) {
+	rows, err := e.pool.Query(ctx, `
+		SELECT
+			ua.id, ua.created_at, ua.updated_at,
+			ua.user_id, ua.question_id, ua.answer_id, ua.text, ua.points,
+			u.id, u.vk_id, u.first_name, u.last_name, u.photo_url,
+			a.is_correct
+		FROM user_answers ua
+		JOIN questions q ON ua.question_id = q.id
+		JOIN users u ON ua.user_id = u.id
+		LEFT JOIN answers a ON ua.answer_id = a.id
+		WHERE q.event_id = $1
+		ORDER BY ua.user_id, ua.created_at
+	`, eventID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var result []as_test.UserAnswer
+	for rows.Next() {
+		var ua as_test.UserAnswer
+		var isCorrect *bool
+		if err := rows.Scan(
+			&ua.ID, &ua.CreatedAt, &ua.UpdatedAt,
+			&ua.UserID, &ua.QuestionID, &ua.AnswerID, &ua.Text, &ua.Points,
+			&ua.User.ID, &ua.User.VkID, &ua.User.FirstName, &ua.User.LastName, &ua.User.PhotoURL,
+			&isCorrect,
+		); err != nil {
+			return nil, err
+		}
+		if isCorrect != nil {
+			ua.Answer = &as_test.Answer{IsCorrect: *isCorrect}
+		}
+		result = append(result, ua)
+	}
+	return result, rows.Err()
+}
+
 func scanQuestion(row pgx.Row) (*as_test.Question, error) {
 	var question as_test.Question
 	if err := row.Scan(

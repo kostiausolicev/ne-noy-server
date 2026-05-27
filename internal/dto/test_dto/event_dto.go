@@ -1,10 +1,30 @@
 package test_dto
 
 import (
+	"ne_noy/internal/dto"
 	"time"
 
 	"github.com/google/uuid"
 )
+
+type MyTestResultDto struct {
+	Question          QuestionDto `json:"question"`
+	SelectedAnswerIds []string    `json:"selected_answer_ids"`
+}
+
+type UserTestResultDto struct {
+	User     dto.UserMiniDto  `json:"user"`
+	Attempts []TestAttemptDto `json:"attempts"`
+}
+
+type TestAttemptDto struct {
+	CorrectCount int `json:"correct_count"`
+	TotalCount   int `json:"total_count"`
+}
+
+type TestReportDto struct {
+	DownloadURL string `json:"download_url"`
+}
 
 type TestDto struct {
 	ID          uuid.UUID     `json:"id"`
@@ -49,12 +69,13 @@ type DeleteTestDto struct {
 }
 
 type QuestionDto struct {
-	ID      uuid.UUID   `json:"id"`
-	Text    string      `json:"text"`
-	Type    string      `json:"type"`
-	EventID uuid.UUID   `json:"event_id"`
-	Order   int         `json:"order"`
-	Answers []AnswerDto `json:"answers"`
+	ID          uuid.UUID           `json:"id"`
+	Text        string              `json:"text"`
+	Type        string              `json:"type"`
+	EventID     uuid.UUID           `json:"event_id"`
+	Order       int                 `json:"order"`
+	Attachments []dto.AttachmentDto `json:"attachments"`
+	Answers     []AnswerDto         `json:"answers"`
 }
 
 type AddQuestionDto struct {

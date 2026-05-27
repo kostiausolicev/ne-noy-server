@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -18,7 +19,7 @@ const (
 	routeAttachments      = "/attachments"
 	routeAttachmentsBatch = "/attachments/batch"
 	routeAttachmentByID   = "/attachments/:id"
-	routeAttachmentFile   = "/file"
+	routeAttachmentFile   = "/file/download/:id"
 
 	queryTTL   = "ttl"
 	queryForce = "force"
@@ -128,7 +129,7 @@ func (ac *attachmentController) getOne(c *gin.Context) {
 		c.Error(err)
 		return
 	}
-	c.JSON(http.StatusOK, dto.GetOneResponse{URL: resp.Url})
+	c.JSON(http.StatusOK, dto.GetOneResponse{URL: fmt.Sprintf("/api/v1%s", resp.Url)})
 }
 
 // getMany godoc
