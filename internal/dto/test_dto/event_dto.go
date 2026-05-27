@@ -41,27 +41,27 @@ type TestDto struct {
 }
 
 type CreateTestDto struct {
-	Name        string     `json:"name"`
-	Description *string    `json:"description"`
-	Cover       *string    `json:"cover"`
-	Status      string     `json:"status"`
-	StartsAt    time.Time  `json:"starts_at"`
-	EndsAt      *time.Time `json:"ends_at"`
-	ExtLinkID   *string    `json:"ext_link_id"`
-	Attempts    int        `json:"attempts"`
-	VkPostID    *int64     `json:"vk_post_id"`
+	Name        string        `json:"name"`
+	Description *string       `json:"description"`
+	Cover       *string       `json:"cover"`
+	Status      string        `json:"status"`
+	StartsAt    dto.FlexTime  `json:"starts_at"`
+	EndsAt      *dto.FlexTime `json:"ends_at"`
+	ExtLinkID   *string       `json:"ext_link_id"`
+	Attempts    int           `json:"attempts"`
+	VkPostID    *int64        `json:"vk_post_id"`
 }
 
 type UpdateTestDto struct {
-	Name        *string    `json:"name"`
-	Description *string    `json:"description"`
-	Cover       *string    `json:"cover"`
-	Status      *string    `json:"status"`
-	StartsAt    *time.Time `json:"starts_at"`
-	EndsAt      *time.Time `json:"ends_at"`
-	ExtLinkID   *string    `json:"ext_link_id"`
-	Attempts    *int       `json:"attempts"`
-	VkPostID    *int64     `json:"vk_post_id"`
+	Name        *string       `json:"name"`
+	Description *string       `json:"description"`
+	Cover       *string       `json:"cover"`
+	Status      *string       `json:"status"`
+	StartsAt    *dto.FlexTime `json:"starts_at"`
+	EndsAt      *dto.FlexTime `json:"ends_at"`
+	ExtLinkID   *string       `json:"ext_link_id"`
+	Attempts    *int          `json:"attempts"`
+	VkPostID    *int64        `json:"vk_post_id"`
 }
 
 type DeleteTestDto struct {

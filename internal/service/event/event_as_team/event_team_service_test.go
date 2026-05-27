@@ -46,7 +46,7 @@ func TestEventTeamServiceCreateUpdateDeleteTeamEvent(t *testing.T) {
 	created, err := service.CreateTeamEvent(ctx, team_dto.CreateTeamEventDto{
 		Name:            "Team Event",
 		Status:          "draft",
-		StartsAt:        startsAt,
+		StartsAt:        dto.FlexTime{Time: startsAt},
 		TeamsConstraint: 4,
 		TeamsCapMin:     &capMin,
 		TeamsCapMax:     &capMax,
@@ -78,7 +78,7 @@ func TestEventTeamServiceCreateTeamEventValidatesRequiredFields(t *testing.T) {
 
 	_, err := service.CreateTeamEvent(context.Background(), team_dto.CreateTeamEventDto{
 		Status:   "draft",
-		StartsAt: time.Date(2026, 5, 9, 10, 0, 0, 0, time.UTC),
+		StartsAt: dto.FlexTime{Time: time.Date(2026, 5, 9, 10, 0, 0, 0, time.UTC)},
 	})
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "team event name is required")
@@ -159,7 +159,7 @@ func TestEventTeamServiceCreateTeamEventWithOrganizers(t *testing.T) {
 	created, err := service.CreateTeamEvent(ctx, team_dto.CreateTeamEventDto{
 		Name:            "Orgs Event",
 		Status:          "draft",
-		StartsAt:        time.Date(2026, 6, 1, 10, 0, 0, 0, time.UTC),
+		StartsAt:        dto.FlexTime{Time: time.Date(2026, 6, 1, 10, 0, 0, 0, time.UTC)},
 		TeamsConstraint: 2,
 		Organizers:      []uuid.UUID{orgID1, orgID2},
 	})

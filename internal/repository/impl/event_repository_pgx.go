@@ -38,7 +38,7 @@ func (e *eventRepositoryPgx) GetAll(ctx context.Context, roleCode *string, archi
 				FROM event_roles er
 				INNER JOIN roles r ON r.id = er.role_id
 				WHERE er.event_id = e.id
-					AND er.event_type = e.type
+					AND er.event_type = e.type::event_type_enum
 					AND r.name = $%d
 			)
 		`, len(args)))
@@ -47,7 +47,7 @@ func (e *eventRepositoryPgx) GetAll(ctx context.Context, roleCode *string, archi
 	query := fmt.Sprintf(`
 		SELECT e.id, e.name, e.status, e.starts_at, e.ends_at, e.type
 		FROM events e
-		WHERE %s
+		WHERE e.status = 'ACTIVE' AND %s
 		ORDER BY e.starts_at ASC
 	`, strings.Join(conditions, " AND "))
 
@@ -154,6 +154,28 @@ func (e *eventRepositoryPgx) Delete(ctx context.Context, id uuid.UUID, eventType
 	return nil
 }
 
+func (e *eventRepositoryPgx) Publish(ctx context.Context, id uuid.UUID) error {
+	var eventType string
+	err := e.pool.QueryRow(ctx, `SELECT type FROM events WHERE id = $1`, id).Scan(&eventType)
+	if err != nil {
+		return err
+	}
+
+	tableName, err := events.GetEventTableName(eventType)
+	if err != nil {
+		return err
+	}
+
+	tag, err := e.pool.Exec(ctx, fmt.Sprintf(`UPDATE %s SET status = 'ACTIVE' WHERE id = $1`, tableName), id)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return pgx.ErrNoRows
+	}
+	return nil
+}
+
 func NewEventBaseRepository(pool *pgxpool.Pool) repository.EventBaseRepository {
 	return &eventRepositoryPgx{pool: pool}
 }
@@ -183,7 +205,7 @@ func (e *eventRepositoryPgx) getEventOrgs(ctx context.Context, id uuid.UUID, eve
 			u.geo_available, u.notification_available
 		FROM event_orgs eo
 		INNER JOIN users u ON u.id = eo.user_id
-		WHERE eo.event_id = $1 AND eo.event_type = $2
+		WHERE eo.event_id = $1 AND eo.event_type = $2::event_type_enum
 		ORDER BY u.created_at ASC
 	`
 	args := []interface{}{id, eventType}

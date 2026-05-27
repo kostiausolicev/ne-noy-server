@@ -34,13 +34,9 @@ type eventService struct {
 }
 
 func (e eventService) PublishEvent(ctx context.Context, eventId uuid.UUID) error {
-	//fields := make(map[string]interface{})
-	//fields["status"] = "ACTIVE"
-	//_, err := e.r.Update(ctx, eventId, fields, nil, nil)
-	//
-	//return err
-	return nil
+	return e.r.Publish(ctx, eventId)
 }
+
 func (e eventService) GetAll(ctx context.Context, vkId int64) ([]dto.EventMiniDto, error) {
 	// Получаем пользователя
 	user, err := e.u.GetUserByVkId(ctx, vkId)

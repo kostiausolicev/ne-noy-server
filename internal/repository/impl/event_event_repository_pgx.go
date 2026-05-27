@@ -48,7 +48,7 @@ func (e *eventEventRepositoryPgx) GetEventOrgs(ctx context.Context, id uuid.UUID
 			u.geo_available, u.notification_available
 		FROM event_orgs eo
 		INNER JOIN users u ON u.id = eo.user_id
-		WHERE eo.event_id = $1 AND eo.event_type = $2
+		WHERE eo.event_id = $1 AND eo.event_type = $2::event_type_enum
 		ORDER BY u.created_at ASC
 	`
 	args := []interface{}{id, events.EventAsEvent}
@@ -170,10 +170,20 @@ func (e *eventEventRepositoryPgx) CreateEvent(ctx context.Context, event *as_eve
 	if err = e.replaceEventOrgs(ctx, eventID, event.Orgs); err != nil {
 		return nil, err
 	}
+	if len(event.AvailableRoleCodes) > 0 {
+		if err = e.replaceEventRoles(ctx, eventID, event.AvailableRoleCodes); err != nil {
+			return nil, err
+		}
+	}
+	if len(event.Attachments) > 0 {
+		if err = e.replaceEventAttachments(ctx, eventID, event.Attachments); err != nil {
+			return nil, err
+		}
+	}
 	return e.GetEventById(ctx, eventID)
 }
 
-func (e *eventEventRepositoryPgx) Update(ctx context.Context, id uuid.UUID, fields map[string]interface{}, orgs []model.User, availableRoles []model.Role) (*as_event.AsEvent, error) {
+func (e *eventEventRepositoryPgx) Update(ctx context.Context, id uuid.UUID, fields map[string]interface{}, orgs []model.User, roleCodes []string, attachments []events.EventAttachment) (*as_event.AsEvent, error) {
 	if len(fields) > 0 {
 		setParts := make([]string, 0, len(fields))
 		args := make([]interface{}, 0, len(fields)+1)
@@ -195,6 +205,16 @@ func (e *eventEventRepositoryPgx) Update(ctx context.Context, id uuid.UUID, fiel
 	}
 	if orgs != nil {
 		if err := e.replaceEventOrgs(ctx, id, orgs); err != nil {
+			return nil, err
+		}
+	}
+	if roleCodes != nil {
+		if err := e.replaceEventRoles(ctx, id, roleCodes); err != nil {
+			return nil, err
+		}
+	}
+	if attachments != nil {
+		if err := e.replaceEventAttachments(ctx, id, attachments); err != nil {
 			return nil, err
 		}
 	}
@@ -232,6 +252,10 @@ func (e *eventEventRepositoryPgx) fillEventRelations(ctx context.Context, event 
 	if err != nil {
 		return err
 	}
+	event.Attachments, err = e.getEventAttachments(ctx, event.ID)
+	if err != nil {
+		return err
+	}
 	err = e.pool.QueryRow(ctx, `
 		SELECT COUNT(*)
 		FROM event_participants
@@ -240,10 +264,103 @@ func (e *eventEventRepositoryPgx) fillEventRelations(ctx context.Context, event 
 	return err
 }
 
+func (e *eventEventRepositoryPgx) getEventAttachments(ctx context.Context, eventID uuid.UUID) ([]events.EventAttachment, error) {
+	rows, err := e.pool.Query(ctx, `
+		SELECT ea.attachment_id, a.url, a.filename
+		FROM event_attachments ea
+		JOIN attachments a ON a.id = ea.attachment_id
+		WHERE ea.event_id = $1 AND ea.event_type = $2::event_type_enum
+		ORDER BY ea.created_at ASC
+	`, eventID, events.EventAsEvent)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	result := make([]events.EventAttachment, 0)
+	for rows.Next() {
+		var ea events.EventAttachment
+		ea.EventID = eventID
+		ea.EventType = events.EventAsEvent
+		ea.Attachment = &model.Attachment{}
+		if err := rows.Scan(&ea.AttachmentID, &ea.Attachment.Url, &ea.Attachment.Filename); err != nil {
+			return nil, err
+		}
+		if ea.AttachmentID != nil {
+			ea.Attachment.ID = *ea.AttachmentID
+		}
+		result = append(result, ea)
+	}
+	return result, rows.Err()
+}
+
+func (e *eventEventRepositoryPgx) replaceEventAttachments(ctx context.Context, eventID uuid.UUID, attachments []events.EventAttachment) error {
+	_, err := e.pool.Exec(ctx, `
+		DELETE FROM event_attachments WHERE event_id = $1 AND event_type = $2::event_type_enum
+	`, eventID, events.EventAsEvent)
+	if err != nil {
+		return err
+	}
+	for _, a := range attachments {
+		if a.Attachment == nil {
+			continue
+		}
+		var attachmentID int64
+		if a.AttachmentID != nil && *a.AttachmentID != 0 {
+			_, err = e.pool.Exec(ctx, `
+				INSERT INTO attachments (id, url, filename)
+				VALUES ($1, $2, $3)
+				ON CONFLICT (id) DO NOTHING
+			`, *a.AttachmentID, a.Attachment.Url, a.Attachment.Filename)
+			if err != nil {
+				return err
+			}
+			attachmentID = *a.AttachmentID
+		} else {
+			err = e.pool.QueryRow(ctx, `
+				INSERT INTO attachments (url, filename)
+				VALUES ($1, $2)
+				RETURNING id
+			`, a.Attachment.Url, a.Attachment.Filename).Scan(&attachmentID)
+			if err != nil {
+				return err
+			}
+		}
+		_, err = e.pool.Exec(ctx, `
+			INSERT INTO event_attachments (event_id, event_type, attachment_id)
+			VALUES ($1, $2::event_type_enum, $3)
+		`, eventID, events.EventAsEvent, attachmentID)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (e *eventEventRepositoryPgx) replaceEventRoles(ctx context.Context, eventID uuid.UUID, roleCodes []string) error {
+	_, err := e.pool.Exec(ctx, `
+		DELETE FROM event_roles WHERE event_id = $1 AND event_type = 'event'::event_type_enum
+	`, eventID)
+	if err != nil {
+		return err
+	}
+	if len(roleCodes) == 0 {
+		return nil
+	}
+	_, err = e.pool.Exec(ctx, `
+		INSERT INTO event_roles (event_id, event_type, role_id)
+		SELECT $1, 'event'::event_type_enum, r.id
+		FROM roles r
+		WHERE r.name = ANY($2)
+		ON CONFLICT DO NOTHING
+	`, eventID, roleCodes)
+	return err
+}
+
 func (e *eventEventRepositoryPgx) replaceEventOrgs(ctx context.Context, eventID uuid.UUID, orgs []model.User) error {
 	_, err := e.pool.Exec(ctx, `
 		DELETE FROM event_orgs
-		WHERE event_id = $1 AND event_type = $2
+		WHERE event_id = $1 AND event_type = $2::event_type_enum
 	`, eventID, events.EventAsEvent)
 	if err != nil {
 		return err
@@ -254,7 +371,7 @@ func (e *eventEventRepositoryPgx) replaceEventOrgs(ctx context.Context, eventID 
 		}
 		_, err = e.pool.Exec(ctx, `
 			INSERT INTO event_orgs (event_id, event_type, user_id)
-			VALUES ($1, $2, $3)
+			VALUES ($1, $2::event_type_enum, $3)
 			ON CONFLICT DO NOTHING
 		`, eventID, events.EventAsEvent, org.ID)
 		if err != nil {

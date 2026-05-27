@@ -306,7 +306,7 @@ definitions:
         type: string
       attachments:
         items:
-          type: string
+          $ref: '#/definitions/dto.AttachmentDto'
         type: array
       availableRoles:
         items:

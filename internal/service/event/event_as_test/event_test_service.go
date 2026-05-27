@@ -149,8 +149,8 @@ func (e *eventTestService) CreateTest(ctx context.Context, test test_dto.CreateT
 			Description: test.Description,
 			Cover:       test.Cover,
 			Status:      test.Status,
-			StartsAt:    test.StartsAt,
-			EndsAt:      test.EndsAt,
+			StartsAt:    test.StartsAt.Time,
+			EndsAt:      test.EndsAt.ToTimePtr(),
 		},
 		ExtLinkID: test.ExtLinkID,
 		Attempts:  attempts,
@@ -174,9 +174,9 @@ func (e *eventTestService) UpdateTest(ctx context.Context, testID uuid.UUID, tes
 		update.Status = *test.Status
 	}
 	if test.StartsAt != nil {
-		update.StartsAt = *test.StartsAt
+		update.StartsAt = test.StartsAt.Time
 	}
-	update.EndsAt = test.EndsAt
+	update.EndsAt = test.EndsAt.ToTimePtr()
 	update.ExtLinkID = test.ExtLinkID
 	if test.Attempts != nil {
 		update.Attempts = *test.Attempts

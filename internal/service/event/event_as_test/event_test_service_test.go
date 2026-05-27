@@ -3,6 +3,7 @@ package event_as_test
 import (
 	"context"
 	"errors"
+	"ne_noy/internal/dto"
 	"ne_noy/internal/dto/test_dto"
 	"ne_noy/internal/model"
 	"ne_noy/internal/model/events"
@@ -22,7 +23,7 @@ func TestEventTestServiceCreateTestSetsDefaultAttempts(t *testing.T) {
 	test, err := service.CreateTest(ctx, test_dto.CreateTestDto{
 		Name:     "Go Basics",
 		Status:   "active",
-		StartsAt: time.Now().UTC(),
+		StartsAt: dto.FlexTime{Time: time.Now().UTC()},
 	})
 
 	require.NoError(t, err)

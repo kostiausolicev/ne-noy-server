@@ -25,8 +25,9 @@ type EventProfile struct {
 }
 
 type EventRelations struct {
-	Orgs        []model.User
-	Attachments []EventAttachment
+	Orgs               []model.User
+	Attachments        []EventAttachment
+	AvailableRoleCodes []string
 }
 
 func GetEventTableName(eventType string) (string, error) {

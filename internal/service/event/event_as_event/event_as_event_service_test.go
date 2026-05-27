@@ -67,8 +67,8 @@ func TestEventAsEventServiceCreateGetAndUpdateReturnsEventDto(t *testing.T) {
 			},
 		},
 		Status:   "active",
-		StartsAt: &startsAt,
-		EndsAt:   &endsAt,
+		StartsAt: dto.NewFlexTime(startsAt),
+		EndsAt:   dto.NewFlexTime(endsAt),
 	})
 	require.NoError(t, err)
 	require.NotEqual(t, uuid.Nil, created.ID)

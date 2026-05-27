@@ -4006,7 +4006,7 @@ const docTemplate = `{
                 "attachments": {
                     "type": "array",
                     "items": {
-                        "type": "string"
+                        "$ref": "#/definitions/dto.AttachmentDto"
                     }
                 },
                 "availableRoles": {

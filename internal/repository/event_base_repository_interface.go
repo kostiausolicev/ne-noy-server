@@ -18,4 +18,7 @@ type EventBaseRepository interface {
 	GetAllByOrg(ctx context.Context, orgId uuid.UUID) ([]*events.EventView, error)
 
 	Delete(ctx context.Context, id uuid.UUID, eventType string) error
+
+	// Publish устанавливает статус ACTIVE в профильной таблице мероприятия.
+	Publish(ctx context.Context, id uuid.UUID) error
 }

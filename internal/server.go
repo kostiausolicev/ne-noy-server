@@ -83,6 +83,7 @@ func New(db *pgxpool.Pool, config config.Config) *Server {
 		{
 			controller.ConfigureOnboardingController(apiV1, onboardingService)
 			controller.ApiServiceController(apiV1)
+			event.ConfigureBaseEventController(apiV1, eventService)
 			event.ConfigureEventController(apiV1, eventService, eventAsEventService, eventParticipantService)
 			event.ConfigureTeamEventController(apiV1, eventService, eventTeamService, userService)
 			event.ConfigureTestController(apiV1, eventService, eventTestService, userService)

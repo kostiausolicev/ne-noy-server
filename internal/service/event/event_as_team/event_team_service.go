@@ -83,8 +83,8 @@ func (e *eventTeamService) CreateTeamEvent(ctx context.Context, event team_dto.C
 			Description: event.Description,
 			Cover:       event.Cover,
 			Status:      event.Status,
-			StartsAt:    event.StartsAt,
-			EndsAt:      event.EndsAt,
+			StartsAt:    event.StartsAt.Time,
+			EndsAt:      event.EndsAt.ToTimePtr(),
 		},
 		TeamsConstraint:   event.TeamsConstraint,
 		TeamsCapMin:       event.TeamsCapMin,
@@ -125,9 +125,9 @@ func (e *eventTeamService) UpdateTeamEvent(ctx context.Context, eventId uuid.UUI
 		update.Status = *event.Status
 	}
 	if event.StartsAt != nil {
-		update.StartsAt = *event.StartsAt
+		update.StartsAt = event.StartsAt.Time
 	}
-	update.EndsAt = event.EndsAt
+	update.EndsAt = event.EndsAt.ToTimePtr()
 	if event.TeamsConstraint != nil {
 		if *event.TeamsConstraint <= 0 {
 			return team_dto.TeamEventDto{}, errors.New("teams constraint must be positive")

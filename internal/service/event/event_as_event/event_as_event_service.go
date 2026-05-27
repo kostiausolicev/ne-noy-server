@@ -14,6 +14,40 @@ import (
 	"github.com/google/uuid"
 )
 
+func attachmentDtosToModels(dtos *[]dto.AttachmentDto) []events.EventAttachment {
+	if dtos == nil {
+		return nil
+	}
+	result := make([]events.EventAttachment, 0, len(*dtos))
+	for _, d := range *dtos {
+		id := d.ID
+		result = append(result, events.EventAttachment{
+			AttachmentID: &id,
+			Attachment: &model.Attachment{
+				ID:       d.ID,
+				Url:      d.Url,
+				Filename: d.Title,
+			},
+		})
+	}
+	return result
+}
+
+func attachmentsToDto(attachments []events.EventAttachment) []dto.AttachmentDto {
+	result := make([]dto.AttachmentDto, 0, len(attachments))
+	for _, a := range attachments {
+		if a.Attachment == nil || a.AttachmentID == nil {
+			continue
+		}
+		result = append(result, dto.AttachmentDto{
+			ID:    a.Attachment.ID,
+			Url:   a.Attachment.Url,
+			Title: a.Attachment.Filename,
+		})
+	}
+	return result
+}
+
 type eventAsEventService struct {
 	repo repository.EventEventRepository
 }
@@ -73,17 +107,17 @@ func (e *eventAsEventService) UpdateEvent(ctx context.Context, eventId uuid.UUID
 		fields["status"] = event.Status
 	}
 	if event.StartsAt != nil {
-		fields["starts_at"] = event.StartsAt
+		fields["starts_at"] = event.StartsAt.Time
 	}
 	if event.EndsAt != nil {
-		fields["ends_at"] = event.EndsAt
+		fields["ends_at"] = event.EndsAt.Time
 	}
 
 	var orgs []model.User
 	if event.Orgs != nil {
 		orgs = miniUsersToModels(event.Orgs)
 	}
-	updated, err := e.repo.Update(ctx, eventId, fields, orgs, nil)
+	updated, err := e.repo.Update(ctx, eventId, fields, orgs, event.AvailableRoles, attachmentDtosToModels(event.Attachments))
 	if err != nil {
 		return event_dto.EventDto{}, err
 	}
@@ -110,10 +144,14 @@ func (e *eventAsEventService) CreateEvent(ctx context.Context, event event_dto.C
 			event.Description,
 			event.PhotoURL,
 			event.Status,
-			*event.StartsAt,
-			event.EndsAt,
+			event.StartsAt.Time,
+			event.EndsAt.ToTimePtr(),
 		),
-		EventRelations:    modelEventRelations(event.Orgs),
+		EventRelations: events.EventRelations{
+			Orgs:               miniUsersToModels(event.Orgs),
+			Attachments:        attachmentDtosToModels(event.Attachments),
+			AvailableRoleCodes: event.AvailableRoles,
+		},
 		VkPostID:          event.VkPostId,
 		VkVoteID:          event.VkVoteID,
 		VkPollAnswerID:    event.VkPollAnswerID,
@@ -148,12 +186,6 @@ func modelEventProfile(name string, description, cover *string, status string, s
 		Status:      status,
 		StartsAt:    startsAt,
 		EndsAt:      endsAt,
-	}
-}
-
-func modelEventRelations(orgs []dto.UserMiniDto) events.EventRelations {
-	return events.EventRelations{
-		Orgs: miniUsersToModels(orgs),
 	}
 }
 
@@ -192,7 +224,7 @@ func asEventToDto(event as_event.AsEvent) event_dto.EventDto {
 		PhotoURL:          event.Cover,
 		Title:             event.Name,
 		Description:       event.Description,
-		Attachments:       make([]dto.AttachmentDto, 0),
+		Attachments:       attachmentsToDto(event.Attachments),
 		Orgs:              orgs,
 		Address:           event.Address,
 		AdAddress:         event.AdditionalAddress,
