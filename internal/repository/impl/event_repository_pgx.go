@@ -69,7 +69,18 @@ func (e *eventRepositoryPgx) GetAll(ctx context.Context, roleCode *string, archi
 		if orgErr != nil {
 			return nil, orgErr
 		}
+
+		participants, participantsErr := e.getEventParticipants(ctx, eventView.ID, eventView.Type, 3)
+		if participantsErr != nil {
+			return nil, participantsErr
+		}
+		count, countErr := e.getEventParticipantsCount(ctx, eventView.ID, eventView.Type)
+		if countErr != nil {
+			return nil, countErr
+		}
 		eventView.Orgs = orgs
+		eventView.Participants = participants
+		eventView.ParticipantsCount = count
 		result = append(result, eventView)
 	}
 
@@ -105,7 +116,17 @@ func (e *eventRepositoryPgx) GetAllByOrg(ctx context.Context, orgId uuid.UUID) (
 		if orgErr != nil {
 			return nil, orgErr
 		}
+		participants, participantsErr := e.getEventParticipants(ctx, eventView.ID, eventView.Type, 3)
+		if participantsErr != nil {
+			return nil, participantsErr
+		}
+		count, countErr := e.getEventParticipantsCount(ctx, eventView.ID, eventView.Type)
+		if countErr != nil {
+			return nil, countErr
+		}
 		eventView.Orgs = orgs
+		eventView.Participants = participants
+		eventView.ParticipantsCount = count
 		result = append(result, eventView)
 	}
 
@@ -234,4 +255,104 @@ func (e *eventRepositoryPgx) getEventOrgs(ctx context.Context, id uuid.UUID, eve
 	}
 
 	return orgs, rows.Err()
+}
+
+// getEventParticipants возвращает превью участников мероприятия в зависимости от его типа:
+//   - event  → записавшиеся участники из event_participants
+//   - test   → пользователи, начавшие тест (имеющие хотя бы один ответ)
+//   - team   → капитаны команд
+func (e *eventRepositoryPgx) getEventParticipants(ctx context.Context, id uuid.UUID, eventType string, limit int) ([]model.User, error) {
+	var query string
+	args := []interface{}{id}
+
+	switch eventType {
+	case events.EventAsEvent:
+		query = `
+			SELECT u.id, u.created_at, u.vk_id, u.first_name, u.last_name, u.role_id, u.photo_url,
+			       u.geo_available, u.notification_available
+			FROM event_participants ep
+			INNER JOIN users u ON u.id = ep.user_id
+			WHERE ep.event_id = $1
+			ORDER BY ep.created_at ASC
+		`
+	case events.EventAsTest:
+		query = `
+			SELECT u.id, u.created_at, u.vk_id, u.first_name, u.last_name, u.role_id, u.photo_url,
+			       u.geo_available, u.notification_available
+			FROM users u
+			WHERE u.id IN (
+				SELECT DISTINCT ua.user_id
+				FROM user_answers ua
+				INNER JOIN questions q ON q.id = ua.question_id
+				WHERE q.event_id = $1
+			)
+			ORDER BY u.created_at ASC
+		`
+	case events.EventAsTeam:
+		query = `
+			SELECT u.id, u.created_at, u.vk_id, u.first_name, u.last_name, u.role_id, u.photo_url,
+			       u.geo_available, u.notification_available
+			FROM teams t
+			INNER JOIN users u ON u.id = t.captain_id
+			WHERE t.event_id = $1
+			ORDER BY t.created_at ASC
+		`
+	default:
+		return nil, nil
+	}
+
+	if limit > 0 {
+		query += fmt.Sprintf(" LIMIT $%d", len(args)+1)
+		args = append(args, limit)
+	}
+
+	rows, err := e.pool.Query(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	users := make([]model.User, 0)
+	for rows.Next() {
+		var user model.User
+		if err = rows.Scan(
+			&user.ID, &user.CreatedAt, &user.VkID, &user.FirstName, &user.LastName,
+			&user.RoleID, &user.PhotoURL, &user.GeoAvailable, &user.NotificationAvailable,
+		); err != nil {
+			return nil, err
+		}
+		users = append(users, user)
+	}
+	return users, rows.Err()
+}
+
+// getEventParticipantsCount возвращает полное число участников мероприятия:
+//   - event  → все записавшиеся участники
+//   - test   → число уникальных пользователей, начавших тест
+//   - team   → число команд (равно числу капитанов)
+func (e *eventRepositoryPgx) getEventParticipantsCount(ctx context.Context, id uuid.UUID, eventType string) (int, error) {
+	var count int
+	var err error
+
+	switch eventType {
+	case events.EventAsEvent:
+		err = e.pool.QueryRow(ctx, `
+			SELECT COUNT(*) FROM event_participants WHERE event_id = $1
+		`, id).Scan(&count)
+	case events.EventAsTest:
+		err = e.pool.QueryRow(ctx, `
+			SELECT COUNT(DISTINCT ua.user_id)
+			FROM user_answers ua
+			INNER JOIN questions q ON q.id = ua.question_id
+			WHERE q.event_id = $1
+		`, id).Scan(&count)
+	case events.EventAsTeam:
+		err = e.pool.QueryRow(ctx, `
+			SELECT COUNT(*) FROM teams WHERE event_id = $1
+		`, id).Scan(&count)
+	default:
+		return 0, nil
+	}
+
+	return count, err
 }

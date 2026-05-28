@@ -98,7 +98,7 @@ func (e eventService) parseModelsToDtos(_ context.Context, events []*events.Even
 			ID:                event.ID,
 			Title:             event.Name,
 			StartsAt:          event.StartsAt,
-			ParticipantsCount: len(event.Participants),
+			ParticipantsCount: event.ParticipantsCount,
 			Orgs:              orgs,
 			Participants:      participants,
 			Status:            event.Status,

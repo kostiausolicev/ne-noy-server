@@ -13,9 +13,10 @@ type EventView struct {
 	EndsAt   *time.Time
 	Type     string
 
-	AvailableRoles []model.Role
-	Orgs           []model.User
-	Participants   []model.User
+	ParticipantsCount int
+	AvailableRoles    []model.Role
+	Orgs              []model.User
+	Participants      []model.User
 }
 
 func (e EventView) TableName() string {
