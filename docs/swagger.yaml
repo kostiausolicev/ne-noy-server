@@ -116,6 +116,11 @@ definitions:
       text:
         type: string
     type: object
+  dto.FlexTime:
+    properties:
+      time.Time:
+        type: string
+    type: object
   dto.GetManyRequest:
     properties:
       ids:
@@ -315,7 +320,7 @@ definitions:
       description:
         type: string
       endsAt:
-        type: string
+        $ref: '#/definitions/dto.FlexTime'
       lat:
         type: number
       long:
@@ -327,7 +332,7 @@ definitions:
       photoUrl:
         type: string
       startsAt:
-        type: string
+        $ref: '#/definitions/dto.FlexTime'
       status:
         type: string
       title:
@@ -394,6 +399,10 @@ definitions:
         type: string
       attachments:
         items:
+          $ref: '#/definitions/dto.AttachmentDto'
+        type: array
+      available_roles:
+        items:
           type: string
         type: array
       cover:
@@ -401,7 +410,7 @@ definitions:
       description:
         type: string
       ends_at:
-        type: string
+        $ref: '#/definitions/dto.FlexTime'
       lat:
         type: number
       lon:
@@ -413,7 +422,7 @@ definitions:
           type: string
         type: array
       starts_at:
-        type: string
+        $ref: '#/definitions/dto.FlexTime'
       status:
         type: string
       teams_cap_max:
@@ -457,6 +466,14 @@ definitions:
         type: string
       address:
         type: string
+      attachments:
+        items:
+          $ref: '#/definitions/dto.AttachmentDto'
+        type: array
+      available_roles:
+        items:
+          type: string
+        type: array
       cover:
         type: string
       description:
@@ -494,12 +511,20 @@ definitions:
         type: string
       address:
         type: string
+      attachments:
+        items:
+          $ref: '#/definitions/dto.AttachmentDto'
+        type: array
+      available_roles:
+        items:
+          type: string
+        type: array
       cover:
         type: string
       description:
         type: string
       ends_at:
-        type: string
+        $ref: '#/definitions/dto.FlexTime'
       lat:
         type: number
       lon:
@@ -507,7 +532,7 @@ definitions:
       name:
         type: string
       starts_at:
-        type: string
+        $ref: '#/definitions/dto.FlexTime'
       status:
         type: string
       teams_cap_max:
@@ -559,13 +584,13 @@ definitions:
       description:
         type: string
       ends_at:
-        type: string
+        $ref: '#/definitions/dto.FlexTime'
       ext_link_id:
         type: string
       name:
         type: string
       starts_at:
-        type: string
+        $ref: '#/definitions/dto.FlexTime'
       status:
         type: string
       vk_post_id:
@@ -658,13 +683,13 @@ definitions:
       description:
         type: string
       ends_at:
-        type: string
+        $ref: '#/definitions/dto.FlexTime'
       ext_link_id:
         type: string
       name:
         type: string
       starts_at:
-        type: string
+        $ref: '#/definitions/dto.FlexTime'
       status:
         type: string
       vk_post_id:
@@ -1850,6 +1875,60 @@ paths:
       summary: Получить команду
       tags:
       - teams
+  /v1/events/team/{id}/{teamId}/captain/{userId}:
+    patch:
+      consumes:
+      - application/json
+      description: Назначает нового капитана команды. Новый капитан должен быть участником
+        команды. Старый капитан становится рядовым участником.
+      parameters:
+      - description: Уникальный идентификатор запроса
+        in: header
+        name: X-Request-Id
+        required: true
+        type: string
+      - description: UUID командного мероприятия
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: UUID команды
+        in: path
+        name: teamId
+        required: true
+        type: string
+      - description: UUID нового капитана
+        in: path
+        name: userId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Некорректный UUID или новый капитан не является участником
+            команды
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Не авторизован
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Команда не найдена
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - VkAuth: []
+      summary: Сменить капитана
+      tags:
+      - teams
   /v1/events/team/{id}/{teamId}/notification:
     post:
       consumes:
@@ -1904,7 +1983,7 @@ paths:
       summary: Отправить уведомление команде
       tags:
       - teams
-  /v1/events/team/{id}/joinTo/{teamId}:
+  /v1/events/team/{id}/join/{teamId}:
     post:
       consumes:
       - application/json
@@ -1952,7 +2031,7 @@ paths:
       summary: Вступить в команду
       tags:
       - teams
-  /v1/events/team/{id}/leaveFrom/{teamId}:
+  /v1/events/team/{id}/leave/{teamId}:
     post:
       consumes:
       - application/json

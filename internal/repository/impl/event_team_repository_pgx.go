@@ -3,6 +3,7 @@ package impl
 import (
 	"context"
 	"ne_noy/internal/model"
+	"ne_noy/internal/model/events"
 	"ne_noy/internal/model/events/as_team"
 	"ne_noy/internal/repository"
 	"time"
@@ -41,6 +42,18 @@ func (e *eventTeamRepositoryPgx) GetEventByID(ctx context.Context, eventID uuid.
 		return nil, err
 	}
 
+	attachments, err := e.getEventAttachments(ctx, eventID)
+	if err != nil {
+		return nil, err
+	}
+	event.Attachments = attachments
+
+	roles, err := e.getEventRoles(ctx, eventID)
+	if err != nil {
+		return nil, err
+	}
+	event.AvailableRoleCodes = roles
+
 	return &event, nil
 }
 
@@ -60,6 +73,18 @@ func (e *eventTeamRepositoryPgx) CreateEvent(ctx context.Context, event *as_team
 		event.AdditionalAddress, event.VkPostID)
 	if err != nil {
 		return nil, err
+	}
+
+	if len(event.Attachments) > 0 {
+		if err = e.replaceEventAttachments(ctx, eventID, event.Attachments); err != nil {
+			return nil, err
+		}
+	}
+
+	if len(event.AvailableRoleCodes) > 0 {
+		if err = e.replaceEventRoles(ctx, eventID, event.AvailableRoleCodes); err != nil {
+			return nil, err
+		}
 	}
 
 	return e.GetEventByID(ctx, eventID)
@@ -94,6 +119,18 @@ func (e *eventTeamRepositoryPgx) UpdateEvent(ctx context.Context, eventID uuid.U
 	}
 	if commandTag.RowsAffected() == 0 {
 		return nil, pgx.ErrNoRows
+	}
+
+	if update.Attachments != nil {
+		if err := e.replaceEventAttachments(ctx, eventID, update.Attachments); err != nil {
+			return nil, err
+		}
+	}
+
+	if update.AvailableRoleCodes != nil {
+		if err := e.replaceEventRoles(ctx, eventID, update.AvailableRoleCodes); err != nil {
+			return nil, err
+		}
 	}
 
 	return e.GetEventByID(ctx, eventID)
@@ -212,6 +249,11 @@ func (e *eventTeamRepositoryPgx) CreateTeam(ctx context.Context, eventID, captai
 	return e.GetTeamByID(ctx, teamID)
 }
 
+func (e *eventTeamRepositoryPgx) DeleteTeam(ctx context.Context, eventID uuid.UUID) error {
+	_, err := e.pool.Exec(ctx, `DELETE FROM teams WHERE id = $1`, eventID)
+	return err
+}
+
 func (e *eventTeamRepositoryPgx) AddMember(ctx context.Context, teamID, userID uuid.UUID) error {
 	team, err := e.GetTeamByID(ctx, teamID)
 	if err != nil {
@@ -285,6 +327,47 @@ func (e *eventTeamRepositoryPgx) getTeamMembers(ctx context.Context, teamID uuid
 	return members, rows.Err()
 }
 
+func (e *eventTeamRepositoryPgx) UpdateCaptain(ctx context.Context, teamID, newCaptainID uuid.UUID) error {
+	team, err := e.GetTeamByID(ctx, teamID)
+	if err != nil {
+		return err
+	}
+
+	oldCaptainID := team.CaptainID
+	if oldCaptainID == newCaptainID {
+		return nil
+	}
+
+	tx, err := e.pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+
+	// Новый капитан должен быть участником команды — убираем его из team_members.
+	if _, err = tx.Exec(ctx, `
+		DELETE FROM team_members WHERE team_id = $1 AND user_id = $2
+	`, teamID, newCaptainID); err != nil {
+		return err
+	}
+
+	// Старый капитан становится рядовым участником.
+	if _, err = tx.Exec(ctx, `
+		INSERT INTO team_members (team_id, user_id) VALUES ($1, $2)
+		ON CONFLICT (team_id, user_id) DO NOTHING
+	`, teamID, oldCaptainID); err != nil {
+		return err
+	}
+
+	if _, err = tx.Exec(ctx, `
+		UPDATE teams SET captain_id = $2, updated_at = now() WHERE id = $1
+	`, teamID, newCaptainID); err != nil {
+		return err
+	}
+
+	return tx.Commit(ctx)
+}
+
 func (e *eventTeamRepositoryPgx) SetEventOrganizers(ctx context.Context, eventID uuid.UUID, userIDs []uuid.UUID) error {
 	tx, err := e.pool.Begin(ctx)
 	if err != nil {
@@ -330,6 +413,123 @@ func (e *eventTeamRepositoryPgx) GetEventOrganizers(ctx context.Context, eventID
 		users = append(users, u)
 	}
 	return users, rows.Err()
+}
+
+func (e *eventTeamRepositoryPgx) getEventAttachments(ctx context.Context, eventID uuid.UUID) ([]events.EventAttachment, error) {
+	rows, err := e.pool.Query(ctx, `
+		SELECT ea.attachment_id, a.url, a.filename
+		FROM event_attachments ea
+		JOIN attachments a ON a.id = ea.attachment_id
+		WHERE ea.event_id = $1 AND ea.event_type = $2::event_type_enum
+		ORDER BY ea.created_at ASC
+	`, eventID, events.EventAsTeam)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	result := make([]events.EventAttachment, 0)
+	for rows.Next() {
+		var ea events.EventAttachment
+		ea.EventID = eventID
+		ea.EventType = events.EventAsTeam
+		ea.Attachment = &model.Attachment{}
+		if err := rows.Scan(&ea.AttachmentID, &ea.Attachment.Url, &ea.Attachment.Filename); err != nil {
+			return nil, err
+		}
+		if ea.AttachmentID != nil {
+			ea.Attachment.ID = *ea.AttachmentID
+		}
+		result = append(result, ea)
+	}
+	return result, rows.Err()
+}
+
+func (e *eventTeamRepositoryPgx) replaceEventAttachments(ctx context.Context, eventID uuid.UUID, attachments []events.EventAttachment) error {
+	_, err := e.pool.Exec(ctx, `
+		DELETE FROM event_attachments WHERE event_id = $1 AND event_type = $2::event_type_enum
+	`, eventID, events.EventAsTeam)
+	if err != nil {
+		return err
+	}
+	for _, a := range attachments {
+		if a.Attachment == nil {
+			continue
+		}
+		var attachmentID int64
+		if a.AttachmentID != nil && *a.AttachmentID != 0 {
+			_, err = e.pool.Exec(ctx, `
+				INSERT INTO attachments (id, url, filename)
+				VALUES ($1, $2, $3)
+				ON CONFLICT (id) DO NOTHING
+			`, *a.AttachmentID, a.Attachment.Url, a.Attachment.Filename)
+			if err != nil {
+				return err
+			}
+			attachmentID = *a.AttachmentID
+		} else {
+			err = e.pool.QueryRow(ctx, `
+				INSERT INTO attachments (url, filename)
+				VALUES ($1, $2)
+				RETURNING id
+			`, a.Attachment.Url, a.Attachment.Filename).Scan(&attachmentID)
+			if err != nil {
+				return err
+			}
+		}
+		_, err = e.pool.Exec(ctx, `
+			INSERT INTO event_attachments (event_id, event_type, attachment_id)
+			VALUES ($1, $2::event_type_enum, $3)
+		`, eventID, events.EventAsTeam, attachmentID)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (e *eventTeamRepositoryPgx) replaceEventRoles(ctx context.Context, eventID uuid.UUID, roleCodes []string) error {
+	_, err := e.pool.Exec(ctx, `
+		DELETE FROM event_roles WHERE event_id = $1 AND event_type = 'team'::event_type_enum
+	`, eventID)
+	if err != nil {
+		return err
+	}
+	if len(roleCodes) == 0 {
+		return nil
+	}
+	_, err = e.pool.Exec(ctx, `
+		INSERT INTO event_roles (event_id, event_type, role_id)
+		SELECT $1, 'team'::event_type_enum, r.id
+		FROM roles r
+		WHERE r.name = ANY($2)
+		ON CONFLICT DO NOTHING
+	`, eventID, roleCodes)
+	return err
+}
+
+func (e *eventTeamRepositoryPgx) getEventRoles(ctx context.Context, eventID uuid.UUID) ([]string, error) {
+	rows, err := e.pool.Query(ctx, `
+		SELECT r.name
+		FROM event_roles er
+		JOIN roles r ON r.id = er.role_id
+		WHERE er.event_id = $1 AND er.event_type = 'team'::event_type_enum
+		ORDER BY r.name ASC
+	`, eventID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	codes := make([]string, 0)
+	for rows.Next() {
+		var code string
+		if err := rows.Scan(&code); err != nil {
+			return nil, err
+		}
+		codes = append(codes, code)
+	}
+	return codes, rows.Err()
 }
 
 func scanTeamWithCaptain(row pgx.Row) (*as_team.Team, int64, error) {

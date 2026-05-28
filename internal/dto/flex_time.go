@@ -1,6 +1,7 @@
 package dto
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -21,10 +22,23 @@ var flexTimeFormats = []string{
 }
 
 func (ft *FlexTime) UnmarshalJSON(b []byte) error {
-	s := strings.Trim(string(b), `"`)
-	if s == "null" {
+	raw := strings.TrimSpace(string(b))
+	if raw == "null" {
 		return nil
 	}
+	// Accept {"time.Time": "..."} produced by naive struct serialization of embedded time.Time.
+	if len(raw) > 0 && raw[0] == '{' {
+		var wrapper map[string]string
+		if err := json.Unmarshal(b, &wrapper); err == nil {
+			for _, key := range []string{"time.Time", "Time", "value"} {
+				if v, ok := wrapper[key]; ok {
+					raw = v
+					break
+				}
+			}
+		}
+	}
+	s := strings.Trim(raw, `"`)
 	for _, layout := range flexTimeFormats {
 		t, err := time.Parse(layout, s)
 		if err == nil {
@@ -32,7 +46,11 @@ func (ft *FlexTime) UnmarshalJSON(b []byte) error {
 			return nil
 		}
 	}
-	return fmt.Errorf("cannot parse %q as time", s)
+	return fmt.Errorf("cannot parse %q as time", raw)
+}
+
+func (ft FlexTime) MarshalJSON() ([]byte, error) {
+	return ft.Time.MarshalJSON()
 }
 
 // ToTimePtr returns nil when the receiver is nil, otherwise a pointer to the wrapped time.Time.

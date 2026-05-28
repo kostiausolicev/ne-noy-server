@@ -178,7 +178,7 @@ func (t *teamController) CreateTeam(c *gin.Context) {
 //	@Failure		401	{object}	dto.ErrorResponse	"Не авторизован"
 //	@Failure		404	{object}	dto.ErrorResponse	"Команда или пользователь не найдены"
 //	@Failure		500	{object}	dto.ErrorResponse
-//	@Router			/v1/events/team/{id}/joinTo/{teamId} [post]
+//	@Router			/v1/events/team/{id}/join/{teamId} [post]
 //	@Security		VkAuth
 func (t *teamController) JoinTeam(c *gin.Context) {
 	if _, err := controller.ParseUUID(c, controller.ParamID); err != nil {
@@ -220,7 +220,7 @@ func (t *teamController) JoinTeam(c *gin.Context) {
 //	@Failure		401	{object}	dto.ErrorResponse	"Не авторизован"
 //	@Failure		404	{object}	dto.ErrorResponse	"Команда или пользователь не найдены"
 //	@Failure		500	{object}	dto.ErrorResponse
-//	@Router			/v1/events/team/{id}/leaveFrom/{teamId} [post]
+//	@Router			/v1/events/team/{id}/leave/{teamId} [post]
 //	@Security		VkAuth
 func (t *teamController) LeaveTeam(c *gin.Context) {
 	if _, err := controller.ParseUUID(c, controller.ParamID); err != nil {
@@ -448,6 +448,49 @@ func (t *teamController) SendNotificationToTeam(c *gin.Context) {
 	c.Status(http.StatusOK)
 }
 
+// ChangeCaptain godoc
+//
+//	@Summary		Сменить капитана
+//	@Description	Назначает нового капитана команды. Новый капитан должен быть участником команды. Старый капитан становится рядовым участником.
+//	@Tags			teams
+//	@Accept			json
+//	@Produce		json
+//	@Param			X-Request-Id	header	string	true	"Уникальный идентификатор запроса"
+//	@Param			id				path	string	true	"UUID командного мероприятия"
+//	@Param			teamId			path	string	true	"UUID команды"
+//	@Param			userId			path	string	true	"UUID нового капитана"
+//	@Success		200
+//	@Failure		400	{object}	dto.ErrorResponse	"Некорректный UUID или новый капитан не является участником команды"
+//	@Failure		401	{object}	dto.ErrorResponse	"Не авторизован"
+//	@Failure		404	{object}	dto.ErrorResponse	"Команда не найдена"
+//	@Failure		500	{object}	dto.ErrorResponse
+//	@Router			/v1/events/team/{id}/{teamId}/captain/{userId} [patch]
+//	@Security		VkAuth
+func (t *teamController) ChangeCaptain(c *gin.Context) {
+	if _, err := controller.ParseUUID(c, controller.ParamID); err != nil {
+		c.Error(err)
+		return
+	}
+
+	teamID, err := controller.ParseUUID(c, controller.ParamTeamID)
+	if err != nil {
+		c.Error(err)
+		return
+	}
+
+	newCaptainID, err := controller.ParseUUID(c, controller.ParamUserID)
+	if err != nil {
+		c.Error(err)
+		return
+	}
+
+	if err = t.teamService.ChangeCaptain(c.Request.Context(), teamID, newCaptainID); err != nil {
+		c.Error(err)
+		return
+	}
+	c.Status(http.StatusOK)
+}
+
 func (t *teamController) currentUserID(c *gin.Context) (uuid.UUID, error) {
 	vkID, err := controller.GetCtxInt64(c, config.UserVkIdContextKey)
 	if err != nil {
@@ -488,6 +531,7 @@ func ConfigureTeamEventController(
 	r.GET(routeGetTeams, controller.GetTeamsByEvent)
 	r.GET(routeTeamByID, controller.GetTeam)
 	r.POST(routeTeamNotification, controller.SendNotificationToTeam)
+	r.PATCH(routeTeamChangeCaptain, controller.ChangeCaptain)
 
 	r.GET(routeTeamEventsID, controller.GetTeamEventByID)
 	r.POST(routeTeamEventFull, controller.CreateTeamEventFull)

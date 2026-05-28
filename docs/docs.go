@@ -1444,7 +1444,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/v1/events/team/{id}/joinTo/{teamId}": {
+        "/v1/events/team/{id}/join/{teamId}": {
             "post": {
                 "security": [
                     {
@@ -1516,7 +1516,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/v1/events/team/{id}/leaveFrom/{teamId}": {
+        "/v1/events/team/{id}/leave/{teamId}": {
             "post": {
                 "security": [
                     {
@@ -1709,6 +1709,85 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Некорректный UUID",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Не авторизован",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Команда не найдена",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/events/team/{id}/{teamId}/captain/{userId}": {
+            "patch": {
+                "security": [
+                    {
+                        "VkAuth": []
+                    }
+                ],
+                "description": "Назначает нового капитана команды. Новый капитан должен быть участником команды. Старый капитан становится рядовым участником.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "teams"
+                ],
+                "summary": "Сменить капитана",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Уникальный идентификатор запроса",
+                        "name": "X-Request-Id",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "UUID командного мероприятия",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "UUID команды",
+                        "name": "teamId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "UUID нового капитана",
+                        "name": "userId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "400": {
+                        "description": "Некорректный UUID или новый капитан не является участником команды",
                         "schema": {
                             "$ref": "#/definitions/dto.ErrorResponse"
                         }
@@ -3715,6 +3794,14 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.FlexTime": {
+            "type": "object",
+            "properties": {
+                "time.Time": {
+                    "type": "string"
+                }
+            }
+        },
         "dto.GetManyRequest": {
             "type": "object",
             "properties": {
@@ -4019,7 +4106,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "endsAt": {
-                    "type": "string"
+                    "$ref": "#/definitions/dto.FlexTime"
                 },
                 "lat": {
                     "type": "number"
@@ -4037,7 +4124,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "startsAt": {
-                    "type": "string"
+                    "$ref": "#/definitions/dto.FlexTime"
                 },
                 "status": {
                     "type": "string"
@@ -4139,6 +4226,12 @@ const docTemplate = `{
                 "attachments": {
                     "type": "array",
                     "items": {
+                        "$ref": "#/definitions/dto.AttachmentDto"
+                    }
+                },
+                "available_roles": {
+                    "type": "array",
+                    "items": {
                         "type": "string"
                     }
                 },
@@ -4149,7 +4242,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "ends_at": {
-                    "type": "string"
+                    "$ref": "#/definitions/dto.FlexTime"
                 },
                 "lat": {
                     "type": "number"
@@ -4167,7 +4260,7 @@ const docTemplate = `{
                     }
                 },
                 "starts_at": {
-                    "type": "string"
+                    "$ref": "#/definitions/dto.FlexTime"
                 },
                 "status": {
                     "type": "string"
@@ -4235,6 +4328,18 @@ const docTemplate = `{
                 "address": {
                     "type": "string"
                 },
+                "attachments": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.AttachmentDto"
+                    }
+                },
+                "available_roles": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "cover": {
                     "type": "string"
                 },
@@ -4291,6 +4396,18 @@ const docTemplate = `{
                 "address": {
                     "type": "string"
                 },
+                "attachments": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.AttachmentDto"
+                    }
+                },
+                "available_roles": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "cover": {
                     "type": "string"
                 },
@@ -4298,7 +4415,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "ends_at": {
-                    "type": "string"
+                    "$ref": "#/definitions/dto.FlexTime"
                 },
                 "lat": {
                     "type": "number"
@@ -4310,7 +4427,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "starts_at": {
-                    "type": "string"
+                    "$ref": "#/definitions/dto.FlexTime"
                 },
                 "status": {
                     "type": "string"
@@ -4390,7 +4507,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "ends_at": {
-                    "type": "string"
+                    "$ref": "#/definitions/dto.FlexTime"
                 },
                 "ext_link_id": {
                     "type": "string"
@@ -4399,7 +4516,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "starts_at": {
-                    "type": "string"
+                    "$ref": "#/definitions/dto.FlexTime"
                 },
                 "status": {
                     "type": "string"
@@ -4542,7 +4659,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "ends_at": {
-                    "type": "string"
+                    "$ref": "#/definitions/dto.FlexTime"
                 },
                 "ext_link_id": {
                     "type": "string"
@@ -4551,7 +4668,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "starts_at": {
-                    "type": "string"
+                    "$ref": "#/definitions/dto.FlexTime"
                 },
                 "status": {
                     "type": "string"

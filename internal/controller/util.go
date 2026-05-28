@@ -11,6 +11,7 @@ import (
 const (
 	ParamID         = "id"
 	ParamTeamID     = "teamId"
+	ParamUserID     = "userId"
 	ParamQuestionID = "qId"
 	ParamPermission = "permission"
 	ParamRoleID     = "roleId"

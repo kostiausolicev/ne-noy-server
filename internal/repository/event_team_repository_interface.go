@@ -30,11 +30,17 @@ type EventTeamRepository interface {
 	// CreateTeam создает команду в мероприятии и назначает капитана.
 	CreateTeam(ctx context.Context, eventID, captainID uuid.UUID, name string) (*as_team.Team, error)
 
+	// DeleteTeam удаляет команду в мероприятии
+	DeleteTeam(ctx context.Context, eventID uuid.UUID) error
+
 	// AddMember добавляет пользователя в команду.
 	AddMember(ctx context.Context, teamID, userID uuid.UUID) error
 
 	// RemoveMember удаляет пользователя из команды.
 	RemoveMember(ctx context.Context, teamID, userID uuid.UUID) error
+
+	// UpdateCaptain назначает нового капитана команды; старый капитан становится рядовым участником.
+	UpdateCaptain(ctx context.Context, teamID, newCaptainID uuid.UUID) error
 
 	// SetEventOrganizers заменяет список организаторов командного мероприятия.
 	SetEventOrganizers(ctx context.Context, eventID uuid.UUID, userIDs []uuid.UUID) error

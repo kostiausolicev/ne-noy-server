@@ -42,10 +42,43 @@ type EventTeamService interface {
 	LeaveTeam(ctx context.Context, teamId, userId uuid.UUID) error
 	// SendNotificationToTeam отправки уведомлений для команды
 	SendNotificationToTeam(ctx context.Context, teamId uuid.UUID, message string) error
+	// ChangeCaptain назначает нового капитана команды; новый капитан должен быть участником команды
+	ChangeCaptain(ctx context.Context, teamId, newCaptainId uuid.UUID) error
 }
 
 func NewEventTeamService(repo repository.EventTeamRepository, cl vkClient.VkApiClient) EventTeamService {
 	return &eventTeamService{repo: repo, cl: cl}
+}
+
+func attachmentDtosToModels(dtos []dto.AttachmentDto) []events.EventAttachment {
+	result := make([]events.EventAttachment, 0, len(dtos))
+	for _, d := range dtos {
+		id := d.ID
+		result = append(result, events.EventAttachment{
+			AttachmentID: &id,
+			Attachment: &model.Attachment{
+				ID:       d.ID,
+				Url:      d.Url,
+				Filename: d.Title,
+			},
+		})
+	}
+	return result
+}
+
+func attachmentsToDto(attachments []events.EventAttachment) []dto.AttachmentDto {
+	result := make([]dto.AttachmentDto, 0, len(attachments))
+	for _, a := range attachments {
+		if a.Attachment == nil || a.AttachmentID == nil {
+			continue
+		}
+		result = append(result, dto.AttachmentDto{
+			ID:    a.Attachment.ID,
+			Url:   a.Attachment.Url,
+			Title: a.Attachment.Filename,
+		})
+	}
+	return result
 }
 
 func (e *eventTeamService) GetTeamEvent(ctx context.Context, eventId uuid.UUID) (team_dto.TeamEventDto, error) {
@@ -73,7 +106,7 @@ func (e *eventTeamService) CreateTeamEvent(ctx context.Context, event team_dto.C
 	if event.StartsAt.IsZero() {
 		return team_dto.TeamEventDto{}, errors.New("team event starts_at is required")
 	}
-	if event.TeamsConstraint <= 0 {
+	if event.TeamsConstraint < 0 {
 		return team_dto.TeamEventDto{}, errors.New("teams constraint must be positive")
 	}
 
@@ -85,6 +118,10 @@ func (e *eventTeamService) CreateTeamEvent(ctx context.Context, event team_dto.C
 			Status:      event.Status,
 			StartsAt:    event.StartsAt.Time,
 			EndsAt:      event.EndsAt.ToTimePtr(),
+		},
+		EventRelations: events.EventRelations{
+			Attachments:        attachmentDtosToModels(event.Attachments),
+			AvailableRoleCodes: event.AvailableRoles,
 		},
 		TeamsConstraint:   event.TeamsConstraint,
 		TeamsCapMin:       event.TeamsCapMin,
@@ -141,6 +178,10 @@ func (e *eventTeamService) UpdateTeamEvent(ctx context.Context, eventId uuid.UUI
 	update.Address = event.Address
 	update.AdditionalAddress = event.AdditionalAddress
 	update.VkPostID = event.VkPostID
+	if event.Attachments != nil {
+		update.Attachments = attachmentDtosToModels(*event.Attachments)
+	}
+	update.AvailableRoleCodes = event.AvailableRoles
 
 	updated, err := e.repo.UpdateEvent(ctx, eventId, update)
 	if err != nil {
@@ -241,8 +282,15 @@ func (e *eventTeamService) LeaveTeam(ctx context.Context, teamId, userId uuid.UU
 	if err != nil {
 		return err
 	}
-	if team.CaptainID == userId {
+	if team.CaptainID == userId && len(team.Members) > 1 {
 		return errors.New("captain cannot leave team")
+	}
+	if team.CaptainID == userId && len(team.Members) == 0 {
+		err := e.repo.DeleteTeam(ctx, teamId)
+		if err != nil {
+			return err
+		}
+		return nil
 	}
 
 	return e.repo.RemoveMember(ctx, teamId, userId)
@@ -263,6 +311,31 @@ func (e *eventTeamService) SendNotificationToTeam(ctx context.Context, teamId uu
 	// Фрагмент оставляем пустым: сервис команд сейчас отправляет только текстовое уведомление конкретному составу.
 	_, err = e.cl.SendNotification(userIDs, message, "")
 	return err
+}
+
+func (e *eventTeamService) ChangeCaptain(ctx context.Context, teamId, newCaptainId uuid.UUID) error {
+	team, err := e.repo.GetTeamByID(ctx, teamId)
+	if err != nil {
+		return err
+	}
+
+	if team.CaptainID == newCaptainId {
+		return nil
+	}
+
+	isMember := false
+	for _, m := range team.Members {
+		if m.UserID == newCaptainId {
+			isMember = true
+			break
+		}
+	}
+	if !isMember {
+		return errors.New("new captain must be a member of the team")
+	}
+
+	// TODO отправить уведомление капитану
+	return e.repo.UpdateCaptain(ctx, teamId, newCaptainId)
 }
 
 func (e *eventTeamService) teamToDto(team as_team.Team) team_dto.TeamDto {
@@ -294,6 +367,11 @@ func teamEventToDto(event as_team.AsTeam) team_dto.TeamEventDto {
 		orgs = append(orgs, userToMiniDto(org))
 	}
 
+	roles := event.AvailableRoleCodes
+	if roles == nil {
+		roles = []string{}
+	}
+
 	return team_dto.TeamEventDto{
 		ID:                event.ID,
 		Name:              event.Name,
@@ -310,7 +388,9 @@ func teamEventToDto(event as_team.AsTeam) team_dto.TeamEventDto {
 		Address:           event.Address,
 		AdditionalAddress: event.AdditionalAddress,
 		VkPostID:          event.VkPostID,
+		AvailableRoles:    roles,
 		Organizers:        orgs,
+		Attachments:       attachmentsToDto(event.Attachments),
 	}
 }
 

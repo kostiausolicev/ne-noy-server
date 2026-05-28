@@ -243,6 +243,7 @@ func (f *fakeEventTeamRepo) CreateEvent(_ context.Context, event *as_team.AsTeam
 		StartsAt:    event.StartsAt,
 		EndsAt:      event.EndsAt,
 	}
+	created.Attachments = event.Attachments
 	f.events[eventID] = &created
 	return &created, nil
 }
@@ -293,6 +294,9 @@ func (f *fakeEventTeamRepo) UpdateEvent(_ context.Context, eventID uuid.UUID, up
 	}
 	if update.VkPostID != nil {
 		event.VkPostID = update.VkPostID
+	}
+	if update.Attachments != nil {
+		event.Attachments = update.Attachments
 	}
 	return event, nil
 }
