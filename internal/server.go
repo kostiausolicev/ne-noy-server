@@ -42,11 +42,12 @@ func New(db *pgxpool.Pool, config config.Config) *Server {
 		log.Printf("attachment grpc client: %v", err)
 	}
 
+	notificationService := service.NewNotificationService(db, vkCl)
 	userService := service.NewUserService(userRepo, roleRepo, vkCl)
 	eventService := event2.NewEventService(eventRepo, userService, roleRepo)
 	eventAsEventService := event_as_event.NewEventAsEventService(eventAsEventRepo)
 	eventParticipantService := event_as_event.NewEventParticipantService(eventParticipantRepository, eventAsEventRepo, config.Distance)
-	eventTeamService := event_as_team.NewEventTeamService(eventTeamRepo, vkCl)
+	eventTeamService := event_as_team.NewEventTeamService(eventTeamRepo, notificationService)
 	eventTestService := event_as_test.NewEventTestService(eventTestRepo)
 	// сервис для обработки callback'ов VK (добавление в очередь и т.п.)
 	vkCallbackService := service.NewVkCallbackService(eventQueueRepository, eventAsEventRepo, eventParticipantService)

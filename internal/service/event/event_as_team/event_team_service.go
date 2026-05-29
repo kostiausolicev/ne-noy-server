@@ -4,21 +4,20 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	vkClient "ne_noy/internal/client"
 	"ne_noy/internal/dto"
 	"ne_noy/internal/dto/team_dto"
 	"ne_noy/internal/model"
 	"ne_noy/internal/model/events"
 	"ne_noy/internal/model/events/as_team"
 	"ne_noy/internal/repository"
-	"strconv"
+	"ne_noy/internal/service"
 
 	"github.com/google/uuid"
 )
 
 type eventTeamService struct {
-	repo repository.EventTeamRepository
-	cl   vkClient.VkApiClient
+	repo         repository.EventTeamRepository
+	notification service.NotificationService
 }
 
 type EventTeamService interface {
@@ -46,8 +45,8 @@ type EventTeamService interface {
 	ChangeCaptain(ctx context.Context, teamId, newCaptainId uuid.UUID) error
 }
 
-func NewEventTeamService(repo repository.EventTeamRepository, cl vkClient.VkApiClient) EventTeamService {
-	return &eventTeamService{repo: repo, cl: cl}
+func NewEventTeamService(repo repository.EventTeamRepository, notificationService service.NotificationService) EventTeamService {
+	return &eventTeamService{repo: repo, notification: notificationService}
 }
 
 func attachmentDtosToModels(dtos []dto.AttachmentDto) []events.EventAttachment {
@@ -274,7 +273,19 @@ func (e *eventTeamService) JoinTeam(ctx context.Context, teamId, userId uuid.UUI
 		return fmt.Errorf("team capacity reached")
 	}
 
-	return e.repo.AddMember(ctx, teamId, userId)
+	err = e.repo.AddMember(ctx, teamId, userId)
+	if err != nil {
+		return err
+	}
+	err = e.notification.SendNotificationForUser(
+		ctx, team.CaptainID,
+		"",
+		fmt.Sprintf("%s: Участник присоединился к команде", team.TeamName),
+		"")
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (e *eventTeamService) LeaveTeam(ctx context.Context, teamId, userId uuid.UUID) error {
@@ -293,7 +304,19 @@ func (e *eventTeamService) LeaveTeam(ctx context.Context, teamId, userId uuid.UU
 		return nil
 	}
 
-	return e.repo.RemoveMember(ctx, teamId, userId)
+	err = e.repo.RemoveMember(ctx, teamId, userId)
+	if err != nil {
+		return err
+	}
+	err = e.notification.SendNotificationForUser(
+		ctx, team.CaptainID,
+		"",
+		fmt.Sprintf("%s: Участник вышел из команды", team.TeamName),
+		"")
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (e *eventTeamService) SendNotificationToTeam(ctx context.Context, teamId uuid.UUID, message string) error {
@@ -302,14 +325,22 @@ func (e *eventTeamService) SendNotificationToTeam(ctx context.Context, teamId uu
 		return err
 	}
 
-	userIDs := make([]string, 0, e.totalMembers(*team))
-	userIDs = append(userIDs, strconv.FormatInt(team.Captain.VkID, 10))
+	userIDs := make([]uuid.UUID, 0, e.totalMembers(*team)+1)
+	userIDs = append(userIDs, team.Captain.ID)
 	for _, member := range team.Members {
-		userIDs = append(userIDs, strconv.FormatInt(member.User.VkID, 10))
+		userIDs = append(userIDs, member.User.ID)
 	}
 
-	// Фрагмент оставляем пустым: сервис команд сейчас отправляет только текстовое уведомление конкретному составу.
-	_, err = e.cl.SendNotification(userIDs, message, "")
+	err = e.notification.SendNotificationForUsers(
+		ctx,
+		userIDs,
+		"",
+		message,
+		"")
+	if err != nil {
+		return err
+	}
+
 	return err
 }
 
@@ -334,7 +365,14 @@ func (e *eventTeamService) ChangeCaptain(ctx context.Context, teamId, newCaptain
 		return errors.New("new captain must be a member of the team")
 	}
 
-	// TODO отправить уведомление капитану
+	err = e.notification.SendNotificationForUser(
+		ctx, newCaptainId,
+		"",
+		fmt.Sprintf("%s: Участник присоединился по ссылке", team.TeamName),
+		"")
+	if err != nil {
+		return err
+	}
 	return e.repo.UpdateCaptain(ctx, teamId, newCaptainId)
 }
 

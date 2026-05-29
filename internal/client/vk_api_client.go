@@ -1,13 +1,13 @@
 package client
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"ne_noy/internal/dto"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -16,7 +16,7 @@ import (
 
 type VkApiClient interface {
 	GetVkUsers(userIds []string) ([]dto.CreateUserDto, error)
-	SendNotification(userIds []string, messageText, fragment string) (dto.SendMessageResponse, error)
+	SendNotificationForUsers(userIds []int64, messageText, fragment string) (dto.SendMessageResponse, error)
 	CreateChat(ctx context.Context, name string, userIds []uuid.UUID) (int64, error)
 	AddUserToChat(ctx context.Context, token string, chatId, userVkId int64) error
 }
@@ -67,29 +67,23 @@ func (v vkApiClient) GetVkUsers(userIds []string) ([]dto.CreateUserDto, error) {
 	return users, nil
 }
 
-func (v vkApiClient) SendNotification(userIds []string, messageText, fragment string) (dto.SendMessageResponse, error) {
-	dtoJson, _ := json.Marshal(dto.SendMessageDto{
-		AccessToken: v.serviceKey,
-		UserIds:     mapUsers(userIds),
-		Message:     messageText,
-		Fragment:    &fragment,
-	})
+func (v vkApiClient) SendNotificationForUsers(userIds []int64, messageText, fragment string) (dto.SendMessageResponse, error) {
+	formData := url.Values{}
+	formData.Set("access_token", v.serviceKey)
+	formData.Set("user_ids", mapUsers(userIds))
+	formData.Set("message", messageText)
+	formData.Set("fragment", fragment)
+	formData.Set("v", "5.199")
 
-	reader := bytes.NewReader(dtoJson)
-	client := http.Client{Timeout: time.Duration(10) * time.Second}
-	res, err := client.Post(v.baseUrl+"/notifications.sendMessage", "application/json", reader)
+	client := http.Client{Timeout: 10 * time.Second}
+	res, err := client.PostForm(v.baseUrl+"/notifications.sendMessage", formData)
 	if err != nil {
 		return dto.SendMessageResponse{}, err
 	}
 	defer res.Body.Close()
+
 	var response dto.SendMessageResponse
-	var b []byte
-	_, err = res.Body.Read(b)
-	if err != nil {
-		return dto.SendMessageResponse{}, err
-	}
-	err = json.Unmarshal(b, &response)
-	if err != nil {
+	if err = json.NewDecoder(res.Body).Decode(&response); err != nil {
 		return dto.SendMessageResponse{}, err
 	}
 	return response, nil
@@ -103,10 +97,10 @@ func (v vkApiClient) AddUserToChat(ctx context.Context, token string, chatId, us
 	return nil
 }
 
-func mapUsers(userIds []string) string {
+func mapUsers(userIds []int64) string {
 	result := strings.Builder{}
 	for i, userId := range userIds {
-		result.WriteString(userId)
+		result.WriteString(strconv.FormatInt(userId, 10))
 		if i != len(userIds)-1 {
 			result.WriteString(",")
 		}

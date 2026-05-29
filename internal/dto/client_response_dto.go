@@ -6,8 +6,8 @@ type SendMessageError struct {
 }
 
 type UserSendMessageStatus struct {
-	UserId string            `json:"user_id"`
-	Status string            `json:"status"`
+	UserId int64             `json:"user_id"`
+	Status bool              `json:"status"`
 	Error  *SendMessageError `json:"error"`
 }
 
