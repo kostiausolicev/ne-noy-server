@@ -151,6 +151,13 @@ func (c *testController) SetAnswer(ctx *gin.Context) {
 		return
 	}
 
+	userID, err := c.currentUserID(ctx)
+	if err != nil {
+		ctx.Error(err)
+		return
+	}
+	setAnswerDto.UserID = userID
+
 	// Проверяем принадлежность вопроса тесту из URL, чтобы нельзя было ответить на чужой вопрос через другой testID.
 	if _, err = c.testService.GetQuestion(ctx.Request.Context(), testID, questionID); err != nil {
 		ctx.Error(err)
@@ -158,6 +165,61 @@ func (c *testController) SetAnswer(ctx *gin.Context) {
 	}
 
 	answer, err := c.testService.SetAnswer(ctx.Request.Context(), questionID, setAnswerDto)
+	if err != nil {
+		ctx.Error(err)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, answer)
+}
+
+// UpdateAnswer godoc
+//
+//	@Summary	Обновить ответ пользователя на вопрос
+//	@Tags		tests
+//	@Accept		json
+//	@Produce	json
+//	@Param		X-Request-Id	header		string						true	"Уникальный идентификатор запроса"
+//	@Param		id				path		string						true	"UUID теста"
+//	@Param		qId				path		string						true	"UUID вопроса"
+//	@Param		request			body		test_dto.UpdateAnswerDto	true	"Новые данные ответа"
+//	@Success	200				{object}	test_dto.UserAnswerDto
+//	@Failure	400				{object}	dto.ErrorResponse	"Некорректные данные"
+//	@Failure	401				{object}	dto.ErrorResponse
+//	@Failure	404				{object}	dto.ErrorResponse	"Ответ не найден"
+//	@Failure	500				{object}	dto.ErrorResponse
+//	@Router		/v1/events/test/{id}/q/{qId} [patch]
+//	@Security	VkAuth
+func (c *testController) UpdateAnswer(ctx *gin.Context) {
+	testID, err := controller.ParseUUID(ctx, controller.ParamID)
+	if err != nil {
+		ctx.Error(err)
+		return
+	}
+	questionID, err := controller.ParseUUID(ctx, controller.ParamQuestionID)
+	if err != nil {
+		ctx.Error(err)
+		return
+	}
+
+	updateDto, ok := controller.BindJSON[test_dto.UpdateAnswerDto](ctx)
+	if !ok {
+		return
+	}
+
+	userID, err := c.currentUserID(ctx)
+	if err != nil {
+		ctx.Error(err)
+		return
+	}
+	updateDto.UserID = userID
+
+	if _, err = c.testService.GetQuestion(ctx.Request.Context(), testID, questionID); err != nil {
+		ctx.Error(err)
+		return
+	}
+
+	answer, err := c.testService.UpdateAnswer(ctx.Request.Context(), questionID, updateDto)
 	if err != nil {
 		ctx.Error(err)
 		return
@@ -195,6 +257,49 @@ func (c *testController) AddQuestion(ctx *gin.Context) {
 	}
 
 	question, err := c.testService.AddQuestion(ctx.Request.Context(), testID, addQuestionDto)
+	if err != nil {
+		ctx.Error(err)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, question)
+}
+
+// UpdateQuestion godoc
+//
+//	@Summary	Обновить данные вопроса
+//	@Tags		tests
+//	@Accept		json
+//	@Produce	json
+//	@Param		X-Request-Id	header		string					true	"Уникальный идентификатор запроса"
+//	@Param		id				path		string					true	"UUID теста"
+//	@Param		qId				path		string					true	"UUID вопроса"
+//	@Param		request			body		test_dto.AddQuestionDto	true	"Новые данные вопроса"
+//	@Success	200				{object}	test_dto.QuestionDto
+//	@Failure	400				{object}	dto.ErrorResponse	"Некорректные данные"
+//	@Failure	401				{object}	dto.ErrorResponse
+//	@Failure	404				{object}	dto.ErrorResponse	"Вопрос не найден"
+//	@Failure	500				{object}	dto.ErrorResponse
+//	@Router		/v1/events/test/{id}/q/{qId}/info [patch]
+//	@Security	VkAuth
+func (c *testController) UpdateQuestion(ctx *gin.Context) {
+	testID, err := controller.ParseUUID(ctx, controller.ParamID)
+	if err != nil {
+		ctx.Error(err)
+		return
+	}
+	questionID, err := controller.ParseUUID(ctx, controller.ParamQuestionID)
+	if err != nil {
+		ctx.Error(err)
+		return
+	}
+
+	updateDto, ok := controller.BindJSON[test_dto.AddQuestionDto](ctx)
+	if !ok {
+		return
+	}
+
+	question, err := c.testService.UpdateQuestion(ctx.Request.Context(), testID, questionID, updateDto)
 	if err != nil {
 		ctx.Error(err)
 		return
@@ -327,6 +432,7 @@ func (c *testController) DeleteTest(ctx *gin.Context) {
 //	@Produce	json
 //	@Param		X-Request-Id	header		string	true	"Уникальный идентификатор запроса"
 //	@Param		eventId			path		string	true	"UUID мероприятия-теста"
+//	@Param		attemptId		query		string	false	"UUID попытки (фильтр по конкретной попытке)"
 //	@Success	200				{array}		test_dto.MyTestResultDto
 //	@Failure	400				{object}	dto.ErrorResponse	"Некорректный UUID"
 //	@Failure	401				{object}	dto.ErrorResponse
@@ -335,7 +441,7 @@ func (c *testController) DeleteTest(ctx *gin.Context) {
 //	@Router		/v1/events/{eventId}/test/my-results [get]
 //	@Security	VkAuth
 func (c *testController) GetMyTestResults(ctx *gin.Context) {
-	eventID, err := controller.ParseUUID(ctx, controller.ParamEventID)
+	eventID, err := controller.ParseUUID(ctx, controller.ParamID)
 	if err != nil {
 		ctx.Error(err)
 		return
@@ -347,13 +453,95 @@ func (c *testController) GetMyTestResults(ctx *gin.Context) {
 		return
 	}
 
-	results, err := c.testService.GetMyTestResults(ctx.Request.Context(), eventID, userID)
+	var attemptID *uuid.UUID
+	if raw := ctx.Query("attemptId"); raw != "" {
+		parsed, parseErr := uuid.Parse(raw)
+		if parseErr != nil {
+			ctx.Error(controller.ParseError)
+			return
+		}
+		attemptID = &parsed
+	}
+
+	results, err := c.testService.GetMyTestResults(ctx.Request.Context(), eventID, userID, attemptID)
 	if err != nil {
 		ctx.Error(err)
 		return
 	}
 
 	ctx.JSON(http.StatusOK, results)
+}
+
+// CreateAttempt godoc
+//
+//	@Summary	Начать новую попытку прохождения теста
+//	@Tags		tests
+//	@Accept		json
+//	@Produce	json
+//	@Param		X-Request-Id	header		string	true	"Уникальный идентификатор запроса"
+//	@Param		eventId			path		string	true	"UUID мероприятия-теста"
+//	@Success	200				{object}	test_dto.UserAttemptCreatedDto
+//	@Failure	400				{object}	dto.ErrorResponse	"Некорректный UUID"
+//	@Failure	401				{object}	dto.ErrorResponse
+//	@Failure	500				{object}	dto.ErrorResponse
+//	@Router		/v1/events/{eventId}/test/attempts [post]
+//	@Security	VkAuth
+func (c *testController) CreateAttempt(ctx *gin.Context) {
+	eventID, err := controller.ParseUUID(ctx, controller.ParamID)
+	if err != nil {
+		ctx.Error(err)
+		return
+	}
+
+	userID, err := c.currentUserID(ctx)
+	if err != nil {
+		ctx.Error(err)
+		return
+	}
+
+	attempt, err := c.testService.CreateAttempt(ctx.Request.Context(), userID, eventID)
+	if err != nil {
+		ctx.Error(err)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, attempt)
+}
+
+// GetUserAttempts godoc
+//
+//	@Summary	Получить список своих попыток прохождения теста
+//	@Tags		tests
+//	@Accept		json
+//	@Produce	json
+//	@Param		X-Request-Id	header		string	true	"Уникальный идентификатор запроса"
+//	@Param		eventId			path		string	true	"UUID мероприятия-теста"
+//	@Success	200				{array}		test_dto.UserAttemptDto
+//	@Failure	400				{object}	dto.ErrorResponse	"Некорректный UUID"
+//	@Failure	401				{object}	dto.ErrorResponse
+//	@Failure	500				{object}	dto.ErrorResponse
+//	@Router		/v1/events/{eventId}/test/attempts [get]
+//	@Security	VkAuth
+func (c *testController) GetUserAttempts(ctx *gin.Context) {
+	eventID, err := controller.ParseUUID(ctx, controller.ParamID)
+	if err != nil {
+		ctx.Error(err)
+		return
+	}
+
+	userID, err := c.currentUserID(ctx)
+	if err != nil {
+		ctx.Error(err)
+		return
+	}
+
+	attempts, err := c.testService.GetUserAttempts(ctx.Request.Context(), userID, eventID)
+	if err != nil {
+		ctx.Error(err)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, attempts)
 }
 
 // GetUserTestResults godoc
@@ -372,7 +560,7 @@ func (c *testController) GetMyTestResults(ctx *gin.Context) {
 //	@Router		/v1/events/{eventId}/test/user-results [get]
 //	@Security	VkAuth
 func (c *testController) GetUserTestResults(ctx *gin.Context) {
-	eventID, err := controller.ParseUUID(ctx, controller.ParamEventID)
+	eventID, err := controller.ParseUUID(ctx, controller.ParamID)
 	if err != nil {
 		ctx.Error(err)
 		return
@@ -390,7 +578,7 @@ func (c *testController) GetUserTestResults(ctx *gin.Context) {
 // GenerateTestReport godoc
 //
 //	@Summary	Сгенерировать CSV-отчёт по результатам теста
-//	@Tags		tests
+//	@Tags		old-tests
 //	@Accept		json
 //	@Produce	json
 //	@Param		X-Request-Id	header		string	true	"Уникальный идентификатор запроса"
@@ -403,7 +591,7 @@ func (c *testController) GetUserTestResults(ctx *gin.Context) {
 //	@Router		/v1/events/{eventId}/test/report [get]
 //	@Security	VkAuth
 func (c *testController) GenerateTestReport(ctx *gin.Context) {
-	eventID, err := controller.ParseUUID(ctx, controller.ParamEventID)
+	eventID, err := controller.ParseUUID(ctx, controller.ParamID)
 	if err != nil {
 		ctx.Error(err)
 		return
@@ -454,9 +642,13 @@ func ConfigureTestController(
 	router.POST(routeTestQuestion, c.AddQuestion)
 	router.GET(routeTestQuestionByID, c.GetQuestion)
 	router.POST(routeTestQuestionByID, c.SetAnswer)
+	router.PATCH(routeTestQuestionByID, c.UpdateAnswer)
 	router.POST(routeTestQuestionAnswers, c.AddAnswer)
+	router.PATCH(routeTestQuestionInfo, c.UpdateQuestion)
 
 	router.GET(routeEventTestMyResults, c.GetMyTestResults)
 	router.GET(routeEventTestUserResults, c.GetUserTestResults)
 	router.GET(routeEventTestReport, c.GenerateTestReport)
+	router.POST(routeEventTestAttempts, c.CreateAttempt)
+	router.GET(routeEventTestAttempts, c.GetUserAttempts)
 }

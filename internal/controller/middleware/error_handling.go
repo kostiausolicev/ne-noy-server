@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5"
 	"gorm.io/gorm"
 )
 
@@ -20,6 +21,8 @@ func ErrorHandler() gin.HandlerFunc {
 			requestId := c.GetHeader(controller.HeaderRequestID)
 			if errors.Is(err, controller.ParseError) {
 				c.JSON(http.StatusBadRequest, dto.ErrorResponse{Error: err.Error(), Timestamp: time.Now(), RequestId: requestId})
+			} else if errors.Is(err, pgx.ErrNoRows) {
+				c.JSON(http.StatusNotFound, dto.ErrorResponse{Error: err.Error(), Timestamp: time.Now(), RequestId: requestId})
 			} else if errors.Is(err, controller.ForbiddenError) {
 				c.JSON(http.StatusForbidden, dto.ErrorResponse{Error: err.Error(), Timestamp: time.Now(), RequestId: requestId})
 			} else if errors.Is(err, controller.AuthorizationError) {

@@ -29,10 +29,12 @@ const (
 	routeTestQuestion        = "/events/test/:id/q"
 	routeTestQuestionByID    = "/events/test/:id/q/:qId"
 	routeTestQuestionAnswers = "/events/test/:id/q/:qId/answers"
+	routeTestQuestionInfo    = "/events/test/:id/q/:qId/info"
 
 	routeTeamEventFull        = "/team-events"
 	routeTeamEventsID         = "/team-events/:id"
-	routeEventTestMyResults   = "/events/:eventId/test/my-results"
-	routeEventTestUserResults = "/events/:eventId/test/user-results"
-	routeEventTestReport      = "/events/:eventId/test/report"
+	routeEventTestMyResults   = "/events/:id/test/my-results"
+	routeEventTestUserResults = "/events/:id/test/user-results"
+	routeEventTestReport      = "/events/:id/test/report"
+	routeEventTestAttempts    = "/events/:id/test/attempts"
 )

@@ -2389,6 +2389,87 @@ const docTemplate = `{
                         }
                     }
                 }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "VkAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tests"
+                ],
+                "summary": "Обновить ответ пользователя на вопрос",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Уникальный идентификатор запроса",
+                        "name": "X-Request-Id",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "UUID теста",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "UUID вопроса",
+                        "name": "qId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Новые данные ответа",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/test_dto.UpdateAnswerDto"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/test_dto.UserAnswerDto"
+                        }
+                    },
+                    "400": {
+                        "description": "Некорректные данные",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Ответ не найден",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
             }
         },
         "/v1/events/test/{id}/q/{qId}/answers": {
@@ -2474,6 +2555,212 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/events/test/{id}/q/{qId}/info": {
+            "patch": {
+                "security": [
+                    {
+                        "VkAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tests"
+                ],
+                "summary": "Обновить данные вопроса",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Уникальный идентификатор запроса",
+                        "name": "X-Request-Id",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "UUID теста",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "UUID вопроса",
+                        "name": "qId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Новые данные вопроса",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/test_dto.AddQuestionDto"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/test_dto.QuestionDto"
+                        }
+                    },
+                    "400": {
+                        "description": "Некорректные данные",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Вопрос не найден",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/events/{eventId}/test/attempts": {
+            "get": {
+                "security": [
+                    {
+                        "VkAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tests"
+                ],
+                "summary": "Получить список своих попыток прохождения теста",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Уникальный идентификатор запроса",
+                        "name": "X-Request-Id",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "UUID мероприятия-теста",
+                        "name": "eventId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/test_dto.UserAttemptDto"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Некорректный UUID",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "VkAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tests"
+                ],
+                "summary": "Начать новую попытку прохождения теста",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Уникальный идентификатор запроса",
+                        "name": "X-Request-Id",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "UUID мероприятия-теста",
+                        "name": "eventId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/test_dto.UserAttemptCreatedDto"
+                        }
+                    },
+                    "400": {
+                        "description": "Некорректный UUID",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/events/{eventId}/test/my-results": {
             "get": {
                 "security": [
@@ -2505,6 +2792,12 @@ const docTemplate = `{
                         "name": "eventId",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "UUID попытки (фильтр по конкретной попытке)",
+                        "name": "attemptId",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -2558,7 +2851,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "tests"
+                    "old-tests"
                 ],
                 "summary": "Сгенерировать CSV-отчёт по результатам теста",
                 "parameters": [
@@ -4497,8 +4790,20 @@ const docTemplate = `{
         "test_dto.CreateTestDto": {
             "type": "object",
             "properties": {
+                "attachments": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.AttachmentDto"
+                    }
+                },
                 "attempts": {
                     "type": "integer"
+                },
+                "available_roles": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "cover": {
                     "type": "string"
@@ -4514,6 +4819,12 @@ const docTemplate = `{
                 },
                 "name": {
                     "type": "string"
+                },
+                "organizers": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "starts_at": {
                     "$ref": "#/definitions/dto.FlexTime"
@@ -4578,10 +4889,10 @@ const docTemplate = `{
                 "answer_id": {
                     "type": "string"
                 },
-                "text": {
+                "attempt_id": {
                     "type": "string"
                 },
-                "user_id": {
+                "text": {
                     "type": "string"
                 }
             }
@@ -4600,8 +4911,20 @@ const docTemplate = `{
         "test_dto.TestDto": {
             "type": "object",
             "properties": {
+                "attachments": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.AttachmentDto"
+                    }
+                },
                 "attempts": {
                     "type": "integer"
+                },
+                "available_roles": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "cover": {
                     "type": "string"
@@ -4620,6 +4943,12 @@ const docTemplate = `{
                 },
                 "name": {
                     "type": "string"
+                },
+                "organizers": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.UserMiniDto"
+                    }
                 },
                 "questions": {
                     "type": "array",
@@ -4646,11 +4975,37 @@ const docTemplate = `{
                 }
             }
         },
+        "test_dto.UpdateAnswerDto": {
+            "type": "object",
+            "properties": {
+                "answer_id": {
+                    "type": "string"
+                },
+                "attempt_id": {
+                    "type": "string"
+                },
+                "text": {
+                    "type": "string"
+                }
+            }
+        },
         "test_dto.UpdateTestDto": {
             "type": "object",
             "properties": {
+                "attachments": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.AttachmentDto"
+                    }
+                },
                 "attempts": {
                     "type": "integer"
+                },
+                "available_roles": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "cover": {
                     "type": "string"
@@ -4666,6 +5021,12 @@ const docTemplate = `{
                 },
                 "name": {
                     "type": "string"
+                },
+                "organizers": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "starts_at": {
                     "$ref": "#/definitions/dto.FlexTime"
@@ -4698,6 +5059,37 @@ const docTemplate = `{
                 },
                 "user_id": {
                     "type": "string"
+                }
+            }
+        },
+        "test_dto.UserAttemptCreatedDto": {
+            "type": "object",
+            "properties": {
+                "attempt_number": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "started": {
+                    "type": "string"
+                }
+            }
+        },
+        "test_dto.UserAttemptDto": {
+            "type": "object",
+            "properties": {
+                "attempt_number": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "order_number": {
+                    "type": "integer"
+                },
+                "points": {
+                    "type": "integer"
                 }
             }
         },

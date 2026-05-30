@@ -147,7 +147,13 @@ func (f *fakeTestService) GetQuestion(_ context.Context, _, _ uuid.UUID) (test_d
 func (f *fakeTestService) SetAnswer(_ context.Context, _ uuid.UUID, _ test_dto.SetAnswerDto) (test_dto.UserAnswerDto, error) {
 	return test_dto.UserAnswerDto{}, nil
 }
+func (f *fakeTestService) UpdateAnswer(_ context.Context, _ uuid.UUID, _ test_dto.UpdateAnswerDto) (test_dto.UserAnswerDto, error) {
+	return test_dto.UserAnswerDto{}, nil
+}
 func (f *fakeTestService) AddQuestion(_ context.Context, _ uuid.UUID, _ test_dto.AddQuestionDto) (test_dto.QuestionDto, error) {
+	return test_dto.QuestionDto{}, nil
+}
+func (f *fakeTestService) UpdateQuestion(_ context.Context, _, _ uuid.UUID, _ test_dto.AddQuestionDto) (test_dto.QuestionDto, error) {
 	return test_dto.QuestionDto{}, nil
 }
 func (f *fakeTestService) AddAnswer(_ context.Context, _ uuid.UUID, _ test_dto.AddAnswerDto) (test_dto.AnswerDto, error) {
@@ -160,7 +166,7 @@ func (f *fakeTestService) UpdateTest(_ context.Context, _ uuid.UUID, _ test_dto.
 	return test_dto.TestDto{}, nil
 }
 func (f *fakeTestService) DeleteTest(_ context.Context, _ test_dto.DeleteTestDto) error { return nil }
-func (f *fakeTestService) GetMyTestResults(_ context.Context, _, _ uuid.UUID) ([]test_dto.MyTestResultDto, error) {
+func (f *fakeTestService) GetMyTestResults(_ context.Context, _, _ uuid.UUID, _ *uuid.UUID) ([]test_dto.MyTestResultDto, error) {
 	return f.myResults, nil
 }
 func (f *fakeTestService) GetUserTestResults(_ context.Context, _ uuid.UUID) ([]test_dto.UserTestResultDto, error) {
@@ -168,6 +174,12 @@ func (f *fakeTestService) GetUserTestResults(_ context.Context, _ uuid.UUID) ([]
 }
 func (f *fakeTestService) GenerateTestReport(_ context.Context, _ uuid.UUID) (test_dto.TestReportDto, error) {
 	return f.report, nil
+}
+func (f *fakeTestService) CreateAttempt(_ context.Context, _, _ uuid.UUID) (test_dto.UserAttemptCreatedDto, error) {
+	return test_dto.UserAttemptCreatedDto{}, nil
+}
+func (f *fakeTestService) GetUserAttempts(_ context.Context, _, _ uuid.UUID) ([]test_dto.UserAttemptDto, error) {
+	return nil, nil
 }
 
 type fakeUserService struct {

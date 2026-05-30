@@ -2,6 +2,8 @@ package impl
 
 import (
 	"context"
+	"ne_noy/internal/model"
+	"ne_noy/internal/model/events"
 	"ne_noy/internal/model/events/as_test"
 	"ne_noy/internal/repository"
 	"time"
@@ -30,6 +32,18 @@ func (e *eventTestRepositoryPgx) GetTest(ctx context.Context, testID uuid.UUID) 
 		return nil, err
 	}
 	test.Questions = questions
+
+	attachments, err := e.getEventAttachments(ctx, testID)
+	if err != nil {
+		return nil, err
+	}
+	test.Attachments = attachments
+
+	roles, err := e.getEventRoles(ctx, testID)
+	if err != nil {
+		return nil, err
+	}
+	test.AvailableRoleCodes = roles
 
 	return test, nil
 }
@@ -66,6 +80,16 @@ func (e *eventTestRepositoryPgx) CreateTest(ctx context.Context, test *as_test.A
 		return nil, err
 	}
 
+	if err = e.replaceEventAttachments(ctx, testID, test.Attachments); err != nil {
+		return nil, err
+	}
+
+	if len(test.AvailableRoleCodes) > 0 {
+		if err = e.replaceEventRoles(ctx, testID, test.AvailableRoleCodes); err != nil {
+			return nil, err
+		}
+	}
+
 	return e.GetTest(ctx, testID)
 }
 
@@ -93,6 +117,18 @@ func (e *eventTestRepositoryPgx) UpdateTest(ctx context.Context, testID uuid.UUI
 		return nil, pgx.ErrNoRows
 	}
 
+	if update.Attachments != nil {
+		if err := e.replaceEventAttachments(ctx, testID, update.Attachments); err != nil {
+			return nil, err
+		}
+	}
+
+	if update.AvailableRoleCodes != nil {
+		if err := e.replaceEventRoles(ctx, testID, update.AvailableRoleCodes); err != nil {
+			return nil, err
+		}
+	}
+
 	return e.GetTest(ctx, testID)
 }
 
@@ -115,16 +151,92 @@ func (e *eventTestRepositoryPgx) DeleteTest(ctx context.Context, testID uuid.UUI
 func (e *eventTestRepositoryPgx) AddQuestion(ctx context.Context, testID uuid.UUID, question as_test.Question) (*as_test.Question, error) {
 	questionID := uuid.New()
 
-	// Вопрос связывается с event_as_tests через event_id; порядок хранится явно для стабильной выдачи теста.
-	_, err := e.pool.Exec(ctx, `
+	tx, err := e.pool.Begin(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback(ctx)
+
+	if err = lockQuestions(ctx, tx, testID); err != nil {
+		return nil, err
+	}
+
+	if _, err = tx.Exec(ctx, `
 		INSERT INTO questions (id, text, type, event_id, q_order)
 		VALUES ($1, $2, $3, $4, $5)
-	`, questionID, question.Text, question.Type, testID, question.QOrder)
-	if err != nil {
+	`, questionID, question.Text, question.Type, testID, question.QOrder); err != nil {
+		return nil, err
+	}
+
+	if err = renumberQuestions(ctx, tx, testID); err != nil {
+		return nil, err
+	}
+
+	if err = tx.Commit(ctx); err != nil {
 		return nil, err
 	}
 
 	return e.GetQuestion(ctx, testID, questionID)
+}
+
+func (e *eventTestRepositoryPgx) UpdateQuestion(ctx context.Context, testID, questionID uuid.UUID, update as_test.Question) (*as_test.Question, error) {
+	tx, err := e.pool.Begin(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback(ctx)
+
+	if err = lockQuestions(ctx, tx, testID); err != nil {
+		return nil, err
+	}
+
+	commandTag, err := tx.Exec(ctx, `
+		UPDATE questions
+		SET text       = COALESCE($3, text),
+		    type       = COALESCE($4, type),
+		    q_order    = COALESCE($5, q_order),
+		    updated_at = now()
+		WHERE id = $1 AND event_id = $2
+	`, questionID, testID, nullableString(update.Text), nullableString(update.Type), nullableInt(update.QOrder))
+	if err != nil {
+		return nil, err
+	}
+	if commandTag.RowsAffected() == 0 {
+		return nil, pgx.ErrNoRows
+	}
+
+	if err = renumberQuestions(ctx, tx, testID); err != nil {
+		return nil, err
+	}
+
+	if err = tx.Commit(ctx); err != nil {
+		return nil, err
+	}
+
+	return e.GetQuestion(ctx, testID, questionID)
+}
+
+// lockQuestions захватывает advisory lock на уровне транзакции для данного теста.
+// Это гарантирует, что параллельные операции с вопросами одного теста выполняются
+// последовательно и не приводят к дедлоку при перенумерации.
+func lockQuestions(ctx context.Context, tx pgx.Tx, testID uuid.UUID) error {
+	_, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtext($1::text))`, testID)
+	return err
+}
+
+// renumberQuestions перенумерует все вопросы теста от 1, сохраняя их относительный порядок.
+func renumberQuestions(ctx context.Context, tx pgx.Tx, testID uuid.UUID) error {
+	_, err := tx.Exec(ctx, `
+		UPDATE questions AS q
+		SET q_order = sub.rn
+		FROM (
+			SELECT id, ROW_NUMBER() OVER (ORDER BY q_order, created_at) AS rn
+			FROM questions
+			WHERE event_id = $1
+		) AS sub
+		WHERE q.id = sub.id
+	`, testID)
+	return err
 }
 
 func (e *eventTestRepositoryPgx) AddAnswer(ctx context.Context, questionID uuid.UUID, answer as_test.Answer) (*as_test.Answer, error) {
@@ -150,19 +262,106 @@ func (e *eventTestRepositoryPgx) SetUserAnswer(ctx context.Context, userAnswer a
 
 	userAnswerID := uuid.New()
 	row := e.pool.QueryRow(ctx, `
-		INSERT INTO user_answers (id, user_id, question_id, answer_id, text, points)
-		VALUES ($1, $2, $3, $4, $5, $6)
-		RETURNING id, created_at, updated_at, user_id, question_id, answer_id, text, points
-	`, userAnswerID, userAnswer.UserID, userAnswer.QuestionID, userAnswer.AnswerID, userAnswer.Text, points)
+		INSERT INTO user_answers (id, user_id, question_id, answer_id, text, points, attempt)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		RETURNING id, created_at, updated_at, user_id, question_id, answer_id, text, points, attempt
+	`, userAnswerID, userAnswer.UserID, userAnswer.QuestionID, userAnswer.AnswerID, userAnswer.Text, points, userAnswer.AttemptID)
 
 	var saved as_test.UserAnswer
 	if err = row.Scan(
-		&saved.ID, &saved.CreatedAt, &saved.UpdatedAt, &saved.UserID, &saved.QuestionID, &saved.AnswerID, &saved.Text, &saved.Points,
+		&saved.ID, &saved.CreatedAt, &saved.UpdatedAt, &saved.UserID, &saved.QuestionID, &saved.AnswerID, &saved.Text, &saved.Points, &saved.AttemptID,
 	); err != nil {
 		return nil, err
 	}
 
 	return &saved, nil
+}
+
+func (e *eventTestRepositoryPgx) UpdateUserAnswer(ctx context.Context, userAnswer as_test.UserAnswer) (*as_test.UserAnswer, error) {
+	points, err := e.resolveUserAnswerPoints(ctx, userAnswer.QuestionID, userAnswer.AnswerID)
+	if err != nil {
+		return nil, err
+	}
+
+	row := e.pool.QueryRow(ctx, `
+		UPDATE user_answers
+		SET answer_id  = $3,
+		    text       = $4,
+		    points     = $5,
+		    updated_at = now()
+		WHERE user_id = $1 AND question_id = $2
+		  AND attempt IS NOT DISTINCT FROM $6
+		RETURNING id, created_at, updated_at, user_id, question_id, answer_id, text, points, attempt
+	`, userAnswer.UserID, userAnswer.QuestionID, userAnswer.AnswerID, userAnswer.Text, points, userAnswer.AttemptID)
+
+	var saved as_test.UserAnswer
+	if err = row.Scan(
+		&saved.ID, &saved.CreatedAt, &saved.UpdatedAt,
+		&saved.UserID, &saved.QuestionID, &saved.AnswerID, &saved.Text, &saved.Points, &saved.AttemptID,
+	); err != nil {
+		return nil, err
+	}
+	return &saved, nil
+}
+
+func (e *eventTestRepositoryPgx) CreateAttempt(ctx context.Context, userID, testID uuid.UUID) (*as_test.UserAttempt, error) {
+	attemptID := uuid.New()
+	row := e.pool.QueryRow(ctx, `
+		INSERT INTO user_attempts (id, userid, testid)
+		VALUES ($1, $2, $3)
+		RETURNING id, userid, testid, started
+	`, attemptID, userID, testID)
+
+	var attempt as_test.UserAttempt
+	if err := row.Scan(&attempt.ID, &attempt.UserID, &attempt.TestID, &attempt.Started); err != nil {
+		return nil, err
+	}
+	return &attempt, nil
+}
+
+func (e *eventTestRepositoryPgx) GetUserAttempts(ctx context.Context, userID, testID uuid.UUID) ([]as_test.UserAttemptInfo, error) {
+	rows, err := e.pool.Query(ctx, `
+		WITH attempt_points AS (
+			SELECT uana.attempt, COALESCE(SUM(uana.points), 0) AS total_points
+			FROM user_answers uana
+			WHERE uana.attempt IS NOT NULL
+			GROUP BY uana.attempt
+		),
+		ranked AS (
+			SELECT
+				ua.id,
+				ua.userid,
+				ua.testid,
+				ua.started,
+				COALESCE(ap.total_points, 0) AS points,
+				ROW_NUMBER() OVER (PARTITION BY ua.userid, ua.testid ORDER BY ua.started) AS attempt_number,
+				ROW_NUMBER() OVER (PARTITION BY ua.testid ORDER BY ua.started)            AS order_number
+			FROM user_attempts ua
+			LEFT JOIN attempt_points ap ON ap.attempt = ua.id
+			WHERE ua.testid = $2
+		)
+		SELECT id, userid, testid, started, points, attempt_number, order_number
+		FROM ranked
+		WHERE userid = $1
+		ORDER BY started
+	`, userID, testID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var result []as_test.UserAttemptInfo
+	for rows.Next() {
+		var info as_test.UserAttemptInfo
+		if err := rows.Scan(
+			&info.ID, &info.UserID, &info.TestID, &info.Started,
+			&info.Points, &info.AttemptNumber, &info.OrderNumber,
+		); err != nil {
+			return nil, err
+		}
+		result = append(result, info)
+	}
+	return result, rows.Err()
 }
 
 func (e *eventTestRepositoryPgx) getTestProfile(ctx context.Context, testID uuid.UUID) (*as_test.AsTest, error) {
@@ -272,14 +471,21 @@ func (e *eventTestRepositoryPgx) resolveUserAnswerPoints(ctx context.Context, qu
 	return points, nil
 }
 
-func (e *eventTestRepositoryPgx) GetUserAnswersByEvent(ctx context.Context, eventID, userID uuid.UUID) ([]as_test.UserAnswer, error) {
-	rows, err := e.pool.Query(ctx, `
-		SELECT ua.id, ua.created_at, ua.updated_at, ua.user_id, ua.question_id, ua.answer_id, ua.text, ua.points
+func (e *eventTestRepositoryPgx) GetUserAnswersByEvent(ctx context.Context, eventID, userID uuid.UUID, attemptID *uuid.UUID) ([]as_test.UserAnswer, error) {
+	query := `
+		SELECT ua.id, ua.created_at, ua.updated_at, ua.user_id, ua.question_id, ua.answer_id, ua.text, ua.points, ua.attempt
 		FROM user_answers ua
 		JOIN questions q ON ua.question_id = q.id
 		WHERE q.event_id = $1 AND ua.user_id = $2
-		ORDER BY q.q_order ASC
-	`, eventID, userID)
+	`
+	args := []any{eventID, userID}
+	if attemptID != nil {
+		query += ` AND ua.attempt = $3`
+		args = append(args, *attemptID)
+	}
+	query += ` ORDER BY q.q_order ASC`
+
+	rows, err := e.pool.Query(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -289,7 +495,7 @@ func (e *eventTestRepositoryPgx) GetUserAnswersByEvent(ctx context.Context, even
 	for rows.Next() {
 		var ua as_test.UserAnswer
 		if err := rows.Scan(
-			&ua.ID, &ua.CreatedAt, &ua.UpdatedAt, &ua.UserID, &ua.QuestionID, &ua.AnswerID, &ua.Text, &ua.Points,
+			&ua.ID, &ua.CreatedAt, &ua.UpdatedAt, &ua.UserID, &ua.QuestionID, &ua.AnswerID, &ua.Text, &ua.Points, &ua.AttemptID,
 		); err != nil {
 			return nil, err
 		}
@@ -357,6 +563,170 @@ func scanAnswer(row pgx.Row) (*as_test.Answer, error) {
 	}
 
 	return &answer, nil
+}
+
+func (e *eventTestRepositoryPgx) SetEventOrganizers(ctx context.Context, eventID uuid.UUID, userIDs []uuid.UUID) error {
+	tx, err := e.pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+
+	if _, err = tx.Exec(ctx, `DELETE FROM event_orgs WHERE event_id = $1 AND event_type = 'test'`, eventID); err != nil {
+		return err
+	}
+
+	for _, userID := range userIDs {
+		if _, err = tx.Exec(ctx, `
+			INSERT INTO event_orgs (event_id, event_type, user_id) VALUES ($1, 'test', $2)
+			ON CONFLICT DO NOTHING
+		`, eventID, userID); err != nil {
+			return err
+		}
+	}
+
+	return tx.Commit(ctx)
+}
+
+func (e *eventTestRepositoryPgx) GetEventOrganizers(ctx context.Context, eventID uuid.UUID) ([]model.User, error) {
+	rows, err := e.pool.Query(ctx, `
+		SELECT u.id, u.vk_id, u.first_name, u.last_name, u.photo_url
+		FROM users u
+		JOIN event_orgs eo ON eo.user_id = u.id
+		WHERE eo.event_id = $1 AND eo.event_type = 'test'
+		ORDER BY u.first_name ASC
+	`, eventID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var users []model.User
+	for rows.Next() {
+		var u model.User
+		if err := rows.Scan(&u.ID, &u.VkID, &u.FirstName, &u.LastName, &u.PhotoURL); err != nil {
+			return nil, err
+		}
+		users = append(users, u)
+	}
+	return users, rows.Err()
+}
+
+func (e *eventTestRepositoryPgx) getEventAttachments(ctx context.Context, testID uuid.UUID) ([]events.EventAttachment, error) {
+	rows, err := e.pool.Query(ctx, `
+		SELECT ea.attachment_id, a.url, a.filename
+		FROM event_attachments ea
+		JOIN attachments a ON a.id = ea.attachment_id
+		WHERE ea.event_id = $1 AND ea.event_type = $2::event_type_enum
+		ORDER BY ea.created_at ASC
+	`, testID, events.EventAsTest)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	result := make([]events.EventAttachment, 0)
+	for rows.Next() {
+		var ea events.EventAttachment
+		ea.EventID = testID
+		ea.EventType = events.EventAsTest
+		ea.Attachment = &model.Attachment{}
+		if err := rows.Scan(&ea.AttachmentID, &ea.Attachment.Url, &ea.Attachment.Filename); err != nil {
+			return nil, err
+		}
+		if ea.AttachmentID != nil {
+			ea.Attachment.ID = *ea.AttachmentID
+		}
+		result = append(result, ea)
+	}
+	return result, rows.Err()
+}
+
+func (e *eventTestRepositoryPgx) replaceEventAttachments(ctx context.Context, testID uuid.UUID, attachments []events.EventAttachment) error {
+	_, err := e.pool.Exec(ctx, `
+		DELETE FROM event_attachments WHERE event_id = $1 AND event_type = $2::event_type_enum
+	`, testID, events.EventAsTest)
+	if err != nil {
+		return err
+	}
+	for _, a := range attachments {
+		if a.Attachment == nil {
+			continue
+		}
+		var attachmentID int64
+		if a.AttachmentID != nil && *a.AttachmentID != 0 {
+			_, err = e.pool.Exec(ctx, `
+				INSERT INTO attachments (id, url, filename)
+				VALUES ($1, $2, $3)
+				ON CONFLICT (id) DO NOTHING
+			`, *a.AttachmentID, a.Attachment.Url, a.Attachment.Filename)
+			if err != nil {
+				return err
+			}
+			attachmentID = *a.AttachmentID
+		} else {
+			err = e.pool.QueryRow(ctx, `
+				INSERT INTO attachments (url, filename)
+				VALUES ($1, $2)
+				RETURNING id
+			`, a.Attachment.Url, a.Attachment.Filename).Scan(&attachmentID)
+			if err != nil {
+				return err
+			}
+		}
+		_, err = e.pool.Exec(ctx, `
+			INSERT INTO event_attachments (event_id, event_type, attachment_id)
+			VALUES ($1, $2::event_type_enum, $3)
+		`, testID, events.EventAsTest, attachmentID)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (e *eventTestRepositoryPgx) replaceEventRoles(ctx context.Context, testID uuid.UUID, roleCodes []string) error {
+	_, err := e.pool.Exec(ctx, `
+		DELETE FROM event_roles WHERE event_id = $1 AND event_type = 'test'::event_type_enum
+	`, testID)
+	if err != nil {
+		return err
+	}
+	if len(roleCodes) == 0 {
+		return nil
+	}
+	_, err = e.pool.Exec(ctx, `
+		INSERT INTO event_roles (event_id, event_type, role_id)
+		SELECT $1, 'test'::event_type_enum, r.id
+		FROM roles r
+		WHERE r.name = ANY($2)
+		ON CONFLICT DO NOTHING
+	`, testID, roleCodes)
+	return err
+}
+
+func (e *eventTestRepositoryPgx) getEventRoles(ctx context.Context, testID uuid.UUID) ([]string, error) {
+	rows, err := e.pool.Query(ctx, `
+		SELECT r.name
+		FROM event_roles er
+		JOIN roles r ON r.id = er.role_id
+		WHERE er.event_id = $1 AND er.event_type = 'test'::event_type_enum
+		ORDER BY r.name ASC
+	`, testID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	codes := make([]string, 0)
+	for rows.Next() {
+		var code string
+		if err := rows.Scan(&code); err != nil {
+			return nil, err
+		}
+		codes = append(codes, code)
+	}
+	return codes, rows.Err()
 }
 
 func nullableString(value string) *string {

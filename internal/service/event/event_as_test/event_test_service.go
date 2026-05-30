@@ -26,10 +26,14 @@ type EventTestService interface {
 	GetTest(ctx context.Context, testID uuid.UUID) (test_dto.TestDto, error)
 	// GetQuestion получение конкретного вопроса
 	GetQuestion(ctx context.Context, testID, questionID uuid.UUID) (test_dto.QuestionDto, error)
-	// SetAnswer Установить ответ пользователем на вопрос
+	// SetAnswer устанавливает ответ пользователя на вопрос
 	SetAnswer(ctx context.Context, questionID uuid.UUID, answer test_dto.SetAnswerDto) (test_dto.UserAnswerDto, error)
+	// UpdateAnswer обновляет существующий ответ пользователя на вопрос
+	UpdateAnswer(ctx context.Context, questionID uuid.UUID, answer test_dto.UpdateAnswerDto) (test_dto.UserAnswerDto, error)
 	// AddQuestion Добавление вопроса в тест
 	AddQuestion(ctx context.Context, testID uuid.UUID, question test_dto.AddQuestionDto) (test_dto.QuestionDto, error)
+	// UpdateQuestion обновляет текст, тип и порядок вопроса
+	UpdateQuestion(ctx context.Context, testID, questionID uuid.UUID, question test_dto.AddQuestionDto) (test_dto.QuestionDto, error)
 	// AddAnswer Добавление варианта ответа в тест
 	AddAnswer(ctx context.Context, questionID uuid.UUID, answer test_dto.AddAnswerDto) (test_dto.AnswerDto, error)
 	// CreateTest Создание теста
@@ -38,16 +42,52 @@ type EventTestService interface {
 	UpdateTest(ctx context.Context, testID uuid.UUID, test test_dto.UpdateTestDto) (test_dto.TestDto, error)
 	// DeleteTest удаляет тест
 	DeleteTest(ctx context.Context, test test_dto.DeleteTestDto) error
-	// GetMyTestResults возвращает ответы текущего пользователя на вопросы теста
-	GetMyTestResults(ctx context.Context, eventID, userID uuid.UUID) ([]test_dto.MyTestResultDto, error)
+	// GetMyTestResults возвращает ответы текущего пользователя на вопросы теста.
+	// attemptID опционален: если передан — только ответы из этой попытки.
+	GetMyTestResults(ctx context.Context, eventID, userID uuid.UUID, attemptID *uuid.UUID) ([]test_dto.MyTestResultDto, error)
 	// GetUserTestResults возвращает результаты всех пользователей по тесту
 	GetUserTestResults(ctx context.Context, eventID uuid.UUID) ([]test_dto.UserTestResultDto, error)
 	// GenerateTestReport генерирует CSV-отчёт по результатам теста
 	GenerateTestReport(ctx context.Context, eventID uuid.UUID) (test_dto.TestReportDto, error)
+	// CreateAttempt создаёт новую попытку пользователя для теста
+	CreateAttempt(ctx context.Context, userID, testID uuid.UUID) (test_dto.UserAttemptCreatedDto, error)
+	// GetUserAttempts возвращает список попыток пользователя с баллами и порядковыми номерами
+	GetUserAttempts(ctx context.Context, userID, testID uuid.UUID) ([]test_dto.UserAttemptDto, error)
 }
 
 func NewEventTestService(repo repository.EventTestRepository) EventTestService {
 	return &eventTestService{repo: repo}
+}
+
+func attachmentDtosToModels(dtos []dto.AttachmentDto) []events.EventAttachment {
+	result := make([]events.EventAttachment, 0, len(dtos))
+	for _, d := range dtos {
+		id := d.ID
+		result = append(result, events.EventAttachment{
+			AttachmentID: &id,
+			Attachment: &model.Attachment{
+				ID:       d.ID,
+				Url:      d.Url,
+				Filename: d.Title,
+			},
+		})
+	}
+	return result
+}
+
+func attachmentsToDto(attachments []events.EventAttachment) []dto.AttachmentDto {
+	result := make([]dto.AttachmentDto, 0, len(attachments))
+	for _, a := range attachments {
+		if a.Attachment == nil || a.AttachmentID == nil {
+			continue
+		}
+		result = append(result, dto.AttachmentDto{
+			ID:    a.Attachment.ID,
+			Url:   a.Attachment.Url,
+			Title: a.Attachment.Filename,
+		})
+	}
+	return result
 }
 
 func (e *eventTestService) GetTest(ctx context.Context, testID uuid.UUID) (test_dto.TestDto, error) {
@@ -55,6 +95,12 @@ func (e *eventTestService) GetTest(ctx context.Context, testID uuid.UUID) (test_
 	if err != nil {
 		return test_dto.TestDto{}, err
 	}
+
+	organizers, err := e.repo.GetEventOrganizers(ctx, testID)
+	if err != nil {
+		return test_dto.TestDto{}, err
+	}
+	test.Orgs = organizers
 
 	return testToDto(*test), nil
 }
@@ -80,6 +126,29 @@ func (e *eventTestService) SetAnswer(ctx context.Context, questionID uuid.UUID, 
 		UserID:     answer.UserID,
 		QuestionID: questionID,
 		AnswerID:   answer.AnswerID,
+		AttemptID:  answer.AttemptID,
+		Text:       answer.Text,
+	})
+	if err != nil {
+		return test_dto.UserAnswerDto{}, err
+	}
+
+	return userAnswerToDto(*userAnswer), nil
+}
+
+func (e *eventTestService) UpdateAnswer(ctx context.Context, questionID uuid.UUID, answer test_dto.UpdateAnswerDto) (test_dto.UserAnswerDto, error) {
+	if answer.UserID == uuid.Nil {
+		return test_dto.UserAnswerDto{}, errors.New("user id is required")
+	}
+	if answer.AnswerID == nil && answer.Text == nil {
+		return test_dto.UserAnswerDto{}, errors.New("answer id or text is required")
+	}
+
+	userAnswer, err := e.repo.UpdateUserAnswer(ctx, as_test.UserAnswer{
+		UserID:     answer.UserID,
+		QuestionID: questionID,
+		AnswerID:   answer.AnswerID,
+		AttemptID:  answer.AttemptID,
 		Text:       answer.Text,
 	})
 	if err != nil {
@@ -107,6 +176,19 @@ func (e *eventTestService) AddQuestion(ctx context.Context, testID uuid.UUID, qu
 	}
 
 	return questionToDto(*createdQuestion), nil
+}
+
+func (e *eventTestService) UpdateQuestion(ctx context.Context, testID, questionID uuid.UUID, question test_dto.AddQuestionDto) (test_dto.QuestionDto, error) {
+	updated, err := e.repo.UpdateQuestion(ctx, testID, questionID, as_test.Question{
+		Text:   question.Text,
+		Type:   question.Type,
+		QOrder: question.Order,
+	})
+	if err != nil {
+		return test_dto.QuestionDto{}, err
+	}
+
+	return questionToDto(*updated), nil
 }
 
 func (e *eventTestService) AddAnswer(ctx context.Context, questionID uuid.UUID, answer test_dto.AddAnswerDto) (test_dto.AnswerDto, error) {
@@ -152,6 +234,10 @@ func (e *eventTestService) CreateTest(ctx context.Context, test test_dto.CreateT
 			StartsAt:    test.StartsAt.Time,
 			EndsAt:      test.EndsAt.ToTimePtr(),
 		},
+		EventRelations: events.EventRelations{
+			Attachments:        attachmentDtosToModels(test.Attachments),
+			AvailableRoleCodes: test.AvailableRoles,
+		},
 		ExtLinkID: test.ExtLinkID,
 		Attempts:  attempts,
 		VkPostID:  test.VkPostID,
@@ -159,6 +245,18 @@ func (e *eventTestService) CreateTest(ctx context.Context, test test_dto.CreateT
 	if err != nil {
 		return test_dto.TestDto{}, err
 	}
+
+	if len(test.Organizers) > 0 {
+		if err = e.repo.SetEventOrganizers(ctx, createdTest.ID, test.Organizers); err != nil {
+			return test_dto.TestDto{}, err
+		}
+	}
+
+	organizers, err := e.repo.GetEventOrganizers(ctx, createdTest.ID)
+	if err != nil {
+		return test_dto.TestDto{}, err
+	}
+	createdTest.Orgs = organizers
 
 	return testToDto(*createdTest), nil
 }
@@ -182,11 +280,27 @@ func (e *eventTestService) UpdateTest(ctx context.Context, testID uuid.UUID, tes
 		update.Attempts = *test.Attempts
 	}
 	update.VkPostID = test.VkPostID
+	if test.Attachments != nil {
+		update.Attachments = attachmentDtosToModels(*test.Attachments)
+	}
+	update.AvailableRoleCodes = test.AvailableRoles
 
 	updatedTest, err := e.repo.UpdateTest(ctx, testID, update)
 	if err != nil {
 		return test_dto.TestDto{}, err
 	}
+
+	if test.Organizers != nil {
+		if err = e.repo.SetEventOrganizers(ctx, testID, *test.Organizers); err != nil {
+			return test_dto.TestDto{}, err
+		}
+	}
+
+	organizers, err := e.repo.GetEventOrganizers(ctx, testID)
+	if err != nil {
+		return test_dto.TestDto{}, err
+	}
+	updatedTest.Orgs = organizers
 
 	return testToDto(*updatedTest), nil
 }
@@ -209,18 +323,31 @@ func testToDto(test as_test.AsTest) test_dto.TestDto {
 		questions = append(questions, questionToDto(*question))
 	}
 
+	orgs := make([]dto.UserMiniDto, 0, len(test.Orgs))
+	for _, org := range test.Orgs {
+		orgs = append(orgs, testUserToMiniDto(org))
+	}
+
+	roles := test.AvailableRoleCodes
+	if roles == nil {
+		roles = []string{}
+	}
+
 	return test_dto.TestDto{
-		ID:          test.ID,
-		Name:        test.Name,
-		Description: test.Description,
-		Cover:       test.Cover,
-		Status:      test.Status,
-		StartsAt:    test.StartsAt,
-		EndsAt:      test.EndsAt,
-		ExtLinkID:   test.ExtLinkID,
-		Attempts:    test.Attempts,
-		VkPostID:    test.VkPostID,
-		Questions:   questions,
+		ID:             test.ID,
+		Name:           test.Name,
+		Description:    test.Description,
+		Cover:          test.Cover,
+		Status:         test.Status,
+		StartsAt:       test.StartsAt,
+		EndsAt:         test.EndsAt,
+		ExtLinkID:      test.ExtLinkID,
+		Attempts:       test.Attempts,
+		VkPostID:       test.VkPostID,
+		AvailableRoles: roles,
+		Organizers:     orgs,
+		Attachments:    attachmentsToDto(test.Attachments),
+		Questions:      questions,
 	}
 }
 
@@ -264,13 +391,13 @@ func userAnswerToDto(answer as_test.UserAnswer) test_dto.UserAnswerDto {
 	}
 }
 
-func (e *eventTestService) GetMyTestResults(ctx context.Context, eventID, userID uuid.UUID) ([]test_dto.MyTestResultDto, error) {
+func (e *eventTestService) GetMyTestResults(ctx context.Context, eventID, userID uuid.UUID, attemptID *uuid.UUID) ([]test_dto.MyTestResultDto, error) {
 	test, err := e.repo.GetTest(ctx, eventID)
 	if err != nil {
 		return nil, err
 	}
 
-	userAnswers, err := e.repo.GetUserAnswersByEvent(ctx, eventID, userID)
+	userAnswers, err := e.repo.GetUserAnswersByEvent(ctx, eventID, userID, attemptID)
 	if err != nil {
 		return nil, err
 	}
@@ -401,6 +528,42 @@ func (e *eventTestService) GenerateTestReport(ctx context.Context, eventID uuid.
 	return test_dto.TestReportDto{
 		DownloadURL: "data:text/csv;base64," + encoded,
 	}, nil
+}
+
+func (e *eventTestService) CreateAttempt(ctx context.Context, userID, testID uuid.UUID) (test_dto.UserAttemptCreatedDto, error) {
+	attempts, err := e.repo.GetUserAttempts(ctx, userID, testID)
+	if err != nil {
+		return test_dto.UserAttemptCreatedDto{}, err
+	}
+
+	attempt, err := e.repo.CreateAttempt(ctx, userID, testID)
+	if err != nil {
+		return test_dto.UserAttemptCreatedDto{}, err
+	}
+
+	return test_dto.UserAttemptCreatedDto{
+		ID:            attempt.ID,
+		AttemptNumber: len(attempts) + 1,
+		Started:       attempt.Started,
+	}, nil
+}
+
+func (e *eventTestService) GetUserAttempts(ctx context.Context, userID, testID uuid.UUID) ([]test_dto.UserAttemptDto, error) {
+	attempts, err := e.repo.GetUserAttempts(ctx, userID, testID)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]test_dto.UserAttemptDto, 0, len(attempts))
+	for _, a := range attempts {
+		result = append(result, test_dto.UserAttemptDto{
+			ID:            a.ID,
+			AttemptNumber: a.AttemptNumber,
+			Points:        a.Points,
+			OrderNumber:   a.OrderNumber,
+		})
+	}
+	return result, nil
 }
 
 func testUserToMiniDto(user model.User) dto.UserMiniDto {

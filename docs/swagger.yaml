@@ -577,8 +577,16 @@ definitions:
     type: object
   test_dto.CreateTestDto:
     properties:
+      attachments:
+        items:
+          $ref: '#/definitions/dto.AttachmentDto'
+        type: array
       attempts:
         type: integer
+      available_roles:
+        items:
+          type: string
+        type: array
       cover:
         type: string
       description:
@@ -589,6 +597,10 @@ definitions:
         type: string
       name:
         type: string
+      organizers:
+        items:
+          type: string
+        type: array
       starts_at:
         $ref: '#/definitions/dto.FlexTime'
       status:
@@ -630,9 +642,9 @@ definitions:
     properties:
       answer_id:
         type: string
-      text:
+      attempt_id:
         type: string
-      user_id:
+      text:
         type: string
     type: object
   test_dto.TestAttemptDto:
@@ -644,8 +656,16 @@ definitions:
     type: object
   test_dto.TestDto:
     properties:
+      attachments:
+        items:
+          $ref: '#/definitions/dto.AttachmentDto'
+        type: array
       attempts:
         type: integer
+      available_roles:
+        items:
+          type: string
+        type: array
       cover:
         type: string
       description:
@@ -658,6 +678,10 @@ definitions:
         type: string
       name:
         type: string
+      organizers:
+        items:
+          $ref: '#/definitions/dto.UserMiniDto'
+        type: array
       questions:
         items:
           $ref: '#/definitions/test_dto.QuestionDto'
@@ -674,10 +698,27 @@ definitions:
       download_url:
         type: string
     type: object
+  test_dto.UpdateAnswerDto:
+    properties:
+      answer_id:
+        type: string
+      attempt_id:
+        type: string
+      text:
+        type: string
+    type: object
   test_dto.UpdateTestDto:
     properties:
+      attachments:
+        items:
+          $ref: '#/definitions/dto.AttachmentDto'
+        type: array
       attempts:
         type: integer
+      available_roles:
+        items:
+          type: string
+        type: array
       cover:
         type: string
       description:
@@ -688,6 +729,10 @@ definitions:
         type: string
       name:
         type: string
+      organizers:
+        items:
+          type: string
+        type: array
       starts_at:
         $ref: '#/definitions/dto.FlexTime'
       status:
@@ -709,6 +754,26 @@ definitions:
         type: string
       user_id:
         type: string
+    type: object
+  test_dto.UserAttemptCreatedDto:
+    properties:
+      attempt_number:
+        type: integer
+      id:
+        type: string
+      started:
+        type: string
+    type: object
+  test_dto.UserAttemptDto:
+    properties:
+      attempt_number:
+        type: integer
+      id:
+        type: string
+      order_number:
+        type: integer
+      points:
+        type: integer
     type: object
   test_dto.UserTestResultDto:
     properties:
@@ -1012,6 +1077,85 @@ paths:
       summary: Получить список всех мероприятий
       tags:
       - base-events
+  /v1/events/{eventId}/test/attempts:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Уникальный идентификатор запроса
+        in: header
+        name: X-Request-Id
+        required: true
+        type: string
+      - description: UUID мероприятия-теста
+        in: path
+        name: eventId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/test_dto.UserAttemptDto'
+            type: array
+        "400":
+          description: Некорректный UUID
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - VkAuth: []
+      summary: Получить список своих попыток прохождения теста
+      tags:
+      - tests
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Уникальный идентификатор запроса
+        in: header
+        name: X-Request-Id
+        required: true
+        type: string
+      - description: UUID мероприятия-теста
+        in: path
+        name: eventId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/test_dto.UserAttemptCreatedDto'
+        "400":
+          description: Некорректный UUID
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - VkAuth: []
+      summary: Начать новую попытку прохождения теста
+      tags:
+      - tests
   /v1/events/{eventId}/test/my-results:
     get:
       consumes:
@@ -1026,6 +1170,10 @@ paths:
         in: path
         name: eventId
         required: true
+        type: string
+      - description: UUID попытки (фильтр по конкретной попытке)
+        in: query
+        name: attemptId
         type: string
       produces:
       - application/json
@@ -1099,7 +1247,7 @@ paths:
       - VkAuth: []
       summary: Сгенерировать CSV-отчёт по результатам теста
       tags:
-      - tests
+      - old-tests
   /v1/events/{eventId}/test/user-results:
     get:
       consumes:
@@ -2393,6 +2541,59 @@ paths:
       summary: Получить вопрос теста
       tags:
       - tests
+    patch:
+      consumes:
+      - application/json
+      parameters:
+      - description: Уникальный идентификатор запроса
+        in: header
+        name: X-Request-Id
+        required: true
+        type: string
+      - description: UUID теста
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: UUID вопроса
+        in: path
+        name: qId
+        required: true
+        type: string
+      - description: Новые данные ответа
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/test_dto.UpdateAnswerDto'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/test_dto.UserAnswerDto'
+        "400":
+          description: Некорректные данные
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Ответ не найден
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - VkAuth: []
+      summary: Обновить ответ пользователя на вопрос
+      tags:
+      - tests
     post:
       consumes:
       - application/json
@@ -2498,6 +2699,60 @@ paths:
       security:
       - VkAuth: []
       summary: Добавить вариант ответа к вопросу
+      tags:
+      - tests
+  /v1/events/test/{id}/q/{qId}/info:
+    patch:
+      consumes:
+      - application/json
+      parameters:
+      - description: Уникальный идентификатор запроса
+        in: header
+        name: X-Request-Id
+        required: true
+        type: string
+      - description: UUID теста
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: UUID вопроса
+        in: path
+        name: qId
+        required: true
+        type: string
+      - description: Новые данные вопроса
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/test_dto.AddQuestionDto'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/test_dto.QuestionDto'
+        "400":
+          description: Некорректные данные
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Вопрос не найден
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - VkAuth: []
+      summary: Обновить данные вопроса
       tags:
       - tests
   /v1/file:

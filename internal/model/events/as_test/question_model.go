@@ -2,9 +2,31 @@ package as_test
 
 import (
 	"ne_noy/internal/model"
+	"time"
 
 	"github.com/google/uuid"
 )
+
+type UserAttempt struct {
+	ID      uuid.UUID
+	UserID  uuid.UUID
+	TestID  uuid.UUID
+	Started time.Time
+}
+
+type UserAttemptInfo struct {
+	ID            uuid.UUID
+	UserID        uuid.UUID
+	TestID        uuid.UUID
+	Started       time.Time
+	Points        int
+	AttemptNumber int
+	OrderNumber   int
+}
+
+func (u UserAttempt) TableName() string {
+	return "user_attempts"
+}
 
 type Question struct {
 	model.BaseModel
@@ -45,6 +67,8 @@ type UserAnswer struct {
 
 	AnswerID *uuid.UUID
 	Answer   *Answer
+
+	AttemptID *uuid.UUID
 
 	Text   *string
 	Points int

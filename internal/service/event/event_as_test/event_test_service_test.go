@@ -161,7 +161,7 @@ func TestEventTestServiceGetMyTestResultsGroupsAnswersByQuestion(t *testing.T) {
 	}
 	service := NewEventTestService(repo)
 
-	results, err := service.GetMyTestResults(ctx, testID, userID)
+	results, err := service.GetMyTestResults(ctx, testID, userID, nil)
 	require.NoError(t, err)
 	require.Len(t, results, 1)
 	require.Equal(t, "Q1", results[0].Question.Text)
@@ -184,7 +184,7 @@ func TestEventTestServiceGetMyTestResultsReturnsEmptyIdsForUnansweredQuestion(t 
 	repo.questions[questionID] = repo.tests[testID].Questions[0]
 	service := NewEventTestService(repo)
 
-	results, err := service.GetMyTestResults(ctx, testID, userID)
+	results, err := service.GetMyTestResults(ctx, testID, userID, nil)
 	require.NoError(t, err)
 	require.Len(t, results, 1)
 	require.Empty(t, results[0].SelectedAnswerIds)
@@ -370,6 +370,23 @@ func (f *fakeEventTestRepo) AddQuestion(_ context.Context, testID uuid.UUID, que
 	return &question, nil
 }
 
+func (f *fakeEventTestRepo) UpdateQuestion(_ context.Context, testID, questionID uuid.UUID, update as_test.Question) (*as_test.Question, error) {
+	q, ok := f.questions[questionID]
+	if !ok || q.EventID != testID {
+		return nil, errors.New("question not found")
+	}
+	if update.Text != "" {
+		q.Text = update.Text
+	}
+	if update.Type != "" {
+		q.Type = update.Type
+	}
+	if update.QOrder != 0 {
+		q.QOrder = update.QOrder
+	}
+	return q, nil
+}
+
 func (f *fakeEventTestRepo) AddAnswer(_ context.Context, questionID uuid.UUID, answer as_test.Answer) (*as_test.Answer, error) {
 	if _, ok := f.questions[questionID]; !ok {
 		return nil, errors.New("question not found")
@@ -393,15 +410,61 @@ func (f *fakeEventTestRepo) SetUserAnswer(_ context.Context, userAnswer as_test.
 	return &userAnswer, nil
 }
 
-func (f *fakeEventTestRepo) GetUserAnswersByEvent(_ context.Context, eventID, userID uuid.UUID) ([]as_test.UserAnswer, error) {
+func (f *fakeEventTestRepo) UpdateUserAnswer(_ context.Context, userAnswer as_test.UserAnswer) (*as_test.UserAnswer, error) {
+	for id, ua := range f.userAnswers {
+		attemptMatch := (userAnswer.AttemptID == nil && ua.AttemptID == nil) ||
+			(userAnswer.AttemptID != nil && ua.AttemptID != nil && *userAnswer.AttemptID == *ua.AttemptID)
+		if ua.UserID == userAnswer.UserID && ua.QuestionID == userAnswer.QuestionID && attemptMatch {
+			ua.AnswerID = userAnswer.AnswerID
+			ua.Text = userAnswer.Text
+			if userAnswer.AnswerID != nil {
+				if a, ok := f.answers[*userAnswer.AnswerID]; ok {
+					ua.Points = a.Points
+				}
+			} else {
+				ua.Points = 0
+			}
+			f.userAnswers[id] = ua
+			return ua, nil
+		}
+	}
+	return nil, errors.New("answer not found")
+}
+
+func (f *fakeEventTestRepo) GetUserAnswersByEvent(_ context.Context, eventID, userID uuid.UUID, attemptID *uuid.UUID) ([]as_test.UserAnswer, error) {
 	var result []as_test.UserAnswer
 	for _, ua := range f.userAnswers {
 		q, ok := f.questions[ua.QuestionID]
-		if ok && q.EventID == eventID && ua.UserID == userID {
-			result = append(result, *ua)
+		if !ok || q.EventID != eventID || ua.UserID != userID {
+			continue
 		}
+		if attemptID != nil && (ua.AttemptID == nil || *ua.AttemptID != *attemptID) {
+			continue
+		}
+		result = append(result, *ua)
 	}
 	return result, nil
+}
+
+func (f *fakeEventTestRepo) CreateAttempt(_ context.Context, userID, testID uuid.UUID) (*as_test.UserAttempt, error) {
+	return &as_test.UserAttempt{
+		ID:      uuid.New(),
+		UserID:  userID,
+		TestID:  testID,
+		Started: time.Now().UTC(),
+	}, nil
+}
+
+func (f *fakeEventTestRepo) GetUserAttempts(_ context.Context, _, _ uuid.UUID) ([]as_test.UserAttemptInfo, error) {
+	return nil, nil
+}
+
+func (f *fakeEventTestRepo) SetEventOrganizers(_ context.Context, _ uuid.UUID, _ []uuid.UUID) error {
+	return nil
+}
+
+func (f *fakeEventTestRepo) GetEventOrganizers(_ context.Context, _ uuid.UUID) ([]model.User, error) {
+	return nil, nil
 }
 
 func (f *fakeEventTestRepo) GetAllUserAnswersByEvent(_ context.Context, eventID uuid.UUID) ([]as_test.UserAnswer, error) {
