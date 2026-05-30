@@ -1244,7 +1244,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "teams"
+                    "event-teams"
                 ],
                 "summary": "Создать команду в командном мероприятии",
                 "parameters": [
@@ -1459,7 +1459,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "teams"
+                    "event-teams"
                 ],
                 "summary": "Вступить в команду",
                 "parameters": [
@@ -1531,7 +1531,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "teams"
+                    "event-teams"
                 ],
                 "summary": "Выйти из команды",
                 "parameters": [
@@ -1603,7 +1603,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "teams"
+                    "event-teams"
                 ],
                 "summary": "Получить команды мероприятия",
                 "parameters": [
@@ -1674,7 +1674,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "teams"
+                    "event-teams"
                 ],
                 "summary": "Получить команду",
                 "parameters": [
@@ -1749,7 +1749,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "teams"
+                    "event-teams"
                 ],
                 "summary": "Сменить капитана",
                 "parameters": [
@@ -1828,7 +1828,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "teams"
+                    "event-teams"
                 ],
                 "summary": "Отправить уведомление команде",
                 "parameters": [
@@ -2174,7 +2174,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "tests"
+                    "test-questions"
                 ],
                 "summary": "Добавить вопрос в тест",
                 "parameters": [
@@ -2250,7 +2250,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "tests"
+                    "test-questions"
                 ],
                 "summary": "Получить вопрос теста",
                 "parameters": [
@@ -2322,7 +2322,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "tests"
+                    "test-answers"
                 ],
                 "summary": "Сохранить ответ пользователя на вопрос",
                 "parameters": [
@@ -2403,7 +2403,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "tests"
+                    "test-answers"
                 ],
                 "summary": "Обновить ответ пользователя на вопрос",
                 "parameters": [
@@ -2486,7 +2486,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "tests"
+                    "test-answers"
                 ],
                 "summary": "Добавить вариант ответа к вопросу",
                 "parameters": [
@@ -2569,7 +2569,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "tests"
+                    "test-questions"
                 ],
                 "summary": "Обновить данные вопроса",
                 "parameters": [
@@ -2625,6 +2625,76 @@ const docTemplate = `{
                     },
                     "404": {
                         "description": "Вопрос не найден",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/events/test/{id}/users-detail": {
+            "get": {
+                "security": [
+                    {
+                        "VkAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tests"
+                ],
+                "summary": "Получить детальную информацию о пользователях теста",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Уникальный идентификатор запроса",
+                        "name": "X-Request-Id",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "UUID теста",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/test_dto.TestUserResultDetailDto"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Некорректный UUID",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Тест не найден",
                         "schema": {
                             "$ref": "#/definitions/dto.ErrorResponse"
                         }
@@ -4975,6 +5045,20 @@ const docTemplate = `{
                 }
             }
         },
+        "test_dto.TestUserResultDetailDto": {
+            "type": "object",
+            "properties": {
+                "attempts": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/test_dto.UserAttemptDetailDto"
+                    }
+                },
+                "user": {
+                    "$ref": "#/definitions/dto.UserMiniDto"
+                }
+            }
+        },
         "test_dto.UpdateAnswerDto": {
             "type": "object",
             "properties": {
@@ -5073,6 +5157,26 @@ const docTemplate = `{
                 },
                 "started": {
                     "type": "string"
+                }
+            }
+        },
+        "test_dto.UserAttemptDetailDto": {
+            "type": "object",
+            "properties": {
+                "answers": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/test_dto.AnswerDto"
+                    }
+                },
+                "info": {
+                    "$ref": "#/definitions/test_dto.UserAttemptDto"
+                },
+                "selected_answer": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         },

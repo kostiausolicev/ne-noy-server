@@ -698,6 +698,15 @@ definitions:
       download_url:
         type: string
     type: object
+  test_dto.TestUserResultDetailDto:
+    properties:
+      attempts:
+        items:
+          $ref: '#/definitions/test_dto.UserAttemptDetailDto'
+        type: array
+      user:
+        $ref: '#/definitions/dto.UserMiniDto'
+    type: object
   test_dto.UpdateAnswerDto:
     properties:
       answer_id:
@@ -763,6 +772,19 @@ definitions:
         type: string
       started:
         type: string
+    type: object
+  test_dto.UserAttemptDetailDto:
+    properties:
+      answers:
+        items:
+          $ref: '#/definitions/test_dto.AnswerDto'
+        type: array
+      info:
+        $ref: '#/definitions/test_dto.UserAttemptDto'
+      selected_answer:
+        items:
+          type: string
+        type: array
     type: object
   test_dto.UserAttemptDto:
     properties:
@@ -1972,7 +1994,7 @@ paths:
       - VkAuth: []
       summary: Создать команду в командном мероприятии
       tags:
-      - teams
+      - event-teams
   /v1/events/team/{id}/{teamId}:
     get:
       consumes:
@@ -2022,7 +2044,7 @@ paths:
       - VkAuth: []
       summary: Получить команду
       tags:
-      - teams
+      - event-teams
   /v1/events/team/{id}/{teamId}/captain/{userId}:
     patch:
       consumes:
@@ -2076,7 +2098,7 @@ paths:
       - VkAuth: []
       summary: Сменить капитана
       tags:
-      - teams
+      - event-teams
   /v1/events/team/{id}/{teamId}/notification:
     post:
       consumes:
@@ -2130,7 +2152,7 @@ paths:
       - VkAuth: []
       summary: Отправить уведомление команде
       tags:
-      - teams
+      - event-teams
   /v1/events/team/{id}/join/{teamId}:
     post:
       consumes:
@@ -2178,7 +2200,7 @@ paths:
       - VkAuth: []
       summary: Вступить в команду
       tags:
-      - teams
+      - event-teams
   /v1/events/team/{id}/leave/{teamId}:
     post:
       consumes:
@@ -2225,7 +2247,7 @@ paths:
       - VkAuth: []
       summary: Выйти из команды
       tags:
-      - teams
+      - event-teams
   /v1/events/team/{id}/teams:
     get:
       consumes:
@@ -2272,7 +2294,7 @@ paths:
       - VkAuth: []
       summary: Получить команды мероприятия
       tags:
-      - teams
+      - event-teams
   /v1/events/test:
     post:
       consumes:
@@ -2492,7 +2514,7 @@ paths:
       - VkAuth: []
       summary: Добавить вопрос в тест
       tags:
-      - tests
+      - test-questions
   /v1/events/test/{id}/q/{qId}:
     get:
       consumes:
@@ -2540,7 +2562,7 @@ paths:
       - VkAuth: []
       summary: Получить вопрос теста
       tags:
-      - tests
+      - test-questions
     patch:
       consumes:
       - application/json
@@ -2593,7 +2615,7 @@ paths:
       - VkAuth: []
       summary: Обновить ответ пользователя на вопрос
       tags:
-      - tests
+      - test-answers
     post:
       consumes:
       - application/json
@@ -2646,7 +2668,7 @@ paths:
       - VkAuth: []
       summary: Сохранить ответ пользователя на вопрос
       tags:
-      - tests
+      - test-answers
   /v1/events/test/{id}/q/{qId}/answers:
     post:
       consumes:
@@ -2700,7 +2722,7 @@ paths:
       - VkAuth: []
       summary: Добавить вариант ответа к вопросу
       tags:
-      - tests
+      - test-answers
   /v1/events/test/{id}/q/{qId}/info:
     patch:
       consumes:
@@ -2753,6 +2775,51 @@ paths:
       security:
       - VkAuth: []
       summary: Обновить данные вопроса
+      tags:
+      - test-questions
+  /v1/events/test/{id}/users-detail:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Уникальный идентификатор запроса
+        in: header
+        name: X-Request-Id
+        required: true
+        type: string
+      - description: UUID теста
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/test_dto.TestUserResultDetailDto'
+            type: array
+        "400":
+          description: Некорректный UUID
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Тест не найден
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - VkAuth: []
+      summary: Получить детальную информацию о пользователях теста
       tags:
       - tests
   /v1/file:

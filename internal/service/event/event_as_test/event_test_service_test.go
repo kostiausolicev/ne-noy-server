@@ -459,6 +459,10 @@ func (f *fakeEventTestRepo) GetUserAttempts(_ context.Context, _, _ uuid.UUID) (
 	return nil, nil
 }
 
+func (f *fakeEventTestRepo) GetTestUserAttempts(_ context.Context, _ uuid.UUID) ([]as_test.UserAttemptWithSelections, error) {
+	return nil, nil
+}
+
 func (f *fakeEventTestRepo) SetEventOrganizers(_ context.Context, _ uuid.UUID, _ []uuid.UUID) error {
 	return nil
 }

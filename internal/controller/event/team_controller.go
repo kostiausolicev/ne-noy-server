@@ -120,7 +120,7 @@ func (t *teamController) DeleteTeamEvent(c *gin.Context) {
 //
 //	@Summary		Создать команду в командном мероприятии
 //	@Description	Создает новую команду в мероприятии типа "команды"; капитаном назначается текущий авторизованный пользователь.
-//	@Tags			teams
+//	@Tags			event-teams
 //	@Accept			json
 //	@Produce		json
 //	@Param			X-Request-Id	header		string							true	"Уникальный идентификатор запроса"
@@ -167,7 +167,7 @@ func (t *teamController) CreateTeam(c *gin.Context) {
 //
 //	@Summary		Вступить в команду
 //	@Description	Добавляет текущего авторизованного пользователя в выбранную команду командного мероприятия.
-//	@Tags			teams
+//	@Tags			event-teams
 //	@Accept			json
 //	@Produce		json
 //	@Param			X-Request-Id	header	string	true	"Уникальный идентификатор запроса"
@@ -209,7 +209,7 @@ func (t *teamController) JoinTeam(c *gin.Context) {
 //
 //	@Summary		Выйти из команды
 //	@Description	Удаляет текущего авторизованного пользователя из выбранной команды.
-//	@Tags			teams
+//	@Tags			event-teams
 //	@Accept			json
 //	@Produce		json
 //	@Param			X-Request-Id	header	string	true	"Уникальный идентификатор запроса"
@@ -251,7 +251,7 @@ func (t *teamController) LeaveTeam(c *gin.Context) {
 //
 //	@Summary		Получить команды мероприятия
 //	@Description	Возвращает список команд командного мероприятия с капитаном, первыми участниками и общим количеством участников.
-//	@Tags			teams
+//	@Tags			event-teams
 //	@Accept			json
 //	@Produce		json
 //	@Param			X-Request-Id	header		string	true	"Уникальный идентификатор запроса"
@@ -373,7 +373,7 @@ func (t *teamController) CreateTeamEventFull(c *gin.Context) {
 //
 //	@Summary		Получить команду
 //	@Description	Возвращает одну команду с капитаном, первыми участниками и общим количеством участников.
-//	@Tags			teams
+//	@Tags			event-teams
 //	@Accept			json
 //	@Produce		json
 //	@Param			X-Request-Id	header		string	true	"Уникальный идентификатор запроса"
@@ -410,7 +410,7 @@ func (t *teamController) GetTeam(c *gin.Context) {
 //
 //	@Summary		Отправить уведомление команде
 //	@Description	Отправляет текстовое VK-уведомление капитану и участникам выбранной команды.
-//	@Tags			teams
+//	@Tags			event-teams
 //	@Accept			json
 //	@Produce		json
 //	@Param			X-Request-Id	header	string								true	"Уникальный идентификатор запроса"
@@ -452,7 +452,7 @@ func (t *teamController) SendNotificationToTeam(c *gin.Context) {
 //
 //	@Summary		Сменить капитана
 //	@Description	Назначает нового капитана команды. Новый капитан должен быть участником команды. Старый капитан становится рядовым участником.
-//	@Tags			teams
+//	@Tags			event-teams
 //	@Accept			json
 //	@Produce		json
 //	@Param			X-Request-Id	header	string	true	"Уникальный идентификатор запроса"

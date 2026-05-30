@@ -24,6 +24,12 @@ type UserAttemptInfo struct {
 	OrderNumber   int
 }
 
+type UserAttemptWithSelections struct {
+	UserAttemptInfo
+	User            model.User
+	SelectedAnswers []uuid.UUID
+}
+
 func (u UserAttempt) TableName() string {
 	return "user_attempts"
 }

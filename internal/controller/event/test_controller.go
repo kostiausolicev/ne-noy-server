@@ -83,7 +83,7 @@ func (c *testController) GetTest(ctx *gin.Context) {
 // GetQuestion godoc
 //
 //	@Summary	Получить вопрос теста
-//	@Tags		tests
+//	@Tags		test-questions
 //	@Accept		json
 //	@Produce	json
 //	@Param		X-Request-Id	header		string	true	"Уникальный идентификатор запроса"
@@ -120,7 +120,7 @@ func (c *testController) GetQuestion(ctx *gin.Context) {
 // SetAnswer godoc
 //
 //	@Summary	Сохранить ответ пользователя на вопрос
-//	@Tags		tests
+//	@Tags		test-answers
 //	@Accept		json
 //	@Produce	json
 //	@Param		X-Request-Id	header		string						true	"Уникальный идентификатор запроса"
@@ -176,7 +176,7 @@ func (c *testController) SetAnswer(ctx *gin.Context) {
 // UpdateAnswer godoc
 //
 //	@Summary	Обновить ответ пользователя на вопрос
-//	@Tags		tests
+//	@Tags		test-answers
 //	@Accept		json
 //	@Produce	json
 //	@Param		X-Request-Id	header		string						true	"Уникальный идентификатор запроса"
@@ -231,7 +231,7 @@ func (c *testController) UpdateAnswer(ctx *gin.Context) {
 // AddQuestion godoc
 //
 //	@Summary	Добавить вопрос в тест
-//	@Tags		tests
+//	@Tags		test-questions
 //	@Accept		json
 //	@Produce	json
 //	@Param		X-Request-Id	header		string					true	"Уникальный идентификатор запроса"
@@ -268,7 +268,7 @@ func (c *testController) AddQuestion(ctx *gin.Context) {
 // UpdateQuestion godoc
 //
 //	@Summary	Обновить данные вопроса
-//	@Tags		tests
+//	@Tags		test-questions
 //	@Accept		json
 //	@Produce	json
 //	@Param		X-Request-Id	header		string					true	"Уникальный идентификатор запроса"
@@ -311,7 +311,7 @@ func (c *testController) UpdateQuestion(ctx *gin.Context) {
 // AddAnswer godoc
 //
 //	@Summary	Добавить вариант ответа к вопросу
-//	@Tags		tests
+//	@Tags		test-answers
 //	@Accept		json
 //	@Produce	json
 //	@Param		X-Request-Id	header		string					true	"Уникальный идентификатор запроса"
@@ -544,6 +544,37 @@ func (c *testController) GetUserAttempts(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, attempts)
 }
 
+// GetTestUsersDetail godoc
+//
+//	@Summary	Получить детальную информацию о пользователях теста
+//	@Tags		tests
+//	@Accept		json
+//	@Produce	json
+//	@Param		X-Request-Id	header		string	true	"Уникальный идентификатор запроса"
+//	@Param		id				path		string	true	"UUID теста"
+//	@Success	200				{array}		test_dto.TestUserResultDetailDto
+//	@Failure	400				{object}	dto.ErrorResponse	"Некорректный UUID"
+//	@Failure	401				{object}	dto.ErrorResponse
+//	@Failure	404				{object}	dto.ErrorResponse	"Тест не найден"
+//	@Failure	500				{object}	dto.ErrorResponse
+//	@Router		/v1/events/test/{id}/users-detail [get]
+//	@Security	VkAuth
+func (c *testController) GetTestUsersDetail(ctx *gin.Context) {
+	testID, err := controller.ParseUUID(ctx, controller.ParamID)
+	if err != nil {
+		ctx.Error(err)
+		return
+	}
+
+	result, err := c.testService.GetTestUsersDetail(ctx.Request.Context(), testID)
+	if err != nil {
+		ctx.Error(err)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, result)
+}
+
 // GetUserTestResults godoc
 //
 //	@Summary	Получить результаты всех пользователей по тесту
@@ -646,6 +677,7 @@ func ConfigureTestController(
 	router.POST(routeTestQuestionAnswers, c.AddAnswer)
 	router.PATCH(routeTestQuestionInfo, c.UpdateQuestion)
 
+	router.GET(routeTestUsersDetail, c.GetTestUsersDetail)
 	router.GET(routeEventTestMyResults, c.GetMyTestResults)
 	router.GET(routeEventTestUserResults, c.GetUserTestResults)
 	router.GET(routeEventTestReport, c.GenerateTestReport)

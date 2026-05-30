@@ -47,6 +47,8 @@ type EventTestService interface {
 	GetMyTestResults(ctx context.Context, eventID, userID uuid.UUID, attemptID *uuid.UUID) ([]test_dto.MyTestResultDto, error)
 	// GetUserTestResults возвращает результаты всех пользователей по тесту
 	GetUserTestResults(ctx context.Context, eventID uuid.UUID) ([]test_dto.UserTestResultDto, error)
+	// GetTestUsersDetail возвращает детальную информацию о пользователях теста: попытки, доступные ответы и выборки
+	GetTestUsersDetail(ctx context.Context, testID uuid.UUID) ([]test_dto.TestUserResultDetailDto, error)
 	// GenerateTestReport генерирует CSV-отчёт по результатам теста
 	GenerateTestReport(ctx context.Context, eventID uuid.UUID) (test_dto.TestReportDto, error)
 	// CreateAttempt создаёт новую попытку пользователя для теста
@@ -462,6 +464,65 @@ func (e *eventTestService) GetUserTestResults(ctx context.Context, eventID uuid.
 					TotalCount:   stats.totalCount,
 				},
 			},
+		})
+	}
+
+	return result, nil
+}
+
+func (e *eventTestService) GetTestUsersDetail(ctx context.Context, testID uuid.UUID) ([]test_dto.TestUserResultDetailDto, error) {
+	test, err := e.repo.GetTest(ctx, testID)
+	if err != nil {
+		return nil, err
+	}
+
+	allAnswers := make([]test_dto.AnswerDto, 0)
+	for _, q := range test.Questions {
+		if q == nil {
+			continue
+		}
+		for _, a := range q.Answers {
+			if a != nil {
+				allAnswers = append(allAnswers, answerToDto(*a))
+			}
+		}
+	}
+
+	userAttempts, err := e.repo.GetTestUserAttempts(ctx, testID)
+	if err != nil {
+		return nil, err
+	}
+
+	type userEntry struct {
+		user     model.User
+		attempts []test_dto.UserAttemptDetailDto
+	}
+	order := make([]uuid.UUID, 0)
+	entries := make(map[uuid.UUID]*userEntry)
+
+	for _, ua := range userAttempts {
+		if _, exists := entries[ua.UserID]; !exists {
+			order = append(order, ua.UserID)
+			entries[ua.UserID] = &userEntry{user: ua.User}
+		}
+		entries[ua.UserID].attempts = append(entries[ua.UserID].attempts, test_dto.UserAttemptDetailDto{
+			Info: test_dto.UserAttemptDto{
+				ID:            ua.ID,
+				AttemptNumber: ua.AttemptNumber,
+				Points:        ua.Points,
+				OrderNumber:   ua.OrderNumber,
+			},
+			Answers:        allAnswers,
+			SelectedAnswer: ua.SelectedAnswers,
+		})
+	}
+
+	result := make([]test_dto.TestUserResultDetailDto, 0, len(order))
+	for _, userID := range order {
+		e := entries[userID]
+		result = append(result, test_dto.TestUserResultDetailDto{
+			User:     testUserToMiniDto(e.user),
+			Attempts: e.attempts,
 		})
 	}
 

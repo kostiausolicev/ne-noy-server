@@ -172,6 +172,9 @@ func (f *fakeTestService) GetMyTestResults(_ context.Context, _, _ uuid.UUID, _ 
 func (f *fakeTestService) GetUserTestResults(_ context.Context, _ uuid.UUID) ([]test_dto.UserTestResultDto, error) {
 	return f.userResults, nil
 }
+func (f *fakeTestService) GetTestUsersDetail(_ context.Context, _ uuid.UUID) ([]test_dto.TestUserResultDetailDto, error) {
+	return nil, nil
+}
 func (f *fakeTestService) GenerateTestReport(_ context.Context, _ uuid.UUID) (test_dto.TestReportDto, error) {
 	return f.report, nil
 }

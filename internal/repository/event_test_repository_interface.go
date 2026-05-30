@@ -53,6 +53,9 @@ type EventTestRepository interface {
 	// GetAllUserAnswersByEvent возвращает все ответы пользователей на вопросы теста с информацией о пользователе и корректности ответа.
 	GetAllUserAnswersByEvent(ctx context.Context, eventID uuid.UUID) ([]as_test.UserAnswer, error)
 
+	// GetTestUserAttempts возвращает все попытки всех пользователей по тесту с выбранными ответами.
+	GetTestUserAttempts(ctx context.Context, testID uuid.UUID) ([]as_test.UserAttemptWithSelections, error)
+
 	// SetEventOrganizers заменяет список организаторов теста.
 	SetEventOrganizers(ctx context.Context, eventID uuid.UUID, userIDs []uuid.UUID) error
 

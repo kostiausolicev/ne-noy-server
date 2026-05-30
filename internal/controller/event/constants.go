@@ -37,4 +37,5 @@ const (
 	routeEventTestUserResults = "/events/:id/test/user-results"
 	routeEventTestReport      = "/events/:id/test/report"
 	routeEventTestAttempts    = "/events/:id/test/attempts"
+	routeTestUsersDetail      = "/events/test/:id/users-detail"
 )

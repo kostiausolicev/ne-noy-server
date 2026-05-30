@@ -543,6 +543,91 @@ func (e *eventTestRepositoryPgx) GetAllUserAnswersByEvent(ctx context.Context, e
 	return result, rows.Err()
 }
 
+func (e *eventTestRepositoryPgx) GetTestUserAttempts(ctx context.Context, testID uuid.UUID) ([]as_test.UserAttemptWithSelections, error) {
+	rows, err := e.pool.Query(ctx, `
+		WITH attempt_points AS (
+			SELECT uana.attempt, COALESCE(SUM(uana.points), 0) AS total_points
+			FROM user_answers uana
+			WHERE uana.attempt IS NOT NULL
+			GROUP BY uana.attempt
+		)
+		SELECT
+			ua.id,
+			ua.userid,
+			ua.testid,
+			ua.started,
+			COALESCE(ap.total_points, 0)                                                      AS points,
+			ROW_NUMBER() OVER (PARTITION BY ua.userid, ua.testid ORDER BY ua.started)         AS attempt_number,
+			ROW_NUMBER() OVER (PARTITION BY ua.testid ORDER BY ua.started)                    AS order_number,
+			u.id, u.vk_id, u.first_name, u.last_name, u.photo_url
+		FROM user_attempts ua
+		LEFT JOIN attempt_points ap ON ap.attempt = ua.id
+		JOIN users u ON u.id = ua.userid
+		WHERE ua.testid = $1
+		ORDER BY ua.userid, ua.started
+	`, testID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var attempts []as_test.UserAttemptWithSelections
+	for rows.Next() {
+		var a as_test.UserAttemptWithSelections
+		if err := rows.Scan(
+			&a.ID, &a.UserID, &a.TestID, &a.Started,
+			&a.Points, &a.AttemptNumber, &a.OrderNumber,
+			&a.User.ID, &a.User.VkID, &a.User.FirstName, &a.User.LastName, &a.User.PhotoURL,
+		); err != nil {
+			return nil, err
+		}
+		attempts = append(attempts, a)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	if len(attempts) == 0 {
+		return attempts, nil
+	}
+
+	// Загружаем выбранные ответы для всех попыток одним запросом.
+	selRows, err := e.pool.Query(ctx, `
+		SELECT uana.attempt, uana.answer_id
+		FROM user_answers uana
+		JOIN questions q ON uana.question_id = q.id
+		WHERE q.event_id = $1
+		  AND uana.attempt IS NOT NULL
+		  AND uana.answer_id IS NOT NULL
+	`, testID)
+	if err != nil {
+		return nil, err
+	}
+	defer selRows.Close()
+
+	selected := make(map[uuid.UUID][]uuid.UUID)
+	for selRows.Next() {
+		var attemptID, answerID uuid.UUID
+		if err := selRows.Scan(&attemptID, &answerID); err != nil {
+			return nil, err
+		}
+		selected[attemptID] = append(selected[attemptID], answerID)
+	}
+	if err := selRows.Err(); err != nil {
+		return nil, err
+	}
+
+	for i := range attempts {
+		if ids, ok := selected[attempts[i].ID]; ok {
+			attempts[i].SelectedAnswers = ids
+		} else {
+			attempts[i].SelectedAnswers = []uuid.UUID{}
+		}
+	}
+
+	return attempts, nil
+}
+
 func scanQuestion(row pgx.Row) (*as_test.Question, error) {
 	var question as_test.Question
 	if err := row.Scan(
